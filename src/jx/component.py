@@ -46,6 +46,7 @@ class Component:
         name: str | None = None,
     ) -> None:
         env = jinja_env or getattr(self, "jinja_env", None) or self._make_default_jinja_env()
+        env.add_extension("jinja2.ext.do")
         env.globals.update({"_get_random_id": utils.get_random_id})
         self.jinja_env = env
 
