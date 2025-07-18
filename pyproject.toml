@@ -40,10 +40,10 @@ documentation = "https://jx.scaletti.dev/"
 [dependency-groups]
 dev = [
     "ipdb >= 0.13",
-    "pyright >= 1.1.400",
     "pre-commit",
     "ruff >= 0.2.0",
     "tox-uv",
+    "ty>=0.0.1a15",
 ]
 test = [
     "pytest >= 7.2",

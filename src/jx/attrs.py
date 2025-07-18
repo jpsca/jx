@@ -45,7 +45,7 @@ class LazyString(UserString):
         return str(self._seq)
 
 
-class HTMLAttrs:
+class Attrs:
     """
     Contains all the HTML attributes/properties (a property is an
     attribute without a value) passed to a component but that weren't

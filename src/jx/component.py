@@ -12,8 +12,7 @@ import jinja2
 from markupsafe import Markup
 
 from . import utils
-from .exceptions import MissingRequiredArgument
-from .html_attrs import HTMLAttrs
+from .attrs import Attrs
 from .parser import JxParser
 
 
@@ -34,9 +33,9 @@ class Component:
     url_relative_to: str | Path = ""
     base_url: str = "/static/"
 
-    _attrs: HTMLAttrs
-    _content: utils.CallerWrapper
-    _co: dict[str, "Component"]  # Dictionary of instances of child components
+    c: dict[str, "Component"]  # Dictionary of instances of child components
+    _attrs: Attrs
+    _content: str = ""
     _template: str = ""
 
     def __init__(
@@ -44,6 +43,7 @@ class Component:
         jinja_env: jinja2.Environment | None = None,
         *,
         name: str | None = None,
+        **global_vars: t.Any,
     ) -> None:
         env = jinja_env or getattr(self, "jinja_env", None) or self._make_default_jinja_env()
         env.add_extension("jinja2.ext.do")
@@ -51,6 +51,8 @@ class Component:
         self.jinja_env = env
 
         self.name = name or self.__class__.__name__
+        self.globals = global_vars
+
         self.filepath = Path(inspect.getfile(self.__class__))
         self._parse_signature()
         self._init_components()
@@ -58,39 +60,14 @@ class Component:
 
         self.template = self.template or self._load_template()
         self._template = self._prepare_template(self.template)
-
         self.url_relative_to = Path(self.url_relative_to or self.filepath.parent).resolve()
+        self._attrs = Attrs({})
 
-    def init(self, *__args, **__kwargs) -> dict[str, t.Any] | None:
+    def render(self, *__args, **__kwargs) -> Markup:
         """
-        Initialize the component data.
-
-        The signature of this method is used to determine the component's required
-        and optional arguments. If not overridden, the component will not
-        require any arguments.
+        Renders the component's template with the provided arguments.
         """
-        return {}
-
-    def render(self, **kwargs: t.Any) -> Markup:
-        _attrs = kwargs.pop("_attrs", None)
-        _caller = kwargs.pop("caller", None)
-        _content = kwargs.pop("_content", None)
-        _globals = kwargs.pop("_globals", None)
-
-        __attrs = _attrs.as_dict if isinstance(_attrs, HTMLAttrs) else _attrs or {}
-        kwargs = {**__attrs, **kwargs}
-        props, extra = self._filter_attrs(kwargs)
-
-        self._attrs = HTMLAttrs(extra)
-        self._content = utils.CallerWrapper(caller=_caller, content=_content)
-        params = self.init(**props) or {}
-        params["_self"] = self
-        params.setdefault("_attrs", self._attrs)
-        params.setdefault("_content", self._content)
-
-        tmpl = self.jinja_env.from_string(self._template, globals=_globals)
-        html = tmpl.render(params).strip()
-        return Markup(html)
+        return self._render()
 
     def collect_css(self, fingerprint: bool = False) -> list[str]:
         """
@@ -101,7 +78,7 @@ class Component:
         will be added to the URL.
         """
         urls = dict.fromkeys(self._parse_urls(self.css, fingerprint=fingerprint), 1)
-        for co in self._co.values():
+        for co in self.c.values():
             for file in co.collect_css(fingerprint=fingerprint):
                 if file not in urls:
                     urls[file] = 1
@@ -117,7 +94,7 @@ class Component:
         will be added to the URL.
         """
         urls = dict.fromkeys(self._parse_urls(self.js, fingerprint=fingerprint), 1)
-        for co in self._co.values():
+        for co in self.c.values():
             for file in co.collect_js(fingerprint=fingerprint):
                 if file not in urls:
                     urls[file] = 1
@@ -186,7 +163,7 @@ class Component:
         """
         Parses the signature of the `init` method to determine the required and optional arguments.
         """
-        sig = inspect.signature(self.init)
+        sig = inspect.signature(self.render)
         self.required = tuple(
             param.name for param in sig.parameters.values()
             # `__args`` and `__kwargs`` are are read as `_Component_args` and `_Component_kwargs` by python
@@ -204,16 +181,17 @@ class Component:
         """
         Instantiate the child components.
         """
-        self._co = {}
+        self.c = {}
         for cls in self.components:
             if isinstance(cls, Component):
                 co = cls
                 co.jinja_env = self.jinja_env
+                co.globals = {**self.globals}
             else:
                 if not issubclass(cls, Component):
-                    raise TypeError(f"`{cls.__name__}` is not a component or a subclass of Component")
-                co = cls(jinja_env=self.jinja_env)
-            self._co[co.name] = co
+                    raise TypeError(f"'{cls.__name__}' is not a component or a subclass of Component")
+                co = cls(jinja_env=self.jinja_env, **self.globals)
+            self.c[co.name] = co
 
     def _add_default_assets(self) -> None:
         css = self.filepath.with_suffix(".css")
@@ -229,8 +207,32 @@ class Component:
         return filepath.read_text() if filepath.exists() else ""
 
     def _prepare_template(self, template: str) -> str:
-        parser = JxParser(name=self.name, source=template, components=list(self._co.keys()))
+        parser = JxParser(name=self.name, source=template, components=list(self.c.keys()))
         return parser.process()
+
+    def _irender(
+        self,
+        *,
+        caller: t.Callable[[], str] | None = None,
+        _attrs: Attrs | dict[str, t.Any] | None = None,
+        **kwargs: t.Any
+    ) -> Markup:
+        _attrs = _attrs.as_dict if isinstance(_attrs, Attrs) else _attrs or {}
+        kwargs = {**_attrs, **kwargs}
+        props, extra = self._filter_attrs(kwargs)
+
+        self._attrs = Attrs(extra)
+        self._content = caller() if caller else ""
+        return self.render(**props)
+
+    def _render(self, **params: t.Any) -> Markup:
+        params["_self"] = self
+        params.setdefault("_attrs", self._attrs)
+        params.setdefault("_content", self._content)
+
+        tmpl = self.jinja_env.from_string(self._template, globals=self.globals)
+        html = tmpl.render(params).strip()
+        return Markup(html)
 
     def _filter_attrs(
         self, kw: dict[str, t.Any]
@@ -239,7 +241,7 @@ class Component:
 
         for key in self.required:
             if key not in kw:
-                raise MissingRequiredArgument(self.name, key)
+                raise TypeError(f"'{self.name}' component missing required argument: '{key}'")
             props[key] = kw.pop(key)
 
         for key in self.optional:

@@ -1,6 +1,6 @@
 import pytest
 
-from jx import Component, MissingRequiredArgument, TemplateSyntaxError
+from jx import Component, TemplateSyntaxError
 
 from .data import Button
 
@@ -27,8 +27,8 @@ def test_empty_init():
     class Meh(Component):
         template = """<span class="info">meh</span>"""
 
-        def init(self):
-            pass
+        def render(self):
+            return self._render()
 
     co = Meh()
     assert co.template
@@ -41,8 +41,8 @@ def test_parse_signature():
     class Button(Component):
         template = """<button id="{{ bid }}">{{ text }}</button>"""
 
-        def init(self, bid, text="Click me!"):
-            return {"bid": bid, "text": text}
+        def render(self, bid, text="Click me!"):
+            return self._render(bid=bid, text=text)
 
     co = Button()
     assert co.required == ("bid",)
@@ -53,12 +53,10 @@ def test_render_exact():
     class Button(Component):
         template = """<button id="{{ bid }}">{{ text }}</button>"""
 
-        def init(self, bid, text="Click me!"):
-            return {"bid": bid, "text": text}
+        def render(self, bid, text="Click me!"):
+            return self._render(bid=bid, text=text)
 
     co = Button()
-    assert co.template
-    assert co.template == Button.template
     html = co.render(bid="btn1", text="Submit")
     assert html == '<button id="btn1">Submit</button>'
 
@@ -67,42 +65,33 @@ def test_missing_required():
     class Button(Component):
         template = """<button id="{{ bid }}">{{ text }}</button>"""
 
-        def init(self, bid, text="Click me!"):
-            return {"bid": bid, "text": text}
+        def render(self, bid, *, text="Click me!"):
+            return self._render(bid=bid, text=text)
 
-    co = Button()
-    assert co.template
-    assert co.template == Button.template
-    with pytest.raises(MissingRequiredArgument, match="`Button` component requires a `bid` argument"):
-        co.render(text="Submit")
+    class Parent(Component):
+        components = [Button]
+        template = """<Button text="Submit" />"""
+
+    co = Parent()
+    print(co._template)
+    with pytest.raises(TypeError, match=".*'bid'.*"):
+        co.render(text="Submit")  # type: ignore
 
 
 def test_render_derived_data():
     class Button(Component):
-        template = """<button class="{{ class }}">{{ text }}</button>"""
+        template = """<button class="{{ classes }}">{{ text }}</button>"""
 
-        def init(self, var="primary", text="Click me!"):
-            return {
-                "text": text,
-                "class": f"btn btn-{var}",
-            }
+        def render(self, var="primary", text="Click me!"):
+            return self._render(
+                var=var,
+                text=text,
+                classes=f"btn btn-{var}",
+            )
 
     co = Button()
     html = co.render(text="Submit")
     assert html == '<button class="btn btn-primary">Submit</button>'
-
-
-def test_render_extra():
-    class Button(Component):
-        template = """<button {{ _attrs.render() }}>{{ text }}</button>"""
-
-        def init(self, text="Click me!"):
-            return {"text": text}
-
-    co = Button()
-    args = {"class": "btn btn-primary", "disabled": True, "text": "Submit"}
-    html = co.render(**args)
-    assert html == '<button class="btn btn-primary" disabled>Submit</button>'
 
 
 def test_child_component():
@@ -151,7 +140,7 @@ def test_child_not_a_component():
         components = [Child]  # type: ignore
         template = """<div><Child>Hello</Child></div>"""
 
-    with pytest.raises(TypeError, match="`Child`.*"):
+    with pytest.raises(TypeError, match="'Child'.*"):
         Parent()
 
 
@@ -176,8 +165,26 @@ def test_content_returned():
     class Child(Component):
         template = """<span>{{ _content }}</span>"""
 
-        def init(self):
-            return {"_content": self._content() * 2}
+        def render(self):
+            return self._render(_content=self._content * 2)
+
+    class Parent(Component):
+        components = [Child]
+        template = """<div><Child>Hello</Child></div>"""
+
+    co = Parent()
+    html = co.render()
+    assert html == "<div><span>HelloHello</span></div>"
+
+
+
+def test_content_rassigned():
+    class Child(Component):
+        template = """<span>{{ _content }}</span>"""
+
+        def render(self):
+            self._content = self._content * 2
+            return self._render()
 
     class Parent(Component):
         components = [Child]
@@ -192,9 +199,9 @@ def test_attrs_modification():
     class Child(Component):
         template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
 
-        def init(self, var="primary"):
+        def render(self, var="primary"):
             self._attrs.add_class(f"btn-{var}")
-            return {}
+            return self._render()
 
     class Parent(Component):
         components = [Child]
@@ -217,15 +224,15 @@ def test_vue_expr():
     class Child(Component):
         template = """<span>{{ text }}</span>"""
 
-        def init(self, text: str):
-            return {"text": text}
+        def render(self, text: str):
+            return self._render(text=text)
 
     class Parent(Component):
         components = [Child]
         template = """<div><Child :text="text * 2" /></div>"""
 
-        def init(self, text: str):
-            return {"text": text}
+        def render(self, text: str):
+            return self._render(text=text)
 
     co = Parent()
     html = co.render(text="Hello")
@@ -236,15 +243,15 @@ def test_jinja_expr():
     class Child(Component):
         template = """<span>{{ text }}</span>"""
 
-        def init(self, text: str):
-            return {"text": text}
+        def render(self, text: str):
+            return self._render(text=text)
 
     class Parent(Component):
         components = [Child]
         template = """<div><Child text={{text * 2}} /></div>"""
 
-        def init(self, text: str):
-            return {"text": text}
+        def render(self, text: str):
+            return self._render(text=text)
 
     co = Parent()
     html = co.render(text="Hello")

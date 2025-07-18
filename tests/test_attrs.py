@@ -3,11 +3,11 @@ Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
 """
 import pytest
 
-from jx.html_attrs import HTMLAttrs
+from jx.attrs import Attrs
 
 
 def test_parse_initial_attrs():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
             "data-position": "top",
@@ -38,7 +38,7 @@ def test_parse_initial_attrs():
     assert attrs.get("data_position") is None
 
 def test_getattr():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
             "class": "z4 c3 a1 z4 b2",
@@ -52,7 +52,7 @@ def test_getattr():
 
 
 def test_deltattr():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
             "class": "z4 c3 a1 z4 b2",
@@ -65,7 +65,7 @@ def test_deltattr():
 
 
 def test_render():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
             "data-position": "top",
@@ -78,7 +78,7 @@ def test_render():
 
 
 def test_set():
-    attrs = HTMLAttrs({})
+    attrs = Attrs({})
     attrs.set(title="hi", data_position="top")
     attrs.set(open=True)
     assert 'data-position="top" title="hi" open' == attrs.render()
@@ -88,7 +88,7 @@ def test_set():
 
 
 def test_class_management():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "class": "z4 c3 a1 z4 b2",
         }
@@ -106,7 +106,7 @@ def test_class_management():
 
 
 def test_setdefault():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
         }
@@ -121,7 +121,7 @@ def test_setdefault():
 
 
 def test_setdefault_classes():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "class": "a",
         }
@@ -131,7 +131,7 @@ def test_setdefault_classes():
 
 
 def test_as_dict():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
             "data-position": "top",
@@ -149,7 +149,7 @@ def test_as_dict():
 
 
 def test_as_dict_no_classes():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "title": "hi",
             "data-position": "top",
@@ -164,7 +164,7 @@ def test_as_dict_no_classes():
 
 
 def test_render_attrs_lik_set():
-    attrs = HTMLAttrs({"class": "lorem"})
+    attrs = Attrs({"class": "lorem"})
     expected = 'class="ipsum lorem" data-position="top" title="hi" open'
     result = attrs.render(
         title="hi",
@@ -177,7 +177,7 @@ def test_render_attrs_lik_set():
 
 
 def test_do_not_escape_tailwind_syntax():
-    attrs = HTMLAttrs({"class": "lorem [&_a]:flex"})
+    attrs = Attrs({"class": "lorem [&_a]:flex"})
     expected = 'class="[&_a]:flex ipsum lorem" title="Hi&Stuff"'
     result = attrs.render(
         **{
@@ -190,7 +190,7 @@ def test_do_not_escape_tailwind_syntax():
 
 
 def test_do_escape_quotes_inside_attrs():
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "class": "lorem text-['red']",
             "title": """I said "Hey O'Neill, what's up?" to him""",
@@ -209,7 +209,7 @@ def test_additional_attributes_are_lazily_evaluated_to_strings():
         def __str__(self):
             raise RuntimeError("Should not be called unless rendered.")
 
-    attrs = HTMLAttrs(
+    attrs = Attrs(
         {
             "some_object": TestObject(),
         }
@@ -224,7 +224,7 @@ def test_additional_attributes_lazily_evaluated_has_string_methods():
         def __str__(self):
             return "test"
 
-    attrs = HTMLAttrs({"some_object": TestObject()})
+    attrs = Attrs({"some_object": TestObject()})
 
     assert attrs["some_object"].__str__
     assert attrs["some_object"].__repr__

@@ -1,6 +1,6 @@
 import pytest
 
-from jx.exceptions import TemplateSyntaxError
+from jx import TemplateSyntaxError
 from jx.parser import JxParser
 
 
@@ -8,27 +8,27 @@ VALID_DATA = (
     # Simple case
     (
         """<Foo bar="baz">content</Foo>""",
-        """{% call(_slot="") _self._co["Foo"].render(**{"bar":"baz"}) -%}content{%- endcall %}""",
+        """{% call _self.c["Foo"]._irender(**{"bar":"baz"}) -%}content{%- endcall %}""",
     ),
     # Self-closing tag
     (
         """<Alert type="success" message="Success!" />""",
-        """{{ _self._co["Alert"].render(**{"type":"success", "message":"Success!"}) }}""",
+        """{{ _self.c["Alert"]._irender(**{"type":"success", "message":"Success!"}) }}""",
     ),
     # No attributes
     (
         """<Foo>content</Foo>""",
-        """{% call(_slot="") _self._co["Foo"].render() -%}content{%- endcall %}""",
+        """{% call _self.c["Foo"]._irender() -%}content{%- endcall %}""",
     ),
     # No attributes, self-closing tag
     (
         """<Foo />""",
-        """{{ _self._co["Foo"].render() }}""",
+        """{{ _self.c["Foo"]._irender() }}""",
     ),
     # Strings vs expressions
     (
         """<Foo bar="baz" :lorem="ipsum">content</Foo>""",
-        """{% call(_slot="") _self._co["Foo"].render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
+        """{% call _self.c["Foo"]._irender(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
     ),
     # Line breaks
     (
@@ -36,7 +36,7 @@ VALID_DATA = (
           bar="baz"
           lorem="ipsum"
         >content</Foo>""",
-        """{% call(_slot="") _self._co["Foo"].render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
+        """{% call _self.c["Foo"]._irender(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
     ),
     # Line breaks, self-closing tag
     (
@@ -45,37 +45,37 @@ VALID_DATA = (
           lorem="ipsum"
           green
         />""",
-        """{{ _self._co["Foo"].render(**{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
+        """{{ _self.c["Foo"]._irender(**{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
     ),
     # Python expression in attribute and boolean attributes
     (
         """<Foo :bar="42 + 4" green large>content</Foo>""",
-        """{% call(_slot="") _self._co["Foo"].render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
+        """{% call _self.c["Foo"]._irender(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
     ),
     (
         """<Foo bar={{ 42 + 4 }} green large>content</Foo>""",
-        """{% call(_slot="") _self._co["Foo"].render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
+        """{% call _self.c["Foo"]._irender(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
     ),
     # `>` in expression
     (
         """<CloseBtn :disabled="num > 4" />""",
-        """{{ _self._co["CloseBtn"].render(**{"disabled":num > 4}) }}""",
+        """{{ _self.c["CloseBtn"]._irender(**{"disabled":num > 4}) }}""",
     ),
     (
         """<CloseBtn disabled={{ num > 4 }} />""",
-        """{{ _self._co["CloseBtn"].render(**{"disabled":num > 4}) }}""",
+        """{{ _self.c["CloseBtn"]._irender(**{"disabled":num > 4}) }}""",
     ),
     # `>` in attribute value
     (
         """<CloseBtn data-closer-action="click->closer#close" />""",
-        """{{ _self._co["CloseBtn"].render(**{"data_closer_action":"click->closer#close"}) }}""",
+        """{{ _self.c["CloseBtn"]._irender(**{"data_closer_action":"click->closer#close"}) }}""",
     ),
     # Raw blocks
     (
         """<Foo bar="baz">content</Foo>
 {% raw %}{{ a + b }}{% endraw %}
 what""",
-        """{% call(_slot="") _self._co["Foo"].render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call _self.c["Foo"]._irender(**{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}{{ a + b }}{% endraw %}
 what""",
     ),
@@ -136,11 +136,11 @@ def test_process_nested_same_tag():
 </Card>
     """
     expected = """
-{% call(_slot="") _self._co["Card"].render(**{"class":"card"}) -%}
+{% call _self.c["Card"]._irender(**{"class":"card"}) -%}
   WTF
-  {% call(_slot="") _self._co["Card"].render(**{"class":"card-header"}) -%}abc{%- endcall %}
-  {% call(_slot="") _self._co["Card"].render(**{"class":"card-body"}) -%}
-    <div>{% call(_slot="") _self._co["Card"].render() -%}Text{%- endcall %}</div>
+  {% call _self.c["Card"]._irender(**{"class":"card-header"}) -%}abc{%- endcall %}
+  {% call _self.c["Card"]._irender(**{"class":"card-body"}) -%}
+    <div>{% call _self.c["Card"]._irender() -%}Text{%- endcall %}</div>
   {%- endcall %}
 {%- endcall %}
 """

@@ -11,9 +11,8 @@ from .exceptions import TemplateSyntaxError
 from .utils import logger
 
 
-RENDER_CMD = '_self._co["[TAG]"].render'
-BLOCK_CALL = '{% call(_slot="") [CMD]([ATTRS]) -%}[CONTENT]{%- endcall %}'.replace("[CMD]", RENDER_CMD)
-INLINE_CALL = "{{ [CMD]([ATTRS]) }}".replace("[CMD]", RENDER_CMD)
+BLOCK_CALL = '{% call _self.c["[TAG]"]._irender([ATTRS]) -%}[CONTENT]{%- endcall %}'
+INLINE_CALL = '{{ _self.c["[TAG]"]._irender([ATTRS]) }}'
 
 re_raw = r"\{%-?\s*raw\s*-?%\}.+?\{%-?\s*endraw\s*-?%\}"
 RX_RAW = re.compile(re_raw, re.DOTALL)
@@ -37,9 +36,6 @@ RX_ATTR = re.compile(re_attr, re.VERBOSE | re.DOTALL)
 
 
 def escape(s: t.Any, /) -> Markup:
-    if hasattr(s, "__html__"):
-        return Markup(s.__html__())
-
     return Markup(
         str(s)
         .replace("&", "&amp;")
@@ -212,18 +208,16 @@ class JxParser:
 
                 attrs.append(f'"{name}"={value}')
 
-        if not attrs:
-            str_attrs = ""
-        else:
+        str_attrs = ""
+        if attrs:
             str_attrs = "**{" + ", ".join([a.replace("=", ":", 1) for a in attrs]) + "}"
 
-        if not content:
-            call = INLINE_CALL.replace("[TAG]", tag).replace("[ATTRS]", str_attrs)
-        else:
-            call = (
+        if content:
+            return (
                 BLOCK_CALL
                 .replace("[TAG]", tag)
                 .replace("[ATTRS]", str_attrs)
                 .replace("[CONTENT]", content)
             )
-        return call
+        else:
+            return INLINE_CALL.replace("[TAG]", tag).replace("[ATTRS]", str_attrs)

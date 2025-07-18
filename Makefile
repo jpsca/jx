@@ -11,23 +11,20 @@ test:
 .PHONY: lint
 lint:
 	uv run ruff check src/jx tests
+	uv run ty check
 
 .PHONY: coverage
 coverage:
 	uv run pytest --cov-config=pyproject.toml --cov-report html --cov jx src/jx tests
 
-.PHONY: types
-types:
-	uv run pyright src/jx
+# .PHONY: docs
+# docs:
+# 	cd docs && uv run python docs.py
 
-.PHONY: docs
-docs:
-	cd docs && uv run python docs.py
+# .PHONY: docs-build
+# docs-build:
+# 	cd docs && uv run python docs.py build
 
-.PHONY: docs-build
-docs-build:
-	cd docs && uv run python docs.py build
-
-.PHONY: docs-deploy
-docs-deploy:
-	cd docs && uv run sh deploy.sh
+# .PHONY: docs-deploy
+# docs-deploy:
+# 	cd docs && uv run sh deploy.sh
