@@ -2,4 +2,5 @@ from jx import Component
 
 
 class Button(Component):
-    pass
+    css = ("button.css",)
+    js = ("button.js",)

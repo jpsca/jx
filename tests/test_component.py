@@ -177,8 +177,7 @@ def test_content_returned():
     assert html == "<div><span>HelloHello</span></div>"
 
 
-
-def test_content_rassigned():
+def test_content_reassigned():
     class Child(Component):
         template = """<span>{{ _content }}</span>"""
 
@@ -256,3 +255,140 @@ def test_jinja_expr():
     co = Parent()
     html = co.render(text="Hello")
     assert html == "<div><span>HelloHello</span></div>"
+
+
+
+def test_collect_assets():
+    class Child(Component):
+        css = (
+            "child.css",
+            "/static/common/parent.css",
+        )
+        js = (
+            "child.js",
+            "https://example.com/child.js",
+            "https://example.com/common.js",
+        )
+        template = """<span>{{ _content }}</span>"""
+
+    class Parent(Component):
+        css = (
+            "parent.css",
+            "/static/common/parent.css",
+        )
+        js = (
+            "parent.js",
+            "https://example.com/common.js",
+        )
+        components = [Child]
+        template = """<Child>Hello</Child>"""
+
+    co = Parent()
+    assert co.collect_css() == [
+        "parent.css",
+        "/static/common/parent.css",
+        "child.css",
+    ]
+    assert co.collect_js() == [
+        "parent.js",
+        "https://example.com/common.js",
+        "child.js",
+        "https://example.com/child.js",
+    ]
+
+
+def test_render_assets():
+    class Child(Component):
+        css = ("child.css",)
+        js = ("child.js", "https://example.com/child.js")
+        template = """<span>{{ _content }}</span>"""
+
+    class Parent(Component):
+        css = ("parent.css", "/static/common/parent.css")
+        js = ("parent.js",)
+        components = [Child]
+        template = """<Child>Hello</Child>"""
+
+    co = Parent()
+
+    result = co.render_css()
+    expected = "\n".join(
+        [
+            '<link rel="stylesheet" href="/static/parent.css">',
+            '<link rel="stylesheet" href="/static/common/parent.css">',
+            '<link rel="stylesheet" href="/static/child.css">',
+        ]
+    )
+    print(f"-- Result --\n{result}")
+    print(f"-- Expected --\n{expected}")
+    assert result == expected
+
+    result = co.render_js()
+    expected = "\n".join(
+        [
+            '<script type="module" src="/static/parent.js"></script>',
+            '<script type="module" src="/static/child.js"></script>',
+            '<script type="module" src="https://example.com/child.js"></script>',
+        ]
+    )
+    print(f"-- Result --\n{result}")
+    print(f"-- Expected --\n{expected}")
+    assert result == expected
+
+    result = co.render_assets()
+    expected = "\n".join(
+        [
+            '<link rel="stylesheet" href="/static/parent.css">',
+            '<link rel="stylesheet" href="/static/common/parent.css">',
+            '<link rel="stylesheet" href="/static/child.css">',
+            '<script type="module" src="/static/parent.js"></script>',
+            '<script type="module" src="/static/child.js"></script>',
+            '<script type="module" src="https://example.com/child.js"></script>',
+        ]
+    )
+    print(f"-- Result --\n{result}")
+    print(f"-- Expected --\n{expected}")
+    assert result == expected
+
+
+def test_render_assets_custom_base():
+    class BaseComponent(Component):
+        base_url = "/assets/"
+
+    class Child(BaseComponent):
+        css = ("child.css",)
+        js = ("child.js", "https://example.com/child.js")
+        template = """<span>{{ _content }}</span>"""
+
+    class Parent(BaseComponent):
+        css = ("parent.css", "/static/common/parent.css")
+        js = ("parent.js",)
+        components = [Child]
+        template = """<Child>Hello</Child>"""
+
+    co = Parent()
+
+    result = co.render_css()
+    expected = "\n".join(
+        [
+            '<link rel="stylesheet" href="/assets/parent.css">',
+            '<link rel="stylesheet" href="/static/common/parent.css">',
+            '<link rel="stylesheet" href="/assets/child.css">',
+        ]
+    )
+    print(f"-- Result --\n{result}")
+    print(f"-- Expected --\n{expected}")
+    assert result == expected
+
+    result = co.render_js()
+    expected = "\n".join(
+        [
+            '<script type="module" src="/assets/parent.js"></script>',
+            '<script type="module" src="/assets/child.js"></script>',
+            '<script type="module" src="https://example.com/child.js"></script>',
+        ]
+    )
+    print(f"-- Result --\n{result}")
+    print(f"-- Expected --\n{expected}")
+    assert result == expected
+

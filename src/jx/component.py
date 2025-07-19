@@ -5,7 +5,6 @@ import inspect
 import re
 import typing as t
 from collections.abc import Sequence
-from hashlib import sha256
 from pathlib import Path
 
 import jinja2
@@ -16,7 +15,7 @@ from .attrs import Attrs
 from .parser import JxParser
 
 
-rx_external_url = re.compile(r"^([a-z]+://|/)", re.IGNORECASE)
+rx_external_url = re.compile(r"^[a-z]+://", re.IGNORECASE)
 
 
 class Component:
@@ -30,7 +29,6 @@ class Component:
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
 
-    url_relative_to: str | Path = ""
     base_url: str = "/static/"
 
     c: dict[str, "Component"]  # Dictionary of instances of child components
@@ -43,24 +41,23 @@ class Component:
         jinja_env: jinja2.Environment | None = None,
         *,
         name: str | None = None,
+        base_url: str | None = None,
         **global_vars: t.Any,
     ) -> None:
         env = jinja_env or getattr(self, "jinja_env", None) or self._make_default_jinja_env()
         env.add_extension("jinja2.ext.do")
         env.globals.update({"_get_random_id": utils.get_random_id})
-        self.jinja_env = env
 
+        self.jinja_env = env
         self.name = name or self.__class__.__name__
         self.globals = global_vars
+        self.base_url = self.base_url if base_url is None else base_url
 
-        self.filepath = Path(inspect.getfile(self.__class__))
         self._parse_signature()
         self._init_components()
-        self._add_default_assets()
 
         self.template = self.template or self._load_template()
         self._template = self._prepare_template(self.template)
-        self.url_relative_to = Path(self.url_relative_to or self.filepath.parent).resolve()
         self._attrs = Attrs({})
 
     def render(self, *__args, **__kwargs) -> Markup:
@@ -69,56 +66,48 @@ class Component:
         """
         return self._render()
 
-    def collect_css(self, fingerprint: bool = False) -> list[str]:
+    def collect_css(self) -> list[str]:
         """
-        Returns a list of CSS files for the component.
-
-        Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        if `fingerprint` is `True`, a hash to invalidate the cache if the content changes,
-        will be added to the URL.
+        Returns a list of CSS files for the component and its children.
         """
-        urls = dict.fromkeys(self._parse_urls(self.css, fingerprint=fingerprint), 1)
+        urls = dict.fromkeys(self.css, 1)
         for co in self.c.values():
-            for file in co.collect_css(fingerprint=fingerprint):
+            for file in co.collect_css():
                 if file not in urls:
                     urls[file] = 1
 
         return list(urls.keys())
 
-    def collect_js(self, fingerprint: bool = False) -> list[str]:
+    def collect_js(self) -> list[str]:
         """
         Returns a list of JS files for the component and its children.
-
-        Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        if `fingerprint` is `True`, a hash to invalidate the cache if the content changes,
-        will be added to the URL.
         """
-        urls = dict.fromkeys(self._parse_urls(self.js, fingerprint=fingerprint), 1)
+        urls = dict.fromkeys(self.js, 1)
         for co in self.c.values():
-            for file in co.collect_js(fingerprint=fingerprint):
+            for file in co.collect_js():
                 if file not in urls:
                     urls[file] = 1
 
         return list(urls.keys())
 
-    def render_css(self, fingerprint: bool = False) -> Markup:
+    def render_css(self) -> Markup:
         """
         Uses the `self.collect_css()` list to generate an HTML fragment
         with `<link rel="stylesheet" href="{url}">` tags.
 
-        Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        the URL is prefixed by `self.base_url`. A hash can also be added to
-        invalidate the cache if the content changes, if `fingerprint` is `True`.
+        Unless it's an external URL (e.g.: beginning with "http://" or "https://")
+        or a root-relative URL (e.g.: starting with "/"),
+        the URL is prefixed by `self.base_url`.
         """
         html = []
-        for url in self.collect_css(fingerprint=fingerprint):
-            if not rx_external_url.match(url):
+        for url in self.collect_css():
+            if not rx_external_url.match(url) and not url.startswith("/"):
                 url = f"{self.base_url}{url}"
             html.append(f'<link rel="stylesheet" href="{url}">')
 
         return Markup("\n".join(html))
 
-    def render_js(self, fingerprint: bool = False) -> Markup:
+    def render_js(self) -> Markup:
         """
         Uses the `self.collected_js()` list to generate an HTML fragment
         with `<script type="module" src="{url}"></script>` tags.
@@ -128,14 +117,14 @@ class Component:
         invalidate the cache if the content changes, if `fingerprint` is `True`.
         """
         html = []
-        for url in self.collect_js(fingerprint=fingerprint):
-            if not rx_external_url.match(url):
+        for url in self.collect_js():
+            if not rx_external_url.match(url) and not url.startswith("/"):
                 url = f"{self.base_url}{url}"
             html.append(f'<script type="module" src="{url}"></script>')
 
         return Markup("\n".join(html))
 
-    def render_assets(self, fingerprint: bool = False) -> Markup:
+    def render_assets(self) -> Markup:
         """
         Calls `self.render_css()` and `self.render_js()` to generate
         an HTML fragment with `<link rel="stylesheet" href="{url}">`
@@ -144,8 +133,8 @@ class Component:
         the URL is prefixed by `self.base_url`. A hash can also be added to
         invalidate the cache if the content changes, if `fingerprint` is `True`.
         """
-        html_css = self.render_css(fingerprint=fingerprint)
-        html_js = self.render_js(fingerprint=fingerprint)
+        html_css = self.render_css()
+        html_js = self.render_js()
         return Markup(("\n".join([html_css, html_js]).strip()))
 
     # Private
@@ -193,17 +182,8 @@ class Component:
                 co = cls(jinja_env=self.jinja_env, **self.globals)
             self.c[co.name] = co
 
-    def _add_default_assets(self) -> None:
-        css = self.filepath.with_suffix(".css")
-        if css.exists() and css not in self.css:
-            self.css = (css.name, *self.css)
-
-        js = self.filepath.with_suffix(".js")
-        if js.exists() and js not in self.js:
-            self.js = (js.name, *self.js)
-
     def _load_template(self) -> str:
-        filepath = self.filepath.with_suffix(".jinja")
+        filepath = Path(inspect.getfile(self.__class__)).with_suffix(".jinja")
         return filepath.read_text() if filepath.exists() else ""
 
     def _prepare_template(self, template: str) -> str:
@@ -248,22 +228,3 @@ class Component:
             props[key] = kw.pop(key, self.optional[key])
         extra = kw.copy()
         return props, extra
-
-    def _parse_urls(self, assets: Sequence[str], fingerprint: bool = False) -> list[str]:
-        urls = []
-        for asset in assets:
-            if rx_external_url.match(asset):
-                urls.append(asset)
-                continue
-            file = (self.filepath.parent / asset).resolve()
-            if fingerprint:
-                file = self._fingerprint(file)
-            url = file.relative_to(self.url_relative_to).as_posix()
-            urls.append(url)
-
-        return urls
-
-    def _fingerprint(self, file: Path) -> Path:
-        stat = file.stat()
-        fingerprint = sha256(str(stat.st_mtime).encode()).hexdigest()
-        return file.with_stem(f"{file.stem}-{fingerprint}")
