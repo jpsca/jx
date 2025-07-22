@@ -28,7 +28,7 @@ def test_empty_init():
         template = """<span class="info">meh</span>"""
 
         def render(self):
-            return self._render()
+            return self()
 
     co = Meh()
     assert co.template
@@ -42,7 +42,7 @@ def test_parse_signature():
         template = """<button id="{{ bid }}">{{ text }}</button>"""
 
         def render(self, bid, text="Click me!"):
-            return self._render(bid=bid, text=text)
+            return self(bid=bid, text=text)
 
     co = Button()
     assert co.required == ("bid",)
@@ -54,7 +54,7 @@ def test_render_exact():
         template = """<button id="{{ bid }}">{{ text }}</button>"""
 
         def render(self, bid, text="Click me!"):
-            return self._render(bid=bid, text=text)
+            return self(bid=bid, text=text)
 
     co = Button()
     html = co.render(bid="btn1", text="Submit")
@@ -66,7 +66,7 @@ def test_missing_required():
         template = """<button id="{{ bid }}">{{ text }}</button>"""
 
         def render(self, bid, *, text="Click me!"):
-            return self._render(bid=bid, text=text)
+            return self(bid=bid, text=text)
 
     class Parent(Component):
         components = [Button]
@@ -83,7 +83,7 @@ def test_render_derived_data():
         template = """<button class="{{ classes }}">{{ text }}</button>"""
 
         def render(self, var="primary", text="Click me!"):
-            return self._render(
+            return self(
                 var=var,
                 text=text,
                 classes=f"btn btn-{var}",
@@ -166,7 +166,7 @@ def test_content_returned():
         template = """<span>{{ _content }}</span>"""
 
         def render(self):
-            return self._render(_content=self._content * 2)
+            return self(_content=self._content * 2)
 
     class Parent(Component):
         components = [Child]
@@ -183,7 +183,7 @@ def test_content_reassigned():
 
         def render(self):
             self._content = self._content * 2
-            return self._render()
+            return self()
 
     class Parent(Component):
         components = [Child]
@@ -200,7 +200,7 @@ def test_attrs_modification():
 
         def render(self, var="primary"):
             self._attrs.add_class(f"btn-{var}")
-            return self._render()
+            return self()
 
     class Parent(Component):
         components = [Child]
@@ -224,14 +224,14 @@ def test_vue_expr():
         template = """<span>{{ text }}</span>"""
 
         def render(self, text: str):
-            return self._render(text=text)
+            return self(text=text)
 
     class Parent(Component):
         components = [Child]
         template = """<div><Child :text="text * 2" /></div>"""
 
         def render(self, text: str):
-            return self._render(text=text)
+            return self(text=text)
 
     co = Parent()
     html = co.render(text="Hello")
@@ -243,14 +243,14 @@ def test_jinja_expr():
         template = """<span>{{ text }}</span>"""
 
         def render(self, text: str):
-            return self._render(text=text)
+            return self(text=text)
 
     class Parent(Component):
         components = [Child]
         template = """<div><Child text={{text * 2}} /></div>"""
 
         def render(self, text: str):
-            return self._render(text=text)
+            return self(text=text)
 
     co = Parent()
     html = co.render(text="Hello")

@@ -60,11 +60,23 @@ class Component:
         self._template = self._prepare_template(self.template)
         self._attrs = Attrs({})
 
+    def __call__(self, **params: t.Any) -> Markup:
+        """
+        Renders the template with the provided arguments.
+        """
+        params["_self"] = self
+        params.setdefault("_attrs", self._attrs)
+        params.setdefault("_content", self._content)
+
+        tmpl = self.jinja_env.from_string(self._template, globals=self.globals)
+        html = tmpl.render(params).strip()
+        return Markup(html)
+
     def render(self, *__args, **__kwargs) -> Markup:
         """
         Renders the component's template with the provided arguments.
         """
-        return self._render()
+        return self()
 
     def collect_css(self) -> list[str]:
         """
@@ -204,15 +216,6 @@ class Component:
         self._attrs = Attrs(extra)
         self._content = caller() if caller else ""
         return self.render(**props)
-
-    def _render(self, **params: t.Any) -> Markup:
-        params["_self"] = self
-        params.setdefault("_attrs", self._attrs)
-        params.setdefault("_content", self._content)
-
-        tmpl = self.jinja_env.from_string(self._template, globals=self.globals)
-        html = tmpl.render(params).strip()
-        return Markup(html)
 
     def _filter_attrs(
         self, kw: dict[str, t.Any]
