@@ -50,6 +50,13 @@ class Component:
 
         self.jinja_env = env
         self.name = name or self.__class__.__name__
+        global_vars.setdefault("_assets", {
+            "css": self.collect_css,
+            "js": self.collect_js,
+            "render_css": self.render_css,
+            "render_js": self.render_js,
+            "render": self.render_assets,
+        })
         self.globals = global_vars
         self.base_url = self.base_url if base_url is None else base_url
 
@@ -64,11 +71,12 @@ class Component:
         """
         Renders the template with the provided arguments.
         """
+        params = {**self.globals, **params}
         params["_self"] = self
         params.setdefault("_attrs", self._attrs)
         params.setdefault("_content", self._content)
 
-        tmpl = self.jinja_env.from_string(self._template, globals=self.globals)
+        tmpl = self.jinja_env.from_string(self._template)
         html = tmpl.render(params).strip()
         return Markup(html)
 
@@ -76,6 +84,7 @@ class Component:
         """
         Renders the component's template with the provided arguments.
         """
+
         return self()
 
     def collect_css(self) -> list[str]:
@@ -104,12 +113,12 @@ class Component:
 
     def render_css(self) -> Markup:
         """
-        Uses the `self.collect_css()` list to generate an HTML fragment
+        Uses the `collect_css()` list to generate an HTML fragment
         with `<link rel="stylesheet" href="{url}">` tags.
 
         Unless it's an external URL (e.g.: beginning with "http://" or "https://")
         or a root-relative URL (e.g.: starting with "/"),
-        the URL is prefixed by `self.base_url`.
+        the URL is prefixed by `base_url`.
         """
         html = []
         for url in self.collect_css():
@@ -121,11 +130,11 @@ class Component:
 
     def render_js(self) -> Markup:
         """
-        Uses the `self.collected_js()` list to generate an HTML fragment
+        Uses the `collected_js()` list to generate an HTML fragment
         with `<script type="module" src="{url}"></script>` tags.
 
         Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        the URL is prefixed by `self.base_url`. A hash can also be added to
+        the URL is prefixed by `base_url`. A hash can also be added to
         invalidate the cache if the content changes, if `fingerprint` is `True`.
         """
         html = []
@@ -138,11 +147,11 @@ class Component:
 
     def render_assets(self) -> Markup:
         """
-        Calls `self.render_css()` and `self.render_js()` to generate
+        Calls `render_css()` and `render_js()` to generate
         an HTML fragment with `<link rel="stylesheet" href="{url}">`
         and `<script type="module" src="{url}"></script>` tags.
         Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        the URL is prefixed by `self.base_url`. A hash can also be added to
+        the URL is prefixed by `base_url`. A hash can also be added to
         invalidate the cache if the content changes, if `fingerprint` is `True`.
         """
         html_css = self.render_css()
@@ -188,6 +197,7 @@ class Component:
                 co = cls
                 co.jinja_env = self.jinja_env
                 co.globals = {**self.globals}
+                co._init_components()
             else:
                 if not issubclass(cls, Component):
                     raise TypeError(f"'{cls.__name__}' is not a component or a subclass of Component")

@@ -257,6 +257,40 @@ def test_jinja_expr():
     assert html == "<div><span>HelloHello</span></div>"
 
 
+def test_globals():
+    class SubChild(Component):
+        template = """<span>{{ lorem }}</span>"""
+
+    class Child(Component):
+        components = [SubChild]
+        template = """<p><SubChild /></p>"""
+
+    class Parent(Component):
+        components = [Child]
+        template = """<div><Child /></div>"""
+
+    co = Parent(lorem="ipsum")
+    html = co.render()
+    assert html == "<div><p><span>ipsum</span></p></div>"
+
+
+
+def test_globals_with_instances():
+    class SubChild(Component):
+        template = """<span>{{ lorem }}</span>"""
+
+    class Child(Component):
+        components = [SubChild]
+        template = """<p><SubChild /></p>"""
+
+    class Parent(Component):
+        components = [Child(name="George")]
+        template = """<div><George /></div>"""
+
+    co = Parent(lorem="ipsum")
+    html = co.render()
+    assert html == "<div><p><span>ipsum</span></p></div>"
+
 
 def test_collect_assets():
     class Child(Component):
@@ -392,3 +426,33 @@ def test_render_assets_custom_base():
     print(f"-- Expected --\n{expected}")
     assert result == expected
 
+
+def test_render_assets_in_layout():
+    class Layout(Component):
+        css = ("layout.css",)
+        js = ("layout.js", "https://example.com/layout.js")
+        template = """{{ _assets.render() }}\n<div>{{ _content }}</div>"""
+
+    class Main(Component):
+        css = ("main.css", "/static/common/main.css")
+        js = ("main.js",)
+        components = [Layout]
+        template = """<Layout>Hello</Layout>"""
+
+    co = Main()
+    result = co.render()
+    expected = "\n".join(
+        [
+            '<link rel="stylesheet" href="/static/main.css">',
+            '<link rel="stylesheet" href="/static/common/main.css">',
+            '<link rel="stylesheet" href="/static/layout.css">',
+            '<script type="module" src="/static/main.js"></script>',
+            '<script type="module" src="/static/layout.js"></script>',
+            '<script type="module" src="https://example.com/layout.js"></script>',
+            "<div>Hello</div>",
+        ]
+    )
+
+    print(f"-- Result --\n{result}")
+    print(f"-- Expected --\n{expected}")
+    assert result == expected
