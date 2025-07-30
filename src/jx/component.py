@@ -24,7 +24,7 @@ class Component:
     required: tuple[str, ...] = ()
     optional: dict[str, t.Any] = {}
 
-    template: str = ""
+    jx_template: str = ""
     components: Sequence["Component | type[Component]"] = ()
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
@@ -63,8 +63,8 @@ class Component:
         self._parse_signature()
         self._init_components()
 
-        self.template = self.template or self._load_template()
-        self._template = self._prepare_template(self.template)
+        self.jx_template = self.jx_template or self._load_template()
+        self._template = self._prepare_template(self.jx_template)
         self._attrs = Attrs({})
 
     def __call__(self, **params: t.Any) -> Markup:
@@ -128,7 +128,7 @@ class Component:
 
         return Markup("\n".join(html))
 
-    def render_js(self) -> Markup:
+    def render_js(self, module: bool = True, defer: bool = True) -> Markup:
         """
         Uses the `collected_js()` list to generate an HTML fragment
         with `<script type="module" src="{url}"></script>` tags.
@@ -141,11 +141,17 @@ class Component:
         for url in self.collect_js():
             if not rx_external_url.match(url) and not url.startswith("/"):
                 url = f"{self.base_url}{url}"
-            html.append(f'<script type="module" src="{url}"></script>')
+            if module:
+                tag = f'<script type="module" src="{url}"></script>'
+            elif defer:
+                tag = f'<script src="{url}" defer></script>'
+            else:
+                tag = f'<script src="{url}"></script>'
+            html.append(tag)
 
         return Markup("\n".join(html))
 
-    def render_assets(self) -> Markup:
+    def render_assets(self, module: bool = True, defer: bool = False) -> Markup:
         """
         Calls `render_css()` and `render_js()` to generate
         an HTML fragment with `<link rel="stylesheet" href="{url}">`
@@ -205,8 +211,13 @@ class Component:
             self.c[co.name] = co
 
     def _load_template(self) -> str:
-        filepath = Path(inspect.getfile(self.__class__)).with_suffix(".jinja")
-        return filepath.read_text() if filepath.exists() else ""
+        filepath = Path(inspect.getfile(self.__class__))
+        files = list(filepath.parent.glob(f"{filepath.stem}*.jx"))
+        if not files:
+            files = list(filepath.parent.glob(f"{filepath.stem}*.jinja"))
+        if not files:
+            return ""
+        return files[0].read_text()
 
     def _prepare_template(self, template: str) -> str:
         parser = JxParser(name=self.name, source=template, components=list(self.c.keys()))
