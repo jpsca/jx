@@ -7,39 +7,39 @@ from .data import Button
 
 def test_load():
     co = Button()
-    assert co.jx_template == "<button>Click me!</button>"
+    assert co.template == "<button>Click me!</button>"
     assert co.css == ("button.css",)
     assert co.js == ("button.js",)
 
 
 def test_default_init():
     class Meh(Component):
-        jx_template = """<span class="info">meh</span>"""
+        template = """<span class="info">meh</span>"""
 
     co = Meh()
-    assert co.jx_template
-    assert co.jx_template == Meh.jx_template
+    assert co.template
+    assert co.template == Meh.template
     assert co.required == ()
     assert co.optional == {}
 
 
 def test_empty_init():
     class Meh(Component):
-        jx_template = """<span class="info">meh</span>"""
+        template = """<span class="info">meh</span>"""
 
         def render(self):
             return self()
 
     co = Meh()
-    assert co.jx_template
-    assert co.jx_template == Meh.jx_template
+    assert co.template
+    assert co.template == Meh.template
     assert co.required == ()
     assert co.optional == {}
 
 
 def test_parse_signature():
     class Button(Component):
-        jx_template = """<button id="{{ bid }}">{{ text }}</button>"""
+        template = """<button id="{{ bid }}">{{ text }}</button>"""
 
         def render(self, bid, text="Click me!"):
             return self(bid=bid, text=text)
@@ -51,7 +51,7 @@ def test_parse_signature():
 
 def test_render_exact():
     class Button(Component):
-        jx_template = """<button id="{{ bid }}">{{ text }}</button>"""
+        template = """<button id="{{ bid }}">{{ text }}</button>"""
 
         def render(self, bid, text="Click me!"):
             return self(bid=bid, text=text)
@@ -63,14 +63,14 @@ def test_render_exact():
 
 def test_missing_required():
     class Button(Component):
-        jx_template = """<button id="{{ bid }}">{{ text }}</button>"""
+        template = """<button id="{{ bid }}">{{ text }}</button>"""
 
         def render(self, bid, *, text="Click me!"):
             return self(bid=bid, text=text)
 
     class Parent(Component):
         components = [Button]
-        jx_template = """<Button text="Submit" />"""
+        template = """<Button text="Submit" />"""
 
     co = Parent()
     print(co._template)
@@ -80,7 +80,7 @@ def test_missing_required():
 
 def test_render_derived_data():
     class Button(Component):
-        jx_template = """<button class="{{ classes }}">{{ text }}</button>"""
+        template = """<button class="{{ classes }}">{{ text }}</button>"""
 
         def render(self, var="primary", text="Click me!"):
             return self(
@@ -96,11 +96,11 @@ def test_render_derived_data():
 
 def test_child_component():
     class Child(Component):
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child>Hello</Child></div>"""
+        template = """<div><Child>Hello</Child></div>"""
 
     co = Parent()
     html = co.render()
@@ -109,11 +109,11 @@ def test_child_component():
 
 def test_child_component_renamed():
     class Child(Component):
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(Component):
         components = [Child(name="Say")]
-        jx_template = """<div><Say>Hello</Say></div>"""
+        template = """<div><Say>Hello</Say></div>"""
 
     co = Parent()
     html = co.render()
@@ -122,11 +122,11 @@ def test_child_component_renamed():
 
 def test_unknown_child_component():
     class Child(Component):
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(Component):
         components = []
-        jx_template = """<div><Child>Hello</Child></div>"""
+        template = """<div><Child>Hello</Child></div>"""
 
     with pytest.raises(TemplateSyntaxError, match="Unknown component `Child`.*"):
         Parent()
@@ -134,11 +134,11 @@ def test_unknown_child_component():
 
 def test_child_not_a_component():
     class Child:
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(Component):
         components = [Child]  # type: ignore
-        jx_template = """<div><Child>Hello</Child></div>"""
+        template = """<div><Child>Hello</Child></div>"""
 
     with pytest.raises(TypeError, match="'Child'.*"):
         Parent()
@@ -146,15 +146,15 @@ def test_child_not_a_component():
 
 def test_inherited_attrs():
     class Button(Component):
-        jx_template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
+        template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
 
     class Child(Component):
         components = [Button]
-        jx_template = """<span><Button :_attrs="_attrs">{{ _content }}</Button></span>"""
+        template = """<span><Button :_attrs="_attrs">{{ _content }}</Button></span>"""
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child class="btn btn-primary">Hello</Child></div>"""
+        template = """<div><Child class="btn btn-primary">Hello</Child></div>"""
 
     co = Parent()
     html = co.render()
@@ -165,14 +165,14 @@ def test_inherited_attrs():
 
 def test_content_returned():
     class Child(Component):
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
         def render(self):
             return self(_content=self._content * 2)
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child>Hello</Child></div>"""
+        template = """<div><Child>Hello</Child></div>"""
 
     co = Parent()
     html = co.render()
@@ -181,7 +181,7 @@ def test_content_returned():
 
 def test_content_reassigned():
     class Child(Component):
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
         def render(self):
             self._content = self._content * 2
@@ -189,7 +189,7 @@ def test_content_reassigned():
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child>Hello</Child></div>"""
+        template = """<div><Child>Hello</Child></div>"""
 
     co = Parent()
     html = co.render()
@@ -198,7 +198,7 @@ def test_content_reassigned():
 
 def test_attrs_modification():
     class Child(Component):
-        jx_template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
+        template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
 
         def render(self, var="primary"):
             self._attrs.add_class(f"btn-{var}")
@@ -206,7 +206,7 @@ def test_attrs_modification():
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child var="secondary">Cancel</Child></div>"""
+        template = """<div><Child var="secondary">Cancel</Child></div>"""
 
     co = Parent()
     html = co.render()
@@ -215,7 +215,7 @@ def test_attrs_modification():
 
 def test_random_id():
     class Button(Component):
-        jx_template = """<button id="{{ _get_random_id() }}">Click me</button>"""
+        template = """<button id="{{ _get_random_id() }}">Click me</button>"""
 
     co = Button()
     assert co.render() != co.render()  # Ensure different IDs are generated
@@ -223,14 +223,14 @@ def test_random_id():
 
 def test_vue_expr():
     class Child(Component):
-        jx_template = """<span>{{ text }}</span>"""
+        template = """<span>{{ text }}</span>"""
 
         def render(self, text: str):
             return self(text=text)
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child :text="text * 2" /></div>"""
+        template = """<div><Child :text="text * 2" /></div>"""
 
         def render(self, text: str):
             return self(text=text)
@@ -242,14 +242,14 @@ def test_vue_expr():
 
 def test_jinja_expr():
     class Child(Component):
-        jx_template = """<span>{{ text }}</span>"""
+        template = """<span>{{ text }}</span>"""
 
         def render(self, text: str):
             return self(text=text)
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child text={{text * 2}} /></div>"""
+        template = """<div><Child text={{text * 2}} /></div>"""
 
         def render(self, text: str):
             return self(text=text)
@@ -261,15 +261,15 @@ def test_jinja_expr():
 
 def test_globals():
     class SubChild(Component):
-        jx_template = """<span>{{ lorem }}</span>"""
+        template = """<span>{{ lorem }}</span>"""
 
     class Child(Component):
         components = [SubChild]
-        jx_template = """<p><SubChild /></p>"""
+        template = """<p><SubChild /></p>"""
 
     class Parent(Component):
         components = [Child]
-        jx_template = """<div><Child /></div>"""
+        template = """<div><Child /></div>"""
 
     co = Parent(lorem="ipsum")
     html = co.render()
@@ -278,15 +278,15 @@ def test_globals():
 
 def test_globals_with_instances():
     class SubChild(Component):
-        jx_template = """<span>{{ lorem }}</span>"""
+        template = """<span>{{ lorem }}</span>"""
 
     class Child(Component):
         components = [SubChild]
-        jx_template = """<p><SubChild /></p>"""
+        template = """<p><SubChild /></p>"""
 
     class Parent(Component):
         components = [Child(name="George")]
-        jx_template = """<div><George /></div>"""
+        template = """<div><George /></div>"""
 
     co = Parent(lorem="ipsum")
     html = co.render()
@@ -304,7 +304,7 @@ def test_collect_assets():
             "https://example.com/child.js",
             "https://example.com/common.js",
         )
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(Component):
         css = (
@@ -316,7 +316,7 @@ def test_collect_assets():
             "https://example.com/common.js",
         )
         components = [Child]
-        jx_template = """<Child>Hello</Child>"""
+        template = """<Child>Hello</Child>"""
 
     co = Parent()
     assert co.collect_css() == [
@@ -336,13 +336,13 @@ def test_render_assets():
     class Child(Component):
         css = ("child.css",)
         js = ("child.js", "https://example.com/child.js")
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(Component):
         css = ("parent.css", "/static/common/parent.css")
         js = ("parent.js",)
         components = [Child]
-        jx_template = """<Child>Hello</Child>"""
+        template = """<Child>Hello</Child>"""
 
     co = Parent()
 
@@ -393,13 +393,13 @@ def test_render_assets_custom_base():
     class Child(BaseComponent):
         css = ("child.css",)
         js = ("child.js", "https://example.com/child.js")
-        jx_template = """<span>{{ _content }}</span>"""
+        template = """<span>{{ _content }}</span>"""
 
     class Parent(BaseComponent):
         css = ("parent.css", "/static/common/parent.css")
         js = ("parent.js",)
         components = [Child]
-        jx_template = """<Child>Hello</Child>"""
+        template = """<Child>Hello</Child>"""
 
     co = Parent()
 
@@ -456,13 +456,13 @@ def test_render_assets_in_layout():
     class Layout(Component):
         css = ("layout.css",)
         js = ("layout.js", "https://example.com/layout.js")
-        jx_template = """{{ _assets.render() }}\n<div>{{ _content }}</div>"""
+        template = """{{ _assets.render() }}\n<div>{{ _content }}</div>"""
 
     class Main(Component):
         css = ("main.css", "/static/common/main.css")
         js = ("main.js",)
         components = [Layout]
-        jx_template = """<Layout>Hello</Layout>"""
+        template = """<Layout>Hello</Layout>"""
 
     co = Main()
     result = co.render()

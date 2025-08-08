@@ -17,9 +17,7 @@ INLINE_CALL = '{{ _self.c["[TAG]"]._irender([ATTRS]) }}'
 re_raw = r"\{%-?\s*raw\s*-?%\}.+?\{%-?\s*endraw\s*-?%\}"
 RX_RAW = re.compile(re_raw, re.DOTALL)
 
-re_tag_prefix = r"([0-9A-Za-z_-]+\:)?"
-re_tag_path = r"([0-9A-Za-z_-]+\.)*[A-Z][0-9A-Za-z_-]*"
-re_tag_name = rf"{re_tag_prefix}{re_tag_path}"
+re_tag_name = r"[A-Z][0-9A-Za-z_.:$-]*"
 RX_TAG_NAME = re.compile(rf"<(?P<tag>{re_tag_name})(\s|\n|/|>)")
 
 re_attr_name = r""

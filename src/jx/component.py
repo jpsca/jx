@@ -24,7 +24,7 @@ class Component:
     required: tuple[str, ...] = ()
     optional: dict[str, t.Any] = {}
 
-    jx_template: str = ""
+    template: str = ""
     components: Sequence["Component | type[Component]"] = ()
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
@@ -63,8 +63,8 @@ class Component:
         self._parse_signature()
         self._init_components()
 
-        self.jx_template = self.jx_template or self._load_template()
-        self._template = self._prepare_template(self.jx_template)
+        self.template = self.template or self._load_template()
+        self._template = self._prepare_template(self.template)
         self._attrs = Attrs({})
 
     def __call__(self, **params: t.Any) -> Markup:

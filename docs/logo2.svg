@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="logo2.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   inkscape:export-filename="logo2.png"
+   inkscape:export-xdpi="101.6"
+   inkscape:export-ydpi="101.6"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.0879207"
+     inkscape:cx="106.62542"
+     inkscape:cy="317.5783"
+     inkscape:window-width="2560"
+     inkscape:window-height="1371"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <defs
+     id="defs1">
+    <rect
+       x="162.15247"
+       y="253.84581"
+       width="110.03202"
+       height="121.61434"
+       id="rect1" />
+    <rect
+       x="162.15247"
+       y="253.84581"
+       width="110.03202"
+       height="121.61434"
+       id="rect1-7" />
+  </defs>
+  <rect
+     style="fill:#3e7dc0;fill-opacity:1;stroke:#3e7dc0;stroke-width:4.86923;stroke-linejoin:bevel;stroke-dasharray:none"
+     id="rect2"
+     width="95.130768"
+     height="95.130768"
+     x="2.4346149"
+     y="2.4346149"
+     rx="5.1532645" />
+  <path
+     d="m 8.8549969,55.347047 8.5966571,-0.01453 c 0,0 -2.721646,4.219192 -1.534028,5.896508 1.18839,1.678392 6.300952,0.830697 6.300952,0.830697 0.703391,-0.03133 1.330085,-0.112142 1.87776,-0.336556 0.547678,-0.249293 0.991044,-0.560915 1.330085,-0.934864 0.339043,-0.398874 0.678084,-0.94733 1.017125,-1.64534 l 14.513529,-31.93486 h 10.875365 l -18.347296,40.61041 c -0.495514,1.146763 -1.056239,2.081627 -1.682159,2.80459 -0.599839,0.698019 -1.356151,1.234007 -2.268965,1.607956 -0.886719,0.373931 -1.995106,0.560905 -3.32519,0.560905 H 3.5606685 Z"
+     id="text1"
+     style="font-size:56px;font-family:'Star Trek TNG-Title';-inkscape-font-specification:'Star Trek TNG-Title, Normal';white-space:pre;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.60565;stroke-linejoin:bevel"
+     aria-label="J" />
+  <path
+     d="M 67.686106,72.791903 64.16532,59.554262 54.307058,68.715921 q -2.347191,2.206274 -4.303198,3.141128 -1.956008,0.934854 -4.655289,0.934854 h -11.5404 l 4.733518,-10.732204 h 3.364319 q 1.838647,0 3.677293,-0.934873 1.877763,-0.934854 2.973117,-1.981887 L 60.957467,47.513249 55.519783,27.20804 h 11.618641 l 3.051363,11.592299 9.506181,-9.049467 q 1.134466,-1.084442 2.816633,-1.794935 1.721278,-0.747897 3.286084,-0.747897 h 10.640647 l -4.303199,9.572987 h -1.603937 q -1.017105,0 -2.386311,0.673104 -1.330076,0.673104 -2.42544,1.720143 l -12.244564,11.629691 5.828885,21.987938 z"
+     id="text1-9"
+     style="font-size:56px;font-family:'Star Trek TNG-Title';-inkscape-font-specification:'Star Trek TNG-Title, Normal';white-space:pre;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.60566;stroke-linejoin:bevel"
+     aria-label="X" />
+</svg>
