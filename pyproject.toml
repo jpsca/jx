@@ -4,7 +4,7 @@ requires = ["setuptools"]
 
 [project]
 name = "jx"
-version = "0.5"
+version = "1.0"
 description = "Replace your HTML templates with Python server-Side components"
 authors = [
     {name = "Juan Pablo Scaletti", email = "juanpablo@jpscaletti.com"},
@@ -45,6 +45,9 @@ dev = [
     "tox-uv",
     "ty>=0.0.1a15",
 ]
+profile = [
+    "line-profiler>=5.0.0",
+]
 test = [
     "pytest >= 7.2",
     "pytest-cov",
@@ -73,17 +76,6 @@ exclude_lines = [
 directory = "covreport"
 
 
-[tool.pyright]
-include = ["src"]
-exclude = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/tests",
-]
-reportPrivateImportUsage = false
-reportWildcardImportFromLibrary = false
-
-
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
 
@@ -102,8 +94,6 @@ runner = uv-venv-lock-runner
 dependency_groups =
     dev
     test
-extras =
-    whitenoise
 commands =
     pytest -x src/jx tests
 """

@@ -1,0 +1,230 @@
+"""
+Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+"""
+import typing as t
+from dataclasses import dataclass, field
+from pathlib import Path
+from types import CodeType
+
+import jinja2
+
+from . import utils
+from .component import Component
+from .exceptions import ImportError
+from .meta import extract_metadata
+from .parser import JxParser
+from .utils import logger
+
+
+@dataclass(slots=True)
+class CData:
+    base_path: Path
+    path: Path
+    mtime: float
+    code: CodeType | None = None
+    required: tuple[str, ...] = ()
+    optional: dict[str, t.Any] = field(default_factory=dict)
+    imports: tuple[tuple[str, str], ...] = ()
+    css: tuple[str, ...] = ()
+    js: tuple[str, ...] = ()
+
+
+class Catalog:
+    """
+    The object that manages the components and their global settings.
+
+    Arguments:
+    """
+    components: dict[str, CData]
+
+    def __init__(
+        self,
+        folder: str | Path | None = None,
+        *,
+        jinja_env: jinja2.Environment | None = None,
+        filters: dict[str, t.Any] | None = None,
+        tests: dict[str, t.Any] | None = None,
+        extensions: list | None = None,
+        auto_reload: bool = True,
+        **globals: t.Any,
+    ) -> None:
+        self.components = {}
+        self.jinja_env = self.make_jinja_env(
+            jinja_env=jinja_env,
+            globals=globals,
+            filters=filters,
+            tests=tests,
+            extensions=extensions,
+        )
+        self.auto_reload = auto_reload
+        if folder:
+            self.add_folder(folder)
+
+    def make_jinja_env(
+        self,
+        *,
+        jinja_env: jinja2.Environment | None = None,
+        globals: dict[str, t.Any] | None = None,
+        filters: dict[str, t.Any] | None = None,
+        tests: dict[str, t.Any] | None = None,
+        extensions: list | None = None,
+    ) -> jinja2.Environment:
+        env = jinja2.Environment()
+        jinja_env = jinja_env or getattr(self, "jinja_env", None)
+        if jinja_env:
+            env = jinja_env.overlay()
+
+        globals = globals or {}
+        globals.update({
+            "_get_random_id": utils.get_random_id,
+        })
+        env.globals.update(globals)
+
+        filters = filters or {}
+        env.filters.update(filters)
+
+        tests = tests or {}
+        env.tests.update(tests)
+
+        extensions = extensions or []
+        extensions.extend(["jinja2.ext.do"])
+        for ext in extensions:
+            env.add_extension(ext)
+
+        env.autoescape = True
+        env.undefined = jinja2.StrictUndefined
+
+        return env
+
+    def add_folder(
+        self,
+        path: str | Path,
+        *,
+        prefix: str = "",
+    ) -> None:
+        """
+        Add a folder path from which to search for components, optionally under a prefix.
+
+        Arguments:
+
+            path:
+                Absolute path of the folder with component files.
+
+            prefix:
+                Optional path prefix that all the components in the folder
+                will have. The default is empty.
+
+        Components without a prefix can be imported as a path relative to the folder,
+        e.g.: `sub/folder/component.jinja` or with a path relative to the component
+        where it is used: `./folder/component.jinja`.
+
+        Components added with a prefix must be imported using the prefix followed
+        by a colon: `prefix:sub/folder/component.jinja`. If the importing is
+        done from within a component with the prefix itself, a relative
+        import can also be used, e.g.: `./component.jinja`.
+
+        All the folders added under the same prefix will be treated as if they
+        were a single folder. This means if you add two folders, under the same prefix,
+        with a component with the same subpath/filename, the one in the folder
+        added **first** will be used and the other ignored.
+
+        """
+        base_path = Path(path).resolve()
+        prefix = prefix.replace("\\", "/").strip("./@ ")
+        prefix = f"@{prefix}/" if prefix else ""
+        if prefix:
+            logger.debug(f"Adding folder `{base_path}` with the prefix `{prefix}`")
+        else:
+            logger.debug(f"Adding folder `{base_path}`")
+
+        for filepath in base_path.rglob("*.jinja"):
+            relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"
+            if relpath in self.components:
+                logger.warning(f"Component already exists: {relpath}")
+                continue
+            cdata = CData(
+                base_path=base_path,
+                path=filepath,
+                mtime=filepath.stat().st_mtime
+            )
+            self.components[relpath] = cdata
+
+        for relpath in self.components:
+            self.components[relpath] = self.get_component_data(relpath)
+
+    def get_component_data(self, relpath: str) -> CData:
+        cdata = self.components.get(relpath)
+        if not cdata:
+            raise ImportError(relpath)
+
+        mtime = cdata.path.stat().st_mtime if self.auto_reload else 0
+        if cdata.code is not None:
+            if self.auto_reload:
+                if mtime == cdata.mtime:
+                    return cdata
+            else:
+                return cdata
+
+        source = cdata.path.read_text()
+        meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
+
+        parser = JxParser(
+            name=relpath,
+            source=source,
+            components=[imp[1] for imp in meta.imports]
+        )
+        parsed_source = parser.parse()
+        code = self.jinja_env.compile(
+            source=parsed_source,
+            name=relpath,
+            filename=cdata.path.as_posix()
+        )
+
+        cdata.code = code
+        cdata.required = meta.required
+        cdata.optional = meta.optional
+        cdata.imports = meta.imports
+        cdata.css = meta.css
+        cdata.js = meta.js
+        return cdata
+
+    def get_component(self, relpath: str) -> Component:
+        cdata = self.get_component_data(relpath)
+        child_components = {
+            imp[1]: self.get_component(imp[0])
+            for imp in cdata.imports
+        }
+        assert cdata.code is not None
+        tmpl = jinja2.Template.from_code(
+            self.jinja_env,
+            cdata.code,
+            self.jinja_env.globals
+        )
+
+        co = Component(
+            name=relpath,
+            tmpl=tmpl,
+            required=cdata.required,
+            optional=cdata.optional,
+            css=cdata.css,
+            js=cdata.js,
+            components=child_components
+        )
+        return co
+
+    def render(self, relpath: str, globals: dict[str, t.Any] | None = None, **kwargs) -> str:
+        co = self.get_component(relpath)
+
+        globals = globals or {}
+        globals.update({
+            "assets": {
+                "css": co.collect_css,
+                "js": co.collect_js,
+                "render_css": co.render_css,
+                "render_js": co.render_js,
+                "render": co.render_assets,
+            },
+        })
+        co.set_globals(globals)
+
+        return co.render(**kwargs)

@@ -1,5 +1,5 @@
 """
 Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
 """
-from .component import Component  # noqa
+from .catalog import CData, Catalog  # noqa
 from .exceptions import *  # noqa

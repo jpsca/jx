@@ -1,483 +1,299 @@
+"""
+Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+"""
 import pytest
 
-from jx import Component, TemplateSyntaxError
-
-from .data import Button
+from jx import Catalog, MissingRequiredArgument, TemplateSyntaxError
 
 
-def test_load():
-    co = Button()
-    assert co.template == "<button>Click me!</button>"
-    assert co.css == ("button.css",)
-    assert co.js == ("button.js",)
+def test_render_simple(folder):
+    (folder / "button.jinja").write_text("""
+{# def bid, text="Click me!" #}
+<button id="{{ bid }}">{{ text }}</button>
+""")
 
-
-def test_default_init():
-    class Meh(Component):
-        template = """<span class="info">meh</span>"""
-
-    co = Meh()
-    assert co.template
-    assert co.template == Meh.template
-    assert co.required == ()
-    assert co.optional == {}
-
-
-def test_empty_init():
-    class Meh(Component):
-        template = """<span class="info">meh</span>"""
-
-        def render(self):
-            return self()
-
-    co = Meh()
-    assert co.template
-    assert co.template == Meh.template
-    assert co.required == ()
-    assert co.optional == {}
-
-
-def test_parse_signature():
-    class Button(Component):
-        template = """<button id="{{ bid }}">{{ text }}</button>"""
-
-        def render(self, bid, text="Click me!"):
-            return self(bid=bid, text=text)
-
-    co = Button()
-    assert co.required == ("bid",)
-    assert co.optional == {"text": "Click me!"}
-
-
-def test_render_exact():
-    class Button(Component):
-        template = """<button id="{{ bid }}">{{ text }}</button>"""
-
-        def render(self, bid, text="Click me!"):
-            return self(bid=bid, text=text)
-
-    co = Button()
-    html = co.render(bid="btn1", text="Submit")
+    cat = Catalog(folder)
+    html = cat.render("button.jinja", bid="btn1", text="Submit")
     assert html == '<button id="btn1">Submit</button>'
 
 
-def test_missing_required():
-    class Button(Component):
-        template = """<button id="{{ bid }}">{{ text }}</button>"""
+def test_render_content(folder):
+    (folder / "child.jinja").write_text("""
+<span>{{ content }}</span>
+""")
 
-        def render(self, bid, *, text="Click me!"):
-            return self(bid=bid, text=text)
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+<div><Child>Hello</Child></div>
+""")
 
-    class Parent(Component):
-        components = [Button]
-        template = """<Button text="Submit" />"""
-
-    co = Parent()
-    print(co._template)
-    with pytest.raises(TypeError, match=".*'bid'.*"):
-        co.render(text="Submit")  # type: ignore
-
-
-def test_render_derived_data():
-    class Button(Component):
-        template = """<button class="{{ classes }}">{{ text }}</button>"""
-
-        def render(self, var="primary", text="Click me!"):
-            return self(
-                var=var,
-                text=text,
-                classes=f"btn btn-{var}",
-            )
-
-    co = Button()
-    html = co.render(text="Submit")
-    assert html == '<button class="btn btn-primary">Submit</button>'
-
-
-def test_child_component():
-    class Child(Component):
-        template = """<span>{{ _content }}</span>"""
-
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child>Hello</Child></div>"""
-
-    co = Parent()
-    html = co.render()
+    cat = Catalog(folder)
+    html = cat.render("parent.jinja")
     assert html == "<div><span>Hello</span></div>"
 
 
-def test_child_component_renamed():
-    class Child(Component):
-        template = """<span>{{ _content }}</span>"""
+def test_render_custom_content(folder):
+    (folder / "child.jinja").write_text("""
+<span>{{ content }}</span>
+""")
 
-    class Parent(Component):
-        components = [Child(name="Say")]
-        template = """<div><Say>Hello</Say></div>"""
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+<div><Child content="Hello" /></div>
+""")
 
-    co = Parent()
-    html = co.render()
+    cat = Catalog(folder)
+    html = cat.render("parent.jinja")
     assert html == "<div><span>Hello</span></div>"
 
 
-def test_unknown_child_component():
-    class Child(Component):
-        template = """<span>{{ _content }}</span>"""
+def test_unknown_child(folder):
+    (folder / "child.jinja").write_text("""
+<span>{{ content }}</span>
+""")
 
-    class Parent(Component):
-        components = []
-        template = """<div><Child>Hello</Child></div>"""
+    (folder / "parent.jinja").write_text("""
+<div><Child>Hello</Child></div>
+""")
 
     with pytest.raises(TemplateSyntaxError, match="Unknown component `Child`.*"):
-        Parent()
+        Catalog(folder)
 
 
-def test_child_not_a_component():
-    class Child:
-        template = """<span>{{ _content }}</span>"""
+def test_missing_required_prop(folder):
+    (folder / "button.jinja").write_text("""
+{# def bid, text="Click me!" #}
+<button id="{{ bid }}">{{ text }}</button>
+""")
 
-    class Parent(Component):
-        components = [Child]  # type: ignore
-        template = """<div><Child>Hello</Child></div>"""
+    cat = Catalog(folder)
 
-    with pytest.raises(TypeError, match="'Child'.*"):
-        Parent()
+    with pytest.raises(MissingRequiredArgument, match=".*`bid`.*"):
+      cat.render("button.jinja")
 
 
-def test_inherited_attrs():
-    class Button(Component):
-        template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
+def test_missing_required_child_prop(folder):
+    (folder / "button.jinja").write_text("""
+{# def bid, text="Click me!" #}
+<button id="{{ bid }}">{{ text }}</button>
+""")
 
-    class Child(Component):
-        components = [Button]
-        template = """<span><Button :_attrs="_attrs">{{ _content }}</Button></span>"""
+    (folder / "parent.jinja").write_text("""
+{# import "button.jinja" as Button #}
+<Button text="text" />
+""")
 
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child class="btn btn-primary">Hello</Child></div>"""
+    cat = Catalog(folder)
 
-    co = Parent()
-    html = co.render()
-    assert (
-        html == '<div><span><button class="btn btn-primary">Hello</button></span></div>'
-    )
+    with pytest.raises(MissingRequiredArgument, match=".*`bid`.*"):
+      cat.render("parent.jinja")
 
 
-def test_content_returned():
-    class Child(Component):
-        template = """<span>{{ _content }}</span>"""
+def test_inherited_attrs(folder):
+    (folder / "button.jinja").write_text("""
+<button {{ attrs.render() }}>{{ content }}</button>
+""")
 
-        def render(self):
-            return self(_content=self._content * 2)
+    (folder / "child.jinja").write_text("""
+{# import "button.jinja" as Button #}
+<span><Button attrs={{ attrs }}>{{ content }}</Button></span>
+""")
 
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child>Hello</Child></div>"""
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+<div><Child class="btn btn-primary">Hello</Child></div>
+""")
 
-    co = Parent()
-    html = co.render()
-    assert html == "<div><span>HelloHello</span></div>"
+    cat = Catalog(folder)
+    html = cat.render("parent.jinja")
+    assert html == '<div><span><button class="btn btn-primary">Hello</button></span></div>'
 
 
-def test_content_reassigned():
-    class Child(Component):
-        template = """<span>{{ _content }}</span>"""
+def test_get_random_id(folder):
+    (folder / "button.jinja").write_text("""
+<button id="{{ _get_random_id() }}">Click me</button>
+""")
 
-        def render(self):
-            self._content = self._content * 2
-            return self()
+    cat = Catalog(folder)
+    # Ensure different IDs are generated
+    assert cat.render("button.jinja") != cat.render("button.jinja")
 
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child>Hello</Child></div>"""
 
-    co = Parent()
-    html = co.render()
-    assert html == "<div><span>HelloHello</span></div>"
+def test_catalog_globals(folder):
+    (folder / "button.jinja").write_text("""<button>{{ lorem }}</button>""")
 
+    cat = Catalog(folder, lorem="ipsum")
+    html = cat.render("button.jinja")
+    assert html == "<button>ipsum</button>"
 
-def test_attrs_modification():
-    class Child(Component):
-        template = """<button {{ _attrs.render() }}>{{ _content }}</button>"""
-
-        def render(self, var="primary"):
-            self._attrs.add_class(f"btn-{var}")
-            return self()
-
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child var="secondary">Cancel</Child></div>"""
-
-    co = Parent()
-    html = co.render()
-    assert html == '<div><button class="btn-secondary">Cancel</button></div>'
-
-
-def test_random_id():
-    class Button(Component):
-        template = """<button id="{{ _get_random_id() }}">Click me</button>"""
-
-    co = Button()
-    assert co.render() != co.render()  # Ensure different IDs are generated
-
-
-def test_vue_expr():
-    class Child(Component):
-        template = """<span>{{ text }}</span>"""
-
-        def render(self, text: str):
-            return self(text=text)
-
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child :text="text * 2" /></div>"""
-
-        def render(self, text: str):
-            return self(text=text)
-
-    co = Parent()
-    html = co.render(text="Hello")
-    assert html == "<div><span>HelloHello</span></div>"
-
-
-def test_jinja_expr():
-    class Child(Component):
-        template = """<span>{{ text }}</span>"""
-
-        def render(self, text: str):
-            return self(text=text)
-
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child text={{text * 2}} /></div>"""
-
-        def render(self, text: str):
-            return self(text=text)
-
-    co = Parent()
-    html = co.render(text="Hello")
-    assert html == "<div><span>HelloHello</span></div>"
-
-
-def test_globals():
-    class SubChild(Component):
-        template = """<span>{{ lorem }}</span>"""
-
-    class Child(Component):
-        components = [SubChild]
-        template = """<p><SubChild /></p>"""
-
-    class Parent(Component):
-        components = [Child]
-        template = """<div><Child /></div>"""
-
-    co = Parent(lorem="ipsum")
-    html = co.render()
-    assert html == "<div><p><span>ipsum</span></p></div>"
-
-
-def test_globals_with_instances():
-    class SubChild(Component):
-        template = """<span>{{ lorem }}</span>"""
-
-    class Child(Component):
-        components = [SubChild]
-        template = """<p><SubChild /></p>"""
-
-    class Parent(Component):
-        components = [Child(name="George")]
-        template = """<div><George /></div>"""
-
-    co = Parent(lorem="ipsum")
-    html = co.render()
-    assert html == "<div><p><span>ipsum</span></p></div>"
-
-
-def test_collect_assets():
-    class Child(Component):
-        css = (
-            "child.css",
-            "/static/common/parent.css",
-        )
-        js = (
-            "child.js",
-            "https://example.com/child.js",
-            "https://example.com/common.js",
-        )
-        template = """<span>{{ _content }}</span>"""
-
-    class Parent(Component):
-        css = (
-            "parent.css",
-            "/static/common/parent.css",
-        )
-        js = (
-            "parent.js",
-            "https://example.com/common.js",
-        )
-        components = [Child]
-        template = """<Child>Hello</Child>"""
-
-    co = Parent()
-    assert co.collect_css() == [
-        "parent.css",
-        "/static/common/parent.css",
-        "child.css",
-    ]
-    assert co.collect_js() == [
-        "parent.js",
-        "https://example.com/common.js",
-        "child.js",
-        "https://example.com/child.js",
-    ]
-
-
-def test_render_assets():
-    class Child(Component):
-        css = ("child.css",)
-        js = ("child.js", "https://example.com/child.js")
-        template = """<span>{{ _content }}</span>"""
-
-    class Parent(Component):
-        css = ("parent.css", "/static/common/parent.css")
-        js = ("parent.js",)
-        components = [Child]
-        template = """<Child>Hello</Child>"""
-
-    co = Parent()
-
-    result = co.render_css()
-    expected = "\n".join(
-        [
-            '<link rel="stylesheet" href="/static/parent.css">',
-            '<link rel="stylesheet" href="/static/common/parent.css">',
-            '<link rel="stylesheet" href="/static/child.css">',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-    result = co.render_js()
-    expected = "\n".join(
-        [
-            '<script type="module" src="/static/parent.js"></script>',
-            '<script type="module" src="/static/child.js"></script>',
-            '<script type="module" src="https://example.com/child.js"></script>',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-    result = co.render_assets()
-    expected = "\n".join(
-        [
-            '<link rel="stylesheet" href="/static/parent.css">',
-            '<link rel="stylesheet" href="/static/common/parent.css">',
-            '<link rel="stylesheet" href="/static/child.css">',
-            '<script type="module" src="/static/parent.js"></script>',
-            '<script type="module" src="/static/child.js"></script>',
-            '<script type="module" src="https://example.com/child.js"></script>',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-
-def test_render_assets_custom_base():
-    class BaseComponent(Component):
-        base_url = "/assets/"
-
-    class Child(BaseComponent):
-        css = ("child.css",)
-        js = ("child.js", "https://example.com/child.js")
-        template = """<span>{{ _content }}</span>"""
-
-    class Parent(BaseComponent):
-        css = ("parent.css", "/static/common/parent.css")
-        js = ("parent.js",)
-        components = [Child]
-        template = """<Child>Hello</Child>"""
-
-    co = Parent()
-
-    result = co.render_css()
-    expected = "\n".join(
-        [
-            '<link rel="stylesheet" href="/assets/parent.css">',
-            '<link rel="stylesheet" href="/static/common/parent.css">',
-            '<link rel="stylesheet" href="/assets/child.css">',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-    result = co.render_js()
-    expected = "\n".join(
-        [
-            '<script type="module" src="/assets/parent.js"></script>',
-            '<script type="module" src="/assets/child.js"></script>',
-            '<script type="module" src="https://example.com/child.js"></script>',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-    result = co.render_js(module=False, defer=True)
-    expected = "\n".join(
-        [
-            '<script src="/assets/parent.js" defer></script>',
-            '<script src="/assets/child.js" defer></script>',
-            '<script src="https://example.com/child.js" defer></script>',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-    result = co.render_js(module=False, defer=False)
-    expected = "\n".join(
-        [
-            '<script src="/assets/parent.js"></script>',
-            '<script src="/assets/child.js"></script>',
-            '<script src="https://example.com/child.js"></script>',
-        ]
-    )
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
-
-
-def test_render_assets_in_layout():
-    class Layout(Component):
-        css = ("layout.css",)
-        js = ("layout.js", "https://example.com/layout.js")
-        template = """{{ _assets.render() }}\n<div>{{ _content }}</div>"""
-
-    class Main(Component):
-        css = ("main.css", "/static/common/main.css")
-        js = ("main.js",)
-        components = [Layout]
-        template = """<Layout>Hello</Layout>"""
-
-    co = Main()
-    result = co.render()
-    expected = "\n".join(
-        [
-            '<link rel="stylesheet" href="/static/main.css">',
-            '<link rel="stylesheet" href="/static/common/main.css">',
-            '<link rel="stylesheet" href="/static/layout.css">',
-            '<script type="module" src="/static/main.js"></script>',
-            '<script type="module" src="/static/layout.js"></script>',
-            '<script type="module" src="https://example.com/layout.js"></script>',
-            "<div>Hello</div>",
-        ]
-    )
-
-    print(f"-- Result --\n{result}")
-    print(f"-- Expected --\n{expected}")
-    assert result == expected
+
+def test_render_globals(folder):
+    (folder / "child.jinja").write_text("""<p>{{ lorem }}</p>""")
+
+    (folder / "layout.jinja").write_text("""<div class="{{ lorem }}">{{ content }}</div>""")
+
+    (folder / "page.jinja").write_text("""
+{# import "layout.jinja" as Layout #}
+{# import "child.jinja" as Child #}
+<Layout><Child /></Layout>
+""")
+
+    cat = Catalog(folder, lorem="ipsum")
+    assert cat.render("page.jinja") == '<div class="ipsum"><p>ipsum</p></div>'
+
+
+def test_collect_assets(folder):
+    (folder / "child.jinja").write_text("""
+{# css "child.css", "/static/common/parent.css" #}
+{# js "child.js", "https://example.com/child.js", "https://example.com/common.js" #}
+<span>{{ content }}</span>
+""")
+
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+{# css "parent.css", "/static/common/parent.css" #}
+{# js "parent.js", "https://example.com/common.js" #}
+<Child>Hello</Child>
+""")
+
+    cat = Catalog(folder)
+    component = cat.get_component("parent.jinja")
+
+    # Check CSS collection (deduplicated)
+    css_files = component.collect_css()
+    print(css_files)
+    assert "parent.css" in css_files
+    assert "/static/common/parent.css" in css_files
+    assert "child.css" in css_files
+    assert len(css_files) == 3
+
+    # Check JS collection (deduplicated)
+    js_files = component.collect_js()
+    print(js_files)
+    assert "parent.js" in js_files
+    assert "https://example.com/common.js" in js_files
+    assert "child.js" in js_files
+    assert "https://example.com/child.js" in js_files
+    assert len(js_files) == 4
+
+
+def test_render_css(folder):
+    (folder / "child.jinja").write_text("""
+{# css "child.css" #}
+<span>{{ content }}</span>
+""")
+
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+{# css "parent.css", "/static/common/parent.css" #}
+<Child>Hello</Child>
+""")
+
+    cat = Catalog(folder)
+    component = cat.get_component("parent.jinja")
+
+    css_html = component.render_css()
+    print(css_html)
+    assert css_html == """
+<link rel="stylesheet" href="parent.css">
+<link rel="stylesheet" href="/static/common/parent.css">
+<link rel="stylesheet" href="child.css">
+    """.strip()
+
+
+def test_render_js(folder):
+    (folder / "child.jinja").write_text("""
+{# js "child.js", "https://example.com/child.js" #}
+<span>{{ content }}</span>
+""")
+
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+{# js "parent.js" #}
+<Child>Hello</Child>
+""")
+
+    cat = Catalog(folder)
+    component = cat.get_component("parent.jinja")
+
+    js_html = component.render_js()
+    print(js_html)
+    assert js_html == """
+<script type="module" src="parent.js"></script>
+<script type="module" src="child.js"></script>
+<script type="module" src="https://example.com/child.js"></script>
+    """.strip()
+
+    js_html = component.render_js(module=False)
+    print(js_html)
+    assert js_html == """
+<script src="parent.js" defer></script>
+<script src="child.js" defer></script>
+<script src="https://example.com/child.js" defer></script>
+    """.strip()
+
+    js_html = component.render_js(module=False, defer=False)
+    print(js_html)
+    assert js_html == """
+<script src="parent.js"></script>
+<script src="child.js"></script>
+<script src="https://example.com/child.js"></script>
+    """.strip()
+
+
+def test_render_assets(folder):
+    (folder / "child.jinja").write_text("""
+{# css "child.css" #}
+{# js "child.js", "https://example.com/child.js" #}
+<span>{{ content }}</span>
+""")
+
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+{# css "parent.css", "/static/common/parent.css" #}
+{# js "parent.js" #}
+<Child>Hello</Child>
+""")
+
+    cat = Catalog(folder)
+    component = cat.get_component("parent.jinja")
+
+    html = component.render_assets()
+    print(html)
+    assert html == """
+<link rel="stylesheet" href="parent.css">
+<link rel="stylesheet" href="/static/common/parent.css">
+<link rel="stylesheet" href="child.css">
+<script type="module" src="parent.js"></script>
+<script type="module" src="child.js"></script>
+<script type="module" src="https://example.com/child.js"></script>
+    """.strip()
+
+
+def test_render_assets_in_layout(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{{ assets.render() }}
+<div>{{ content }}</div>
+""")
+
+    (folder / "main.jinja").write_text("""
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+""")
+
+    cat = Catalog(folder)
+    html = cat.render("main.jinja")
+    print(html)
+    assert html == """
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="/static/common/main.css">
+<link rel="stylesheet" href="layout.css">
+<script type="module" src="main.js"></script>
+<script type="module" src="layout.js"></script>
+<script type="module" src="https://example.com/layout.js"></script>
+<div>Hello</div>
+    """.strip()

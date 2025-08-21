@@ -10,3 +10,4 @@ logger = logging.getLogger("jx")
 
 def get_random_id(prefix: str = "id") -> str:
     return f"{prefix}-{str(uuid.uuid4().hex)}"
+
