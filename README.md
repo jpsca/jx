@@ -1,5 +1,5 @@
 <h1>
-  <img src="https://github.com/jpsca/jx/raw/main/docs/logo.png" height="100" align="top">
+  <img src="https://github.com/jpsca/jx/raw/main/docs/logo-jx.png" height="100" align="top">
 </h1>
 
 Super components powers for your Jinja templates.

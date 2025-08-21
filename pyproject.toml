@@ -45,9 +45,6 @@ dev = [
     "tox-uv",
     "ty>=0.0.1a15",
 ]
-profile = [
-    "line-profiler>=5.0.0",
-]
 test = [
     "pytest >= 7.2",
     "pytest-cov",
