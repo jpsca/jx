@@ -20,7 +20,7 @@ def test_empty_source():
     meta = extract_metadata(source, base, base / "test.jinja")
     assert meta.required == ()
     assert meta.optional == {}
-    assert meta.imports == ()
+    assert meta.imports == {}
     assert meta.css == ()
     assert meta.js == ()
 
@@ -33,7 +33,7 @@ def test_source_without_metadata():
 
     assert meta.required == ()
     assert meta.optional == {}
-    assert meta.imports == ()
+    assert meta.imports == {}
     assert meta.css == ()
     assert meta.js == ()
 
@@ -122,10 +122,10 @@ def test_import_metadata():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.imports == (
-        ("components/button.jinja", "Button"),
-        ("components/header.jinja", "Header")
-    )
+    assert meta.imports == {
+        "Button": "components/button.jinja",
+        "Header": "components/header.jinja"
+    }
 
 
 def test_relative_import_metadata():
@@ -137,9 +137,9 @@ def test_relative_import_metadata():
     """
     meta = extract_metadata(source, base, base / "foo/bar.jinja")
 
-    assert meta.imports == (
-        ("foo/button.jinja", "Button"),
-    )
+    assert meta.imports == {
+        "Button": "foo/button.jinja",
+    }
 
 
 def test_complex_relative_import_metadata():
@@ -151,9 +151,9 @@ def test_complex_relative_import_metadata():
     """
     meta = extract_metadata(source, base, base / "foo/bar/header.jinja")
 
-    assert meta.imports == (
-        ("foo/forms/button.jinja", "Button"),
-    )
+    assert meta.imports == {
+        "Button": "foo/forms/button.jinja",
+    }
 
 def test_invalid_relative_import():
     """Test that invalid relative imports raise an exception."""
@@ -175,7 +175,10 @@ def test_css_metadata():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.css == ("/static/styles.css", "https://cdn.example.com/style.css")
+    assert meta.css == (
+        "/static/styles.css",
+        "https://cdn.example.com/style.css"
+    )
 
 
 def test_js_metadata():
@@ -187,7 +190,10 @@ def test_js_metadata():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.js == ("/static/script.js", "https://cdn.example.com/script.js")
+    assert meta.js == (
+        "/static/script.js",
+        "https://cdn.example.com/script.js"
+    )
 
 
 def test_css_commas():
@@ -199,7 +205,10 @@ def test_css_commas():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.css == ("/static/styles.css", "https://cdn.example.com/style.css")
+    assert meta.css == (
+        "/static/styles.css",
+        "https://cdn.example.com/style.css",
+    )
 
 
 def test_js_commas():
@@ -211,7 +220,10 @@ def test_js_commas():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.js == ("/static/script.js", "https://cdn.example.com/script.js")
+    assert meta.js == (
+        "/static/script.js",
+        "https://cdn.example.com/script.js",
+    )
 
 
 def test_comments_in_metadata():
@@ -244,9 +256,9 @@ def test_multiple_metadata_blocks():
 
     assert meta.required == ("name",)
     assert meta.optional == {"age": 21}
-    assert meta.imports == (("button.jinja", "Button"),)
-    assert meta.css == ("/style.css",)
-    assert meta.js == ("/script.js",)
+    assert meta.imports == {"Button": "button.jinja"}
+    assert meta.css == ("/style.css", )
+    assert meta.js == ("/script.js", )
 
 
 def test_duplicate_def_declaration():
@@ -271,4 +283,4 @@ def test_empty_meta_declarations():
     meta = extract_metadata(source, base, base / "test.jinja")
     assert meta.required == ()
     assert meta.optional == {}
-    assert meta.optional == {}
+    assert meta.imports == {}

@@ -42,8 +42,8 @@ ALLOWED_NAMES_IN_EXPRESSION_VALUES = {
 @dataclass(slots=True)
 class Meta:
     required: tuple[str, ...] = ()
-    optional: dict[str, t.Any] = field(default_factory=dict)
-    imports: tuple[tuple[str, str], ...] = ()
+    optional: dict[str, t.Any] = field(default_factory=dict) # { attr: default_value }
+    imports: dict[str, str] = field(default_factory=dict)  # { component_name: relpath }
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
 
@@ -91,7 +91,7 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
             import_path, import_name = parse_import_expr(expr)
             if import_path.startswith("."):
                 import_path = (fullpath.parent / import_path).resolve().relative_to(base_path).as_posix()
-            meta.imports = (*meta.imports, (import_path, import_name))
+            meta.imports[import_name] = import_path
             continue
 
         expr = read_metadata_item(item, RX_CSS_START)

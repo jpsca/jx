@@ -4,7 +4,6 @@ Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
 import re
 import typing as t
 from collections.abc import Callable
-from types import CodeType
 
 import jinja2
 from markupsafe import Markup
@@ -17,43 +16,41 @@ rx_external_url = re.compile(r"^[a-z]+://", re.IGNORECASE)
 
 
 class Component:
-    name: str
-    jinja_env: jinja2.Environment
-    code: CodeType
-
-    required: tuple[str, ...]
-    optional: dict[str, t.Any]
-    css: tuple[str, ...] = ()
-    js: tuple[str, ...] = ()
-    components: dict[str, "Component"]
-
-    globals: dict[str, t.Any]
+    __slots__ = (
+        "relpath",
+        "tmpl",
+        "get_component",
+        "required",
+        "optional",
+        "css",
+        "js",
+        "imports",
+        "globals",
+    )
 
     def __init__(
         self,
         *,
-        name: str,
+        relpath: str,
         tmpl: jinja2.Template,
+        get_component: Callable[[str], "Component"],
         required: tuple[str, ...] = (),
         optional: dict[str, t.Any] | None = None,
         css: tuple[str, ...] = (),
         js: tuple[str, ...] = (),
-        components: dict[str, "Component"] | None = None
+        imports: dict[str, str] | None = None,
     ) -> None:
-        self.name = name
+        self.relpath = relpath
         self.tmpl = tmpl
+        self.get_component = get_component
+
         self.required = required
         self.optional = optional or {}
         self.css = css
         self.js = js
+        self.imports = imports or {}
 
-        self.components = components or {}
-        self.globals = {}
-
-    def set_globals(self, globals: dict[str, t.Any]) -> None:
-        self.globals = globals
-        for co in self.components.values():
-            co.set_globals(globals)
+        self.globals: dict[str, t.Any] = {}
 
     def render(
         self,
@@ -68,7 +65,7 @@ class Component:
         params = {**attrs, **params}
         props, attrs = self.filter_attrs(params)
 
-        globals = {**self.globals, "_components": self.components}
+        globals = {**self.globals, "_get": self.get_child}
         globals.setdefault("attrs", Attrs(attrs))
         globals.setdefault("content", content)
 
@@ -82,7 +79,7 @@ class Component:
 
         for key in self.required:
             if key not in kw:
-                raise MissingRequiredArgument(self.name, key)
+                raise MissingRequiredArgument(self.relpath, key)
             props[key] = kw.pop(key)
 
         for key in self.optional:
@@ -90,27 +87,47 @@ class Component:
         extra = kw.copy()
         return props, extra
 
-    def collect_css(self) -> list[str]:
+    def get_child(self, name: str) -> "Component":
+        relpath = self.imports[name]
+        child = self.get_component(relpath)
+        child.globals = self.globals
+        return child
+
+    def collect_css(self, visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of CSS files for the component and its children.
         """
         urls = dict.fromkeys(self.css, 1)
-        for co in self.components.values():
-            for file in co.collect_css():
+        visited = visited or set()
+        visited.add(self.relpath)
+
+        for name, relpath in self.imports.items():
+            if relpath in visited:
+                continue
+            co = self.get_child(name)
+            for file in co.collect_css(visited=visited):
                 if file not in urls:
                     urls[file] = 1
+            visited.add(relpath)
 
         return list(urls.keys())
 
-    def collect_js(self) -> list[str]:
+    def collect_js(self, visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of JS files for the component and its children.
         """
         urls = dict.fromkeys(self.js, 1)
-        for co in self.components.values():
-            for file in co.collect_js():
+        visited = visited or set()
+        visited.add(self.relpath)
+
+        for name, relpath in self.imports.items():
+            if relpath in visited:
+                continue
+            co = self.get_child(name)
+            for file in co.collect_js(visited=visited):
                 if file not in urls:
                     urls[file] = 1
+            visited.add(relpath)
 
         return list(urls.keys())
 

@@ -23,8 +23,8 @@ class CData:
     mtime: float
     code: CodeType | None = None
     required: tuple[str, ...] = ()
-    optional: dict[str, t.Any] = field(default_factory=dict)
-    imports: tuple[tuple[str, str], ...] = ()
+    optional: dict[str, t.Any] = field(default_factory=dict) # { attr: default_value }
+    imports: dict[str, str] = field(default_factory=dict)  # { component_name: relpath }
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
 
@@ -171,7 +171,7 @@ class Catalog:
         parser = JxParser(
             name=relpath,
             source=source,
-            components=[imp[1] for imp in meta.imports]
+            components=list(meta.imports.keys())
         )
         parsed_source = parser.parse()
         code = self.jinja_env.compile(
@@ -190,10 +190,6 @@ class Catalog:
 
     def get_component(self, relpath: str) -> Component:
         cdata = self.get_component_data(relpath)
-        child_components = {
-            imp[1]: self.get_component(imp[0])
-            for imp in cdata.imports
-        }
         assert cdata.code is not None
         tmpl = jinja2.Template.from_code(
             self.jinja_env,
@@ -202,13 +198,14 @@ class Catalog:
         )
 
         co = Component(
-            name=relpath,
+            relpath=relpath,
             tmpl=tmpl,
+            get_component=self.get_component,
             required=cdata.required,
             optional=cdata.optional,
             css=cdata.css,
             js=cdata.js,
-            components=child_components
+            imports=cdata.imports
         )
         return co
 
@@ -225,6 +222,6 @@ class Catalog:
                 "render": co.render_assets,
             },
         })
-        co.set_globals(globals)
+        co.globals = globals
 
         return co.render(**kwargs)

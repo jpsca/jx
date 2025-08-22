@@ -11,41 +11,41 @@ VALID_DATA = (
     # Simple case
     (
         """<Foo bar="baz">content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":"baz"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}""",
     ),
     # Self-closing tag
     (
         """<Alert type="success" message="Success!" />""",
-        """{{ _components["Alert"].render(**{"type":"success", "message":"Success!"}) }}""",
+        """{{ _get("Alert").render(**{"type":"success", "message":"Success!"}) }}""",
     ),
     # No attributes
     (
         """<Foo>content</Foo>""",
-        """{% call _components["Foo"].render() -%}content{%- endcall %}""",
+        """{% call _get("Foo").render() -%}content{%- endcall %}""",
     ),
     # No attributes, self-closing tag
     (
         """<Foo />""",
-        """{{ _components["Foo"].render() }}""",
+        """{{ _get("Foo").render() }}""",
     ),
     # Strings vs expressions
     (
         """<Foo bar="baz" lorem={{ ipsum }}>content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
     ),
     # Single quotes
     (
         """<Foo bar='say "hello world"'>content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
     ),
     (
         """<Foo bar="say 'hello world'">content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
     ),
     # Braces inside quotes
     (
         """<Foo bar="say 'hello {{world}}'">content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
     ),
     # Line breaks
     (
@@ -53,7 +53,7 @@ VALID_DATA = (
           bar="baz"
           lorem="ipsum"
         >content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
     ),
     # Line breaks, self-closing tag
     (
@@ -62,29 +62,29 @@ VALID_DATA = (
           lorem="ipsum"
           green
         />""",
-        """{{ _components["Foo"].render(**{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
+        """{{ _get("Foo").render(**{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
     ),
     # Python expression in attribute and boolean attributes
     (
         """<Foo bar={{ 42 + 4 }} green large>content</Foo>""",
-        """{% call _components["Foo"].render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
     ),
     # `>` in expression
     (
         """<CloseBtn disabled={{ num > 4 }} />""",
-        """{{ _components["CloseBtn"].render(**{"disabled":num > 4}) }}""",
+        """{{ _get("CloseBtn").render(**{"disabled":num > 4}) }}""",
     ),
     # `>` in attribute value
     (
         """<CloseBtn data-closer-action="click->closer#close" />""",
-        """{{ _components["CloseBtn"].render(**{"data_closer_action":"click->closer#close"}) }}""",
+        """{{ _get("CloseBtn").render(**{"data_closer_action":"click->closer#close"}) }}""",
     ),
     # Raw blocks
     (
         """<Foo bar="baz">content</Foo>
 {% raw %}{{ a + b }}{% endraw %}
 what""",
-        """{% call _components["Foo"].render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}{{ a + b }}{% endraw %}
 what""",
     ),
@@ -150,11 +150,11 @@ def test_process_nested_same_tag():
 </Card>
     """
     expected = """
-{% call _components["Card"].render(**{"class":"card"}) -%}
+{% call _get("Card").render(**{"class":"card"}) -%}
   WTF
-  {% call _components["Card"].render(**{"class":"card-header"}) -%}abc{%- endcall %}
-  {% call _components["Card"].render(**{"class":"card-body"}) -%}
-    <div>{% call _components["Card"].render() -%}Text{%- endcall %}</div>
+  {% call _get("Card").render(**{"class":"card-header"}) -%}abc{%- endcall %}
+  {% call _get("Card").render(**{"class":"card-body"}) -%}
+    <div>{% call _get("Card").render() -%}Text{%- endcall %}</div>
   {%- endcall %}
 {%- endcall %}
 """

@@ -11,8 +11,8 @@ from .exceptions import TemplateSyntaxError
 from .utils import logger
 
 
-BLOCK_CALL = '{% call _components["[TAG]"].render([ATTRS]) -%}[CONTENT]{%- endcall %}'
-INLINE_CALL = '{{ _components["[TAG]"].render([ATTRS]) }}'
+BLOCK_CALL = '{% call _get("[TAG]").render([ATTRS]) -%}[CONTENT]{%- endcall %}'
+INLINE_CALL = '{{ _get("[TAG]").render([ATTRS]) }}'
 
 re_raw = r"\{%-?\s*raw\s*-?%\}.+?\{%-?\s*endraw\s*-?%\}"
 RX_RAW = re.compile(re_raw, re.DOTALL)

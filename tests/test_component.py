@@ -14,7 +14,7 @@ def test_render_simple(folder):
 
     cat = Catalog(folder)
     html = cat.render("button.jinja", bid="btn1", text="Submit")
-    assert html == '<button id="btn1">Submit</button>'
+    assert html.strip() == '<button id="btn1">Submit</button>'
 
 
 def test_render_content(folder):
@@ -29,7 +29,7 @@ def test_render_content(folder):
 
     cat = Catalog(folder)
     html = cat.render("parent.jinja")
-    assert html == "<div><span>Hello</span></div>"
+    assert html.strip() == "<div><span>Hello</span></div>"
 
 
 def test_render_custom_content(folder):
@@ -44,7 +44,7 @@ def test_render_custom_content(folder):
 
     cat = Catalog(folder)
     html = cat.render("parent.jinja")
-    assert html == "<div><span>Hello</span></div>"
+    assert html.strip() == "<div><span>Hello</span></div>"
 
 
 def test_unknown_child(folder):
@@ -106,7 +106,7 @@ def test_inherited_attrs(folder):
 
     cat = Catalog(folder)
     html = cat.render("parent.jinja")
-    assert html == '<div><span><button class="btn btn-primary">Hello</button></span></div>'
+    assert html.strip() == '<div><span><button class="btn btn-primary">Hello</button></span></div>'
 
 
 def test_get_random_id(folder):
@@ -124,7 +124,7 @@ def test_catalog_globals(folder):
 
     cat = Catalog(folder, lorem="ipsum")
     html = cat.render("button.jinja")
-    assert html == "<button>ipsum</button>"
+    assert html.strip() == "<button>ipsum</button>"
 
 
 def test_render_globals(folder):
@@ -260,7 +260,7 @@ def test_render_assets(folder):
 
     html = component.render_assets()
     print(html)
-    assert html == """
+    assert html.strip() == """
 <link rel="stylesheet" href="parent.css">
 <link rel="stylesheet" href="/static/common/parent.css">
 <link rel="stylesheet" href="child.css">
@@ -288,7 +288,7 @@ def test_render_assets_in_layout(folder):
     cat = Catalog(folder)
     html = cat.render("main.jinja")
     print(html)
-    assert html == """
+    assert html.strip() == """
 <link rel="stylesheet" href="main.css">
 <link rel="stylesheet" href="/static/common/main.css">
 <link rel="stylesheet" href="layout.css">
@@ -297,3 +297,84 @@ def test_render_assets_in_layout(folder):
 <script type="module" src="https://example.com/layout.js"></script>
 <div>Hello</div>
     """.strip()
+
+
+def test_recursive_component(folder):
+    (folder / "recu.jinja").write_text("""
+{# import "recu.jinja" as Recu #}
+{# def items: list[str], level=1 #}
+{# css "recu.css" #}
+{% if items %}
+<h{{ level }}>Level {{ level }}</h{{ level }}>
+<p>{{ items[0] }}</p>
+<Recu items={{ items[1:] }} level={{ level + 1 }} />
+{%- endif %}
+""")
+
+    (folder / "main.jinja").write_text("""
+{# import "recu.jinja" as Recu #}
+{# def items: list[str] #}
+{# css "main.css" #}
+{{ assets.render() }}
+<Recu items={{ items }} />
+""")
+
+    cat = Catalog(folder)
+    html = cat.render("main.jinja", items=["one", "two", "three"])
+    print(html)
+    assert html.strip() == """
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="recu.css">
+<h1>Level 1</h1>
+<p>one</p>
+<h2>Level 2</h2>
+<p>two</p>
+<h3>Level 3</h3>
+<p>three</p>
+""".strip()
+
+
+def test_indirect_recursion(folder):
+    (folder / "a.jinja").write_text("""
+{# import "b.jinja" as B #}
+{# def level #}
+{# css "a.css" #}
+{% if level > 0 -%}
+{{ level }}
+<B level={{ level - 1 }} />
+{%- endif %}
+""")
+
+    (folder / "b.jinja").write_text("""
+{# import "a.jinja" as A #}
+{# def level #}
+{# css "b.css" #}
+{% if level > 0 -%}
+{{ level }}
+<A level={{ level - 1 }} />
+{%- endif %}
+""")
+
+    (folder / "main.jinja").write_text("""
+{# import "a.jinja" as A #}
+{{ assets.render_css() }}
+<A level={{ 10 }} />
+""")
+
+    cat = Catalog(folder)
+    html = cat.render("main.jinja")
+    print(html)
+    assert html.strip() == """
+<link rel="stylesheet" href="a.css">
+<link rel="stylesheet" href="b.css">
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+""".strip()
