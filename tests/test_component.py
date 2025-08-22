@@ -378,3 +378,58 @@ def test_indirect_recursion(folder):
 2
 1
 """.strip()
+
+
+def test_autoreload(folder):
+    (folder / "test.jinja").write_text("""
+{# css before.css #}
+{{ assets.render_css() }}
+BEFORE
+""")
+
+    cat = Catalog(folder, auto_reload=True)
+
+    html = cat.render("test.jinja")
+    assert html.strip() == """
+<link rel="stylesheet" href="before.css">
+BEFORE
+""".strip()
+
+    (folder / "test.jinja").write_text("""
+{# css after.css #}
+{{ assets.render_css() }}
+AFTER
+""")
+
+    html = cat.render("test.jinja")
+    assert html == """
+<link rel="stylesheet" href="after.css">
+AFTER
+""".strip()
+
+
+def test_no_autoreload(folder):
+    (folder / "test.jinja").write_text("""
+{# css before.css #}
+{{ assets.render_css() }}
+BEFORE
+""")
+    cat = Catalog(folder, auto_reload=False)
+
+    html = cat.render("test.jinja")
+    assert html == """
+<link rel="stylesheet" href="before.css">
+BEFORE
+""".strip()
+
+    (folder / "test.jinja").write_text("""
+{# css after.css #}
+{{ assets.render_css() }}
+AFTER
+""")
+
+    html = cat.render("test.jinja")
+    assert html == """
+<link rel="stylesheet" href="before.css">
+BEFORE
+""".strip()
