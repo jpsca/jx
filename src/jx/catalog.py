@@ -140,7 +140,7 @@ class Catalog:
         for filepath in base_path.rglob("*.jinja"):
             relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"
             if relpath in self.components:
-                logger.warning(f"Component already exists: {relpath}")
+                logger.debug(f"Component already exists: {relpath}")
                 continue
             cdata = CData(
                 base_path=base_path,
