@@ -61,7 +61,8 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
             The absolute full path of the current template.
 
     Returns:
-        A Meta object containing the extracted metadata.
+        A `Meta` object containing the extracted metadata.
+
     """
     meta = Meta()
 
@@ -138,7 +139,7 @@ def parse_args_expr(expr: str) -> tuple[tuple[str, ...], dict[str, t.Any]]:
     return tuple(required), optional
 
 
-def eval_expression(input_string):
+def eval_expression(input_string: str) -> t.Any:
     code = compile(input_string, "<string>", "eval")
     for name in code.co_names:
         if name not in ALLOWED_NAMES_IN_EXPRESSION_VALUES:

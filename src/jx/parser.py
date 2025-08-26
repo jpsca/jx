@@ -1,6 +1,7 @@
 """
 Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
 """
+
 import re
 import typing as t
 from uuid import uuid4
@@ -45,12 +46,48 @@ def escape(s: t.Any, /) -> Markup:
 
 
 class JxParser:
-    def __init__(self, *, name: str, source: str, components: list[str]) :
+    def __init__(
+        self,
+        *,
+        name: str,
+        source: str,
+        components: list[str],
+    ):
+        """
+        A parser that transforms a template's source code by replacing
+        TitledCased HTML tags with their corresponding component calls.
+
+        Only the names defined in the `components` list are allowed.
+
+        Arguments:
+            name:
+                The name of the template for error reporting.
+            source:
+                The source code of the template.
+            components:
+                A list of allowed component names.
+
+        """
         self.name = name
         self.source = source
         self.components = components
 
     def parse(self, *, validate_tags: bool = True) -> str:
+        """
+        Parses the template source code.
+
+        Arguments:
+            validate_tags:
+                Whether to raise an error for unknown TitleCased tags.
+
+        Returns:
+            The transformed template source code.
+
+        Raises:
+            TemplateSyntaxError:
+                If the template contains unknown components or syntax errors.
+
+        """
         raw_blocks = {}
         source = self.source
         source, raw_blocks = self.replace_raw_blocks(source)
@@ -59,6 +96,14 @@ class JxParser:
         return source
 
     def replace_raw_blocks(self, source: str) -> tuple[str, dict[str, str]]:
+        """
+        Replace the `{% raw %}` blocks with temporary placeholders.
+
+        Arguments:
+            source:
+                The template source code.
+
+        """
         raw_blocks = {}
         while True:
             match = RX_RAW.search(source)
@@ -73,11 +118,32 @@ class JxParser:
         return source, raw_blocks
 
     def restore_raw_blocks(self, source: str, raw_blocks: dict[str, str]) -> str:
+        """
+        Restores the original `{% raw %}` blocks from the temporary placeholders.
+
+        Arguments:
+            source:
+                The template source code.
+            raw_blocks:
+                A dictionary mapping placeholder keys to their original raw block content.
+
+        """
         for uid, code in raw_blocks.items():
             source = source.replace(uid, code)
         return source
 
     def process_tags(self, source: str, *, validate_tags: bool = True) -> str:
+        """
+        Search for TitledCased HTML tags in the template source code and replace
+        them with their corresponding component calls.
+
+        Arguments:
+            source:
+                The template source code.
+            validate_tags:
+                Whether to raise an error for unknown TitleCased tags.
+
+        """
         while True:
             match = RX_TAG_NAME.search(source)
             if not match:
@@ -85,21 +151,43 @@ class JxParser:
             source = self.replace_tag(source, match, validate_tags=validate_tags)
         return source
 
-    def replace_tag(self, source: str, match: re.Match, *, validate_tags: bool = True) -> str:
+    def replace_tag(
+        self,
+        source: str,
+        match: re.Match,
+        *,
+        validate_tags: bool = True,
+    ) -> str:
+        """
+        Replaces a single TitledCased HTML tag with its corresponding component call.
+
+        Arguments:
+            source:
+                The template source code.
+            match:
+                The regex match object for the tag.
+            validate_tags:
+                Whether to raise an error for unknown TitleCased tags.
+
+        """
         start, curr = match.span(0)
         lineno = source[:start].count("\n") + 1
 
         tag = match.group("tag")
         if validate_tags and tag not in self.components:
             line = self.source.split("\n")[lineno - 1]
-            raise TemplateSyntaxError(f"[{self.name}:{lineno}] Unknown component `{tag}`\n{line}")
+            raise TemplateSyntaxError(
+                f"[{self.name}:{lineno}] Unknown component `{tag}`\n{line}"
+            )
 
-        attrs, end = self._parse_opening_tag(source, lineno=lineno, start=curr - 1)
+        raw_attrs, end = self._parse_opening_tag(source, lineno=lineno, start=curr - 1)
         if end == -1:
             line = self.source.split("\n")[lineno - 1]
-            raise TemplateSyntaxError(f"[{self.name}:{lineno}] Syntax error: `{tag}`\n{line}")
+            raise TemplateSyntaxError(
+                f"[{self.name}:{lineno}] Syntax error: `{tag}`\n{line}"
+            )
 
-        inline = source[end - 2:end] == "/>"
+        inline = source[end - 2 : end] == "/>"
         if inline:
             content = ""
         else:
@@ -107,39 +195,52 @@ class JxParser:
             index = source.find(close_tag, end, None)
             if index == -1:
                 line = self.source.split("\n")[lineno - 1]
-                raise TemplateSyntaxError(f"[{self.name}:{lineno}] Unclosed component `{tag}`\n{line}")
+                raise TemplateSyntaxError(
+                    f"[{self.name}:{lineno}] Unclosed component `{tag}`\n{line}"
+                )
 
             content = source[end:index]
             end = index + len(close_tag)
 
-        attrs_list = self._parse_attrs(attrs)
-        repl = self._build_call(tag, attrs_list, content)
-
+        attrs = self._parse_attrs(raw_attrs)
+        repl = self._build_call(tag, attrs, content)
         return f"{source[:start]}{repl}{source[end:]}"
 
-    def _parse_opening_tag(self, source: str, *, lineno: int, start: int) -> tuple[str, int]:
+    # Private
+
+    def _parse_opening_tag(
+        self, source: str, *, lineno: int, start: int
+    ) -> tuple[str, int]:
+        """
+        Parses the opening tag and returns the raw attributes and the position
+        where the opening tag ends.
+        """
         eof = len(source)
-        in_single_quotes = in_double_quotes = in_braces = False   # dentro de '…'  /  "…"
+        in_single_quotes = in_double_quotes = in_braces = False
         i = start
         end = -1
 
         while i < eof:
             ch = source[i]
-            ch2 = source[i:i + 2]
+            ch2 = source[i : i + 2]
             # print(ch, ch2, in_single_quotes, in_double_quotes, in_braces)
 
             # Detects {{ … }} only when NOT inside quotes
             if not in_single_quotes and not in_double_quotes:
                 if ch2 == "{{":
                     if in_braces:
-                        raise TemplateSyntaxError(f"[{self.name}:{lineno}] Unmatched braces")
+                        raise TemplateSyntaxError(
+                            f"[{self.name}:{lineno}] Unmatched braces"
+                        )
                     in_braces = True
                     i += 2
                     continue
 
                 if ch2 == "}}":
                     if not in_braces:
-                        raise TemplateSyntaxError(f"[{self.name}:{lineno}] Unmatched braces")
+                        raise TemplateSyntaxError(
+                            f"[{self.name}:{lineno}] Unmatched braces"
+                        )
                     in_braces = False
                     i += 2
                     continue
@@ -164,33 +265,25 @@ class JxParser:
         attrs = source[start:end].strip().removesuffix("/>").removesuffix(">")
         return attrs, end
 
-    def _parse_attrs(self, attrs: str) -> list[tuple[str, str]]:
-        attrs = attrs.replace("\n", " ").strip()
-        if not attrs:
+    def _parse_attrs(self, raw_attrs: str) -> list[str]:
+        """
+        Parses the HTML attributes string and returns a list of '"key":value'
+        strings to be used in a components call.
+        """
+        raw_attrs = raw_attrs.replace("\n", " ").strip()
+        if not raw_attrs:
             return []
-        return RX_ATTR.findall(attrs)
 
-    def _build_call(
-        self,
-        tag: str,
-        attrs_list: list[tuple[str, str]],
-        content: str = "",
-    ) -> str:
-        logger.debug(f"{tag} {attrs_list} {'inline' if not content else ''}")
         attrs = []
-        for name, value in attrs_list:
+        for name, value in RX_ATTR.findall(raw_attrs):
             name = name.strip().replace("-", "_")
             value = value.strip()
 
             if not value:
-                attrs.append(f'"{name}"=True')
+                attrs.append(f'"{name}":True')
             else:
-                # vue-like syntax
-                # if (
-                #     name[0] == ":"
-                #     and value[0] in ("\"'")
-                #     and value[-1] in ("\"'")
-                # ):
+                # vue-like syntax could be possible
+                # if (name[0] == ":" and value[0] in ("\"'") and value[-1] in ("\"'")):
                 #     value = value[1:-1].strip()
                 #     name = name.lstrip(":")
 
@@ -198,16 +291,23 @@ class JxParser:
                 if value[:2] == "{{" and value[-2:] == "}}":
                     value = value[2:-2].strip()
 
-                attrs.append(f'"{name}"={value}')
+                attrs.append(f'"{name}":{value}')
+
+        return attrs
+
+    def _build_call(self, tag: str, attrs: list[str], content: str = "") -> str:
+        """
+        Builds a component call string.
+        """
+        logger.debug(f"{tag} {attrs} {'inline' if not content else ''}")
 
         str_attrs = ""
         if attrs:
-            str_attrs = "**{" + ", ".join([a.replace("=", ":", 1) for a in attrs]) + "}"
+            str_attrs = "**{" + ", ".join(attrs) + "}"
 
         if content:
             return (
-                BLOCK_CALL
-                .replace("[TAG]", tag)
+                BLOCK_CALL.replace("[TAG]", tag)
                 .replace("[ATTRS]", str_attrs)
                 .replace("[CONTENT]", content)
             )

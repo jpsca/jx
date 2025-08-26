@@ -40,6 +40,28 @@ class Component:
         js: tuple[str, ...] = (),
         imports: dict[str, str] | None = None,
     ) -> None:
+        """
+        Internal object that represents a Jx component.
+
+        Arguments:
+            relpath:
+                The "name" of the component.
+            tmpl:
+                The jinja2.Template for the component.
+            get_component:
+                A callable that retrieves a component by its name/relpath.
+            required:
+                A tuple of required attribute names.
+            optional:
+                A dictionary of optional attributes and their default values.
+            css:
+                A tuple of CSS file URLs.
+            js:
+                A tuple of JS file URLs.
+            imports:
+                A dictionary of imported component names as "name": "relpath" pairs.
+
+        """
         self.relpath = relpath
         self.tmpl = tmpl
         self.get_component = get_component
@@ -93,41 +115,41 @@ class Component:
         child.globals = self.globals
         return child
 
-    def collect_css(self, visited: set[str] | None = None) -> list[str]:
+    def collect_css(self, _visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of CSS files for the component and its children.
         """
         urls = dict.fromkeys(self.css, 1)
-        visited = visited or set()
-        visited.add(self.relpath)
+        _visited = _visited or set()
+        _visited.add(self.relpath)
 
         for name, relpath in self.imports.items():
-            if relpath in visited:
+            if relpath in _visited:
                 continue
             co = self.get_child(name)
-            for file in co.collect_css(visited=visited):
+            for file in co.collect_css(_visited=_visited):
                 if file not in urls:
                     urls[file] = 1
-            visited.add(relpath)
+            _visited.add(relpath)
 
         return list(urls.keys())
 
-    def collect_js(self, visited: set[str] | None = None) -> list[str]:
+    def collect_js(self, _visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of JS files for the component and its children.
         """
         urls = dict.fromkeys(self.js, 1)
-        visited = visited or set()
-        visited.add(self.relpath)
+        _visited = _visited or set()
+        _visited.add(self.relpath)
 
         for name, relpath in self.imports.items():
-            if relpath in visited:
+            if relpath in _visited:
                 continue
             co = self.get_child(name)
-            for file in co.collect_js(visited=visited):
+            for file in co.collect_js(_visited=_visited):
                 if file not in urls:
                     urls[file] = 1
-            visited.add(relpath)
+            _visited.add(relpath)
 
         return list(urls.keys())
 
@@ -135,10 +157,6 @@ class Component:
         """
         Uses the `collect_css()` list to generate an HTML fragment
         with `<link rel="stylesheet" href="{url}">` tags.
-
-        Unless it's an external URL (e.g.: beginning with "http://" or "https://")
-        or a root-relative URL (e.g.: starting with "/"),
-        the URL is prefixed by `base_url`.
         """
         html = []
         for url in self.collect_css():
@@ -151,9 +169,15 @@ class Component:
         Uses the `collected_js()` list to generate an HTML fragment
         with `<script type="module" src="{url}"></script>` tags.
 
-        Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        the URL is prefixed by `base_url`. A hash can also be added to
-        invalidate the cache if the content changes, if `fingerprint` is `True`.
+        Arguments:
+            module:
+                Whether to render the script tags as modules, e.g.:
+                `<script type="module" src="..."></script>`
+            defer:
+                Whether to add the `defer` attribute to the script tags,
+                if `module` is `False` (all module scripts are also deferred), e.g.:
+                `<script src="..." defer></script>`
+
         """
         html = []
         for url in self.collect_js():
@@ -172,9 +196,16 @@ class Component:
         Calls `render_css()` and `render_js()` to generate
         an HTML fragment with `<link rel="stylesheet" href="{url}">`
         and `<script type="module" src="{url}"></script>` tags.
-        Unless it's an external URL (e.g.: beginning with "http://" or "https://"),
-        the URL is prefixed by `base_url`. A hash can also be added to
-        invalidate the cache if the content changes, if `fingerprint` is `True`.
+
+        Arguments:
+            module:
+                Whether to render the script tags as modules, e.g.:
+                `<script type="module" src="..."></script>`
+            defer:
+                Whether to add the `defer` attribute to the script tags,
+                if `module` is `False` (all module scripts are also deferred), e.g.:
+                `<script src="..." defer></script>`
+
         """
         html_css = self.render_css()
         html_js = self.render_js()

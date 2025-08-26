@@ -30,14 +30,13 @@ def quote(text: str) -> str:
 
 
 class LazyString(UserString):
-    """
-    Behave like regular strings, but the actual casting of the initial value
-    is deferred until the value is actually required.
-    """
-
     __slots__ = ("_seq",)
 
     def __init__(self, seq):
+        """
+        Behave like regular strings, but the actual casting of the initial value
+        is deferred until the value is actually required.
+        """
         self._seq = seq
 
     @cached_property
@@ -46,21 +45,20 @@ class LazyString(UserString):
 
 
 class Attrs:
-    """
-    Contains all the HTML attributes/properties (a property is an
-    attribute without a value) passed to a component but that weren't
-    in the declared attributes list.
-
-    For HTML classes you can use the name "classes" (instead of "class")
-    if you need to.
-
-    **NOTE**: The string values passed to this class, are not cast to `str` until
-    the string representation is actually needed, for example when
-    `attrs.render()` is invoked.
-
-    """
-
     def __init__(self, attrs: "dict[str, t.Any| LazyString]") -> None:
+        """
+        Contains all the HTML attributes/properties (a property is an
+        attribute without a value) passed to a component but that weren't
+        in the declared attributes list.
+
+        For HTML classes you can use the name "classes" (instead of "class")
+        if you need to.
+
+        **NOTE**: The string values passed to this class, are not cast to `str` until
+        the string representation is actually needed, for example when
+        `attrs.render()` is invoked.
+
+        """
         attributes: "dict[str, str | LazyString]" = {}
         properties: set[str] = set()
 
@@ -90,7 +88,7 @@ class Attrs:
         Example:
 
             ```python
-            attrs = HTMLAttrs({"class": "italic bold bg-blue wide abcde"})
+            attrs = Attrs({"class": "italic bold bg-blue wide abcde"})
             attrs.set(class="bold text-white")
             print(attrs.classes)
             abcde bg-blue bold italic text-white wide
@@ -108,7 +106,7 @@ class Attrs:
         Example:
 
             ```python
-            attrs = HTMLAttrs({
+            attrs = Attrs({
             "class": "lorem ipsum",
             "data_test": True,
             "hidden": True,
@@ -160,7 +158,7 @@ class Attrs:
         Example:
 
             ```python
-            attrs = HTMLAttrs({"secret": "qwertyuiop"})
+            attrs = Attrs({"secret": "qwertyuiop"})
             attrs.set(secret=False)
             attrs.as_dict
             {}
@@ -169,7 +167,7 @@ class Attrs:
             attrs.as_dict
             {"count":42, "lorem":"ipsum", "data_good": True}
 
-            attrs = HTMLAttrs({"class": "b c a"})
+            attrs = Attrs({"class": "b c a"})
             attrs.set(class="c b f d e")
             attrs.as_dict
             {"class": "a b c d e f"}
@@ -199,7 +197,7 @@ class Attrs:
         Example:
 
             ```python
-            attrs = HTMLAttrs({"lorem": "ipsum"})
+            attrs = Attrs({"lorem": "ipsum"})
             attrs.setdefault(tabindex=0, lorem="meh")
             attrs.as_dict
             # "tabindex" changed but "lorem" didn't
@@ -222,10 +220,15 @@ class Attrs:
         """
         Adds one or more classes to the list of classes, if not already present.
 
+        Arguments:
+
+            values:
+                One or more class names to add, separated by spaces.
+
         Example:
 
             ```python
-            attrs = HTMLAttrs({"class": "a b c"})
+            attrs = Attrs({"class": "a b c"})
             attrs.add_class("c", "d")
             attrs.as_dict
             {"class": "a b c d"}
@@ -243,7 +246,7 @@ class Attrs:
         Example:
 
             ```python
-            attrs = HTMLAttrs({"class": "a b c"})
+            attrs = Attrs({"class": "a b c"})
             attrs.remove_class("c", "d")
             attrs.as_dict
             {"class": "a b"}
@@ -258,10 +261,18 @@ class Attrs:
         Returns the value of the attribute or property,
         or the default value if it doesn't exists.
 
+        Arguments:
+
+            name:
+                The name of the attribute or property to get.
+
+            default:
+                The default value to return if the attribute or property doesn't exist.
+
         Example:
 
             ```python
-            attrs = HTMLAttrs({"lorem": "ipsum", "hidden": True})
+            attrs = Attrs({"lorem": "ipsum", "hidden": True})
 
             attrs.get("lorem", defaut="bar")
             'ipsum'
@@ -291,7 +302,7 @@ class Attrs:
         Renders the attributes and properties as a string.
 
         Any arguments you use with this function are merged with the existing
-        attibutes/properties by the same rules as the `HTMLAttrs.set()` function:
+        attibutes/properties by the same rules as the `Attrs.set()` function:
 
         - Pass a name and a value to set an attribute (e.g. `type="text"`)
         - Use `True` as a value to set a property (e.g. `disabled`)
@@ -308,7 +319,7 @@ class Attrs:
         Example:
 
             ```python
-            attrs = HTMLAttrs({"class": "ipsum", "data_good": True, "width": 42})
+            attrs = Attrs({"class": "ipsum", "data_good": True, "width": 42})
 
             attrs.render()
             'class="ipsum" width="42" data-good'
