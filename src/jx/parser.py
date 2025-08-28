@@ -12,7 +12,7 @@ from .exceptions import TemplateSyntaxError
 from .utils import logger
 
 
-BLOCK_CALL = '{% call _get("[TAG]").render([ATTRS]) -%}[CONTENT]{%- endcall %}'
+BLOCK_CALL = '{% call(_slot="") _get("[TAG]").render([ATTRS]) -%}[CONTENT]{%- endcall %}'
 INLINE_CALL = '{{ _get("[TAG]").render([ATTRS]) }}'
 
 re_raw = r"\{%-?\s*raw\s*-?%\}.+?\{%-?\s*endraw\s*-?%\}"
@@ -32,6 +32,17 @@ re_attr = r"""
 (?:\s+|/|"|$)
 """
 RX_ATTR = re.compile(re_attr, re.VERBOSE | re.DOTALL)
+
+RE_LSTRIP = r"\s*(?P<lstrip>-?)%}"
+RE_RSTRIP = r"{%(?P<rstrip>-?)\s*"
+
+RE_SLOT_OPEN = r"{%-?\s*slot\s+(?P<name>[0-9A-Za-z_.:$-]+)" + RE_LSTRIP
+RE_SLOT_CLOSE = RE_RSTRIP + r"endslot\s*-?%}"
+RX_SLOT = re.compile(rf"{RE_SLOT_OPEN}(?P<default>.*?)({RE_SLOT_CLOSE})", re.DOTALL)
+
+RE_FILL_OPEN = r"{%-?\s*fill\s+(?P<name>[0-9A-Za-z_.:$-]+)" + RE_LSTRIP
+RE_FILL_CLOSE = RE_RSTRIP + r"endfill\s*-?%}"
+RX_FILL = re.compile(rf"{RE_FILL_OPEN}(?P<body>.*?)({RE_FILL_CLOSE})", re.DOTALL)
 
 
 def escape(s: t.Any, /) -> Markup:
@@ -72,7 +83,7 @@ class JxParser:
         self.source = source
         self.components = components
 
-    def parse(self, *, validate_tags: bool = True) -> str:
+    def parse(self, *, validate_tags: bool = True) -> tuple[str, tuple[str, ...]]:
         """
         Parses the template source code.
 
@@ -81,7 +92,8 @@ class JxParser:
                 Whether to raise an error for unknown TitleCased tags.
 
         Returns:
-            The transformed template source code.
+            - The transformed template source code
+            - The list of slot names.
 
         Raises:
             TemplateSyntaxError:
@@ -92,8 +104,9 @@ class JxParser:
         source = self.source
         source, raw_blocks = self.replace_raw_blocks(source)
         source = self.process_tags(source, validate_tags=validate_tags)
+        source, slots = self.process_slots(source)
         source = self.restore_raw_blocks(source, raw_blocks)
-        return source
+        return source, slots
 
     def replace_raw_blocks(self, source: str) -> tuple[str, dict[str, str]]:
         """
@@ -202,9 +215,92 @@ class JxParser:
             content = source[end:index]
             end = index + len(close_tag)
 
+        if content:
+            content = self.process_fills(content)
+
         attrs = self._parse_attrs(raw_attrs)
         repl = self._build_call(tag, attrs, content)
         return f"{source[:start]}{repl}{source[end:]}"
+
+    def process_slots(self, source: str) -> tuple[str, tuple[str, ...]]:
+        """
+        Extracts slot content from the template source code.
+
+        Arguments:
+            source:
+                The template source code
+
+        Returns:
+            - The transformed template source code
+            - The list of slot names.
+
+        """
+        slots = {}
+        while True:
+            match = RX_SLOT.search(source)
+            if not match:
+                break
+            start, end = match.span(0)
+            slot_name = match.group("name")
+            slot_default = match.group("default") or ""
+            lstrip = match.group("lstrip") == "-"
+            rstrip = match.group("rstrip") == "-"
+            if lstrip:
+                slot_default = slot_default.lstrip()
+            if rstrip:
+                slot_default = slot_default.rstrip()
+
+            slot_expr = "".join([
+                "{% if _slots.get('", slot_name,
+                "') %}{{ _slots['", slot_name,
+                "'] }}{% else %}", slot_default,
+                "{% endif %}"
+            ])
+            source = f"{source[:start]}{slot_expr}{source[end:]}"
+            slots[slot_name] = 1
+
+        return source, tuple(slots.keys())
+
+    def process_fills(self, source: str) -> str:
+        """
+        Processes `{% fill slot_name %}...{% endfill %}` blocks in the template source code.
+
+        Arguments:
+            source:
+                The template source code.
+
+        Returns:
+            The modified source code prepended by fill contents as `if` statements.
+
+        """
+        fills = {}
+
+        while True:
+            match = RX_FILL.search(source)
+            if not match:
+                break
+            start, end = match.span(0)
+            fill_name = match.group("name")
+            fill_body = match.group("body") or ""
+            lstrip = match.group("lstrip") == "-"
+            rstrip = match.group("rstrip") == "-"
+            if lstrip:
+                fill_body = fill_body.lstrip()
+            if rstrip:
+                fill_body = fill_body.rstrip()
+            fills[fill_name] = fill_body
+            source = f"{source[:start]}{source[end:]}"
+
+        if not fills:
+            return source
+
+        ifs = []
+        for fill_name, fill_body in fills.items():
+            ifs.append(f"{{% elif _slot == '{fill_name}' %}}{fill_body}")
+        # Replace the first occurrence of "elif" with "if"
+        str_ifs = f"\n{{% {''.join(ifs)[5:]}"
+
+        return f"{str_ifs}{{% else -%}}\n{source.strip()}\n{{%- endif %}}\n"
 
     # Private
 

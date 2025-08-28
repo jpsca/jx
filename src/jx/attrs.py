@@ -155,6 +155,8 @@ class Attrs:
         - The underscores in the names will be translated automatically to dashes,
           so `aria_selected` becomes the attribute `aria-selected`.
 
+        TODO: vue-style
+
         Example:
 
             ```python

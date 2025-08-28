@@ -22,9 +22,10 @@ class Component:
         "get_component",
         "required",
         "optional",
+        "imports",
         "css",
         "js",
-        "imports",
+        "slots",
         "globals",
     )
 
@@ -36,9 +37,10 @@ class Component:
         get_component: Callable[[str], "Component"],
         required: tuple[str, ...] = (),
         optional: dict[str, t.Any] | None = None,
+        imports: dict[str, str] | None = None,
         css: tuple[str, ...] = (),
         js: tuple[str, ...] = (),
-        imports: dict[str, str] | None = None,
+        slots: tuple[str, ...] = (),
     ) -> None:
         """
         Internal object that represents a Jx component.
@@ -54,12 +56,14 @@ class Component:
                 A tuple of required attribute names.
             optional:
                 A dictionary of optional attributes and their default values.
+            imports:
+                A dictionary of imported component names as "name": "relpath" pairs.
             css:
                 A tuple of CSS file URLs.
             js:
                 A tuple of JS file URLs.
-            imports:
-                A dictionary of imported component names as "name": "relpath" pairs.
+            slots:
+                A tuple of slot names.
 
         """
         self.relpath = relpath
@@ -68,9 +72,10 @@ class Component:
 
         self.required = required
         self.optional = optional or {}
+        self.imports = imports or {}
         self.css = css
         self.js = js
-        self.imports = imports or {}
+        self.slots = slots
 
         self.globals: dict[str, t.Any] = {}
 
@@ -79,10 +84,10 @@ class Component:
         *,
         content: str | None = None,
         attrs: Attrs | dict[str, t.Any] | None = None,
-        caller: Callable[[], str] | None = None,
+        caller: Callable[[str], str] | None = None,
         **params: t.Any
     ) -> Markup:
-        content = content if content is not None else caller() if caller else ""
+        content = content if content is not None else caller("") if caller else ""
         attrs = attrs.as_dict if isinstance(attrs, Attrs) else attrs or {}
         params = {**attrs, **params}
         props, attrs = self.filter_attrs(params)
@@ -90,6 +95,14 @@ class Component:
         globals = {**self.globals, "_get": self.get_child}
         globals.setdefault("attrs", Attrs(attrs))
         globals.setdefault("content", content)
+
+        slots = {}
+        if caller:
+            for name in self.slots:
+                body = caller(name)
+                if body != content:
+                    slots[name] = body
+        props["_slots"] = slots
 
         html = self.tmpl.render({**props, **globals}).lstrip()
         return Markup(html)

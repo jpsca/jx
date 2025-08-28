@@ -11,7 +11,7 @@ VALID_DATA = (
     # Simple case
     (
         """<Foo bar="baz">content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}""",
     ),
     # Self-closing tag
     (
@@ -21,7 +21,7 @@ VALID_DATA = (
     # No attributes
     (
         """<Foo>content</Foo>""",
-        """{% call _get("Foo").render() -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render() -%}content{%- endcall %}""",
     ),
     # No attributes, self-closing tag
     (
@@ -31,21 +31,21 @@ VALID_DATA = (
     # Strings vs expressions
     (
         """<Foo bar="baz" lorem={{ ipsum }}>content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
     ),
     # Single quotes
     (
         """<Foo bar='say "hello world"'>content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
     ),
     (
         """<Foo bar="say 'hello world'">content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
     ),
     # Braces inside quotes
     (
         """<Foo bar="say 'hello {{world}}'">content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
     ),
     # Line breaks
     (
@@ -53,7 +53,7 @@ VALID_DATA = (
           bar="baz"
           lorem="ipsum"
         >content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
     ),
     # Line breaks, self-closing tag
     (
@@ -67,7 +67,7 @@ VALID_DATA = (
     # Python expression in attribute and boolean attributes
     (
         """<Foo bar={{ 42 + 4 }} green large>content</Foo>""",
-        """{% call _get("Foo").render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
     ),
     # `>` in expression
     (
@@ -84,7 +84,7 @@ VALID_DATA = (
         """<Foo bar="baz">content</Foo>
 {% raw %}{{ a + b }}{% endraw %}
 what""",
-        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}{{ a + b }}{% endraw %}
 what""",
     ),
@@ -94,7 +94,7 @@ what""",
 @pytest.mark.parametrize("source, expected", VALID_DATA)
 def test_process_valid_tags(source, expected):
     parser = JxParser(name="test", source=source, components=[])
-    result = parser.parse(validate_tags=False)
+    result, _ = parser.parse(validate_tags=False)
     print(result)
     assert result == expected
 
@@ -150,16 +150,16 @@ def test_process_nested_same_tag():
 </Card>
     """
     expected = """
-{% call _get("Card").render(**{"class":"card"}) -%}
+{% call(_slot="") _get("Card").render(**{"class":"card"}) -%}
   WTF
-  {% call _get("Card").render(**{"class":"card-header"}) -%}abc{%- endcall %}
-  {% call _get("Card").render(**{"class":"card-body"}) -%}
-    <div>{% call _get("Card").render() -%}Text{%- endcall %}</div>
+  {% call(_slot="") _get("Card").render(**{"class":"card-header"}) -%}abc{%- endcall %}
+  {% call(_slot="") _get("Card").render(**{"class":"card-body"}) -%}
+    <div>{% call(_slot="") _get("Card").render() -%}Text{%- endcall %}</div>
   {%- endcall %}
 {%- endcall %}
 """
     parser = JxParser(name="test", source=source, components=[])
-    result = parser.parse(validate_tags=False)
+    result, _ = parser.parse(validate_tags=False)
     print(result)
     assert result.strip() == expected.strip()
 
@@ -169,3 +169,144 @@ def test_validate_tags():
     parser = JxParser(name="test", source=source, components=["Button"])
     with pytest.raises(TemplateSyntaxError, match="Unknown component `Icon`.*"):
         parser.parse(validate_tags=True)
+
+
+def test_slots():
+    source = """
+<html>
+  {% slot header %}
+  <h1>Header</h1>
+  {% endslot %}
+
+  <p>Main content</p>
+  {% if user %}
+    <p>Hi, {{ user }}!</p>
+  {% endif %}
+
+  {% slot footer %}
+    <footer>Footer content</footer>
+  {% endslot %}
+</html>
+    """
+    parser = JxParser(name="test", source=source, components=[])
+    result, slots = parser.parse(validate_tags=False)
+    print(result)
+
+    assert slots == ("header", "footer")
+    assert result.strip() == """
+<html>
+  {% if _slots.get('header') %}{{ _slots['header'] }}{% else %}
+  <h1>Header</h1>
+  {% endif %}
+
+  <p>Main content</p>
+  {% if user %}
+    <p>Hi, {{ user }}!</p>
+  {% endif %}
+
+  {% if _slots.get('footer') %}{{ _slots['footer'] }}{% else %}
+    <footer>Footer content</footer>
+  {% endif %}
+</html>
+""".strip()
+
+
+
+def test_slots_strip():
+    source = """
+<html>
+  {% slot header %}
+  <h1>Header</h1>
+  {% endslot %}
+
+  <p>Main content</p>
+  {% if user %}
+    <p>Hi, {{ user }}!</p>
+  {% endif %}
+
+  {% slot footer -%}
+    <footer>Footer content</footer>
+  {%- endslot %}
+</html>
+    """
+    parser = JxParser(name="test", source=source, components=[])
+    result, _ = parser.parse(validate_tags=False)
+    print(result)
+
+    assert result.strip() == """
+<html>
+  {% if _slots.get('header') %}{{ _slots['header'] }}{% else %}
+  <h1>Header</h1>
+  {% endif %}
+
+  <p>Main content</p>
+  {% if user %}
+    <p>Hi, {{ user }}!</p>
+  {% endif %}
+
+  {% if _slots.get('footer') %}{{ _slots['footer'] }}{% else %}<footer>Footer content</footer>{% endif %}
+</html>
+""".strip()
+
+
+def test_fills():
+    source = """
+<Layout>
+{% fill header %}
+<h1>Header</h1>
+{% endfill %}
+
+<p>Main content</p>
+<p>Hi, {{ user }}!</p>
+
+{% fill footer %}
+<footer>Footer content</footer>
+{% endfill %}
+</Layout>
+    """
+    parser = JxParser(name="test", source=source, components=["Layout"])
+    result, _ = parser.parse(validate_tags=False)
+    print(result)
+
+    assert result.strip() == """
+{% call(_slot="") _get("Layout").render() -%}
+{% if _slot == 'header' %}
+<h1>Header</h1>
+{% elif _slot == 'footer' %}
+<footer>Footer content</footer>
+{% else -%}
+<p>Main content</p>
+<p>Hi, {{ user }}!</p>
+{%- endif %}
+{%- endcall %}
+""".strip()
+
+
+def test_fills_strip():
+    source = """
+<Layout>
+{% fill header -%}
+<h1>Header</h1>
+{%- endfill %}
+
+<p>Main content</p>
+<p>Hi, {{ user }}!</p>
+
+{% fill footer %}
+<footer>Footer content</footer>
+{%- endfill %}
+</Layout>
+    """
+    parser = JxParser(name="test", source=source, components=["Layout"])
+    result, _ = parser.parse(validate_tags=False)
+    print(result)
+
+    assert result.strip() == """
+{% call(_slot="") _get("Layout").render() -%}
+{% if _slot == 'header' %}<h1>Header</h1>{% elif _slot == 'footer' %}
+<footer>Footer content</footer>{% else -%}
+<p>Main content</p>
+<p>Hi, {{ user }}!</p>
+{%- endif %}
+{%- endcall %}
+""".strip()

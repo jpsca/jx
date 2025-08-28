@@ -27,6 +27,7 @@ class CData:
     imports: dict[str, str] = field(default_factory=dict)  # { name: relpath }
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
+    slots: tuple[str, ...] = ()
 
 
 class Catalog:
@@ -217,7 +218,7 @@ class Catalog:
             source=source,
             components=list(meta.imports.keys())
         )
-        parsed_source = parser.parse()
+        parsed_source, slots = parser.parse()
         code = self.jinja_env.compile(
             source=parsed_source,
             name=relpath,
@@ -230,6 +231,7 @@ class Catalog:
         cdata.imports = meta.imports
         cdata.css = meta.css
         cdata.js = meta.js
+        cdata.slots = slots
         return cdata
 
     def get_component(self, relpath: str) -> Component:
@@ -256,9 +258,10 @@ class Catalog:
             get_component=self.get_component,
             required=cdata.required,
             optional=cdata.optional,
+            imports=cdata.imports,
             css=cdata.css,
             js=cdata.js,
-            imports=cdata.imports
+            slots=cdata.slots,
         )
         return co
 
