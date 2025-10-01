@@ -237,8 +237,6 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
-    { name = "markupsafe" },
-    { name = "ty" },
 ]
 
 [package.dev-dependencies]
@@ -256,11 +254,7 @@ test = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "jinja2", specifier = ">=3.0" },
-    { name = "markupsafe", specifier = ">=2.0" },
-    { name = "ty", specifier = ">=0.0.1a15" },
-]
+requires-dist = [{ name = "jinja2", specifier = ">=3.0" }]
 
 [package.metadata.requires-dev]
 dev = [

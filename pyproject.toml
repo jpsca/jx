@@ -29,14 +29,11 @@ classifiers = [
 requires-python = ">=3.11,<4"
 dependencies = [
     "jinja2 >= 3.0",
-    "markupsafe >= 2.0",
-    "ty>=0.0.1a15",
 ]
 
 [project.urls]
-homepage = "https://jx.scaletti.dev/"
-repository = "https://github.com/jpsca/jx"
-documentation = "https://jx.scaletti.dev/"
+Homepage = "https://jx.scaletti.dev/"
+GitHub = "https://github.com/jpsca/jx"
 
 [dependency-groups]
 dev = [
