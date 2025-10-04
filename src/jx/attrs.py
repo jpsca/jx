@@ -1,7 +1,6 @@
 """
 Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
 """
-import re
 import typing as t
 from collections import UserString
 from functools import cached_property
@@ -12,10 +11,6 @@ from markupsafe import Markup
 CLASS_KEY = "class"
 CLASS_ALT_KEY = "classes"
 CLASS_KEYS = (CLASS_KEY, CLASS_ALT_KEY)
-
-
-def split(ssl: str) -> list[str]:
-    return re.split(r"\s+", ssl.strip())
 
 
 def quote(text: str) -> str:
@@ -45,6 +40,10 @@ class LazyString(UserString):
 
 
 class Attrs:
+    __classes: tuple[str, ...]
+    __attributes: dict[str, str | LazyString]
+    __properties: set[str]
+
     def __init__(self, attrs: "dict[str, t.Any| LazyString]") -> None:
         """
         Contains all the HTML attributes/properties (a property is an
@@ -62,11 +61,15 @@ class Attrs:
         attributes: "dict[str, str | LazyString]" = {}
         properties: set[str] = set()
 
-        class_names = split(" ".join([
+        class_names = (" ".join([
             str(attrs.pop(CLASS_KEY, "")),
             str(attrs.get(CLASS_ALT_KEY, "")),
-        ]))
-        self.__classes = {name for name in class_names if name}
+        ])).strip().split()
+        classes = []
+        for name in class_names:
+            if name and name not in classes:
+                classes.append(name)
+        self.__classes = tuple(classes)
 
         for name, value in attrs.items():
             if name.startswith("_"):
@@ -83,7 +86,7 @@ class Attrs:
     @property
     def classes(self) -> str:
         """
-        All the HTML classes alphabetically sorted and separated by a space.
+        All the HTML classes separated by a space.
 
         Example:
 
@@ -91,11 +94,11 @@ class Attrs:
             attrs = Attrs({"class": "italic bold bg-blue wide abcde"})
             attrs.set(class="bold text-white")
             print(attrs.classes)
-            abcde bg-blue bold italic text-white wide
+            italic bold bg-blue wide abcde text-white
             ```
 
         """
-        return " ".join(sorted((self.__classes)))
+        return " ".join(self.__classes)
 
     @property
     def as_dict(self) -> dict[str, t.Any]:
@@ -116,7 +119,7 @@ class Attrs:
             attrs.as_dict
             {
                 "aria_label": "hello",
-                "class": "ipsum lorem",
+                "class": "lorem ipsum",
                 "id": "world",
                 "data_test": True,
                 "hidden": True
@@ -155,8 +158,6 @@ class Attrs:
         - The underscores in the names will be translated automatically to dashes,
           so `aria_selected` becomes the attribute `aria-selected`.
 
-        TODO: vue-style
-
         Example:
 
             ```python
@@ -172,7 +173,7 @@ class Attrs:
             attrs = Attrs({"class": "b c a"})
             attrs.set(class="c b f d e")
             attrs.as_dict
-            {"class": "a b c d e f"}
+            {"class": "b c a f d e"}
             ```
 
         """
@@ -212,7 +213,8 @@ class Attrs:
                 continue
 
             if name in CLASS_KEYS:
-                self.add_class(value)
+                if not self.__classes:
+                    self.add_class(value)
 
             name = name.replace("_", "-")
             if name not in self.__attributes:
@@ -220,10 +222,10 @@ class Attrs:
 
     def add_class(self, *values: str) -> None:
         """
-        Adds one or more classes to the list of classes, if not already present.
+        Adds one or more classes to the end of the list of classes,
+        if not already present.
 
         Arguments:
-
             values:
                 One or more class names to add, separated by spaces.
 
@@ -231,15 +233,44 @@ class Attrs:
 
             ```python
             attrs = Attrs({"class": "a b c"})
-            attrs.add_class("c", "d")
+            attrs.add_class("c d")
             attrs.as_dict
             {"class": "a b c d"}
             ```
 
         """
         for names in values:
-            for name in split(names):
-                self.__classes.add(name)
+            for name in names.strip().split():
+                if name not in self.__classes:
+                    self.__classes += (name,)
+
+    def prepend_class(self, *values: str) -> None:
+        """
+        Adds one or more classes to the beginning of the list of classes,
+        if not already present.
+
+        Arguments:
+            values:
+                One or more class names to add, separated by spaces.
+
+        Example:
+
+            ```python
+            attrs = Attrs({"class": "a b c"})
+            attrs.add_class("c d |")
+            attrs.as_dict
+            {"class": "d | a b c"}
+            ```
+
+        """
+        new_classes = [
+            name
+            for names in values
+            for name in names.strip().split()
+            if name not in self.__classes
+        ]
+
+        self.__classes = tuple(new_classes) + self.__classes
 
     def remove_class(self, *names: str) -> None:
         """
@@ -255,8 +286,7 @@ class Attrs:
             ```
 
         """
-        for name in names:
-            self.__classes.remove(name)
+        self.__classes = tuple(c for c in self.__classes if c not in names)
 
     def get(self, name: str, default: t.Any = None) -> t.Any:
         """
@@ -358,7 +388,7 @@ class Attrs:
         Removes an attribute or property.
         """
         if name in CLASS_KEYS:
-            self.__classes = set()
+            self.__classes = ()
         if name in self.__attributes:
             del self.__attributes[name]
         if name in self.__properties:

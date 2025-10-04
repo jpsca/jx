@@ -32,7 +32,7 @@ class CData:
 
 class Catalog:
     # IDEA: This dict could be replaced by a dict-like object
-    # that usesa LRU cache (to limit the memory used)
+    # that uses a LRU cache (to limit the memory used)
     # or even a shared Redis/Memcache cache.
     components: dict[str, CData]
 
@@ -279,9 +279,6 @@ class Catalog:
         """
         Create a new Jinja2 environment with the specified settings.
 
-        If an existing environment is provided, an "overlay" of it will
-        be created and used.
-
         Arguments:
             jinja_env:
                 Optional Jinja2 environment to use as a base.
@@ -297,7 +294,10 @@ class Catalog:
         """
         jinja_env = jinja_env or getattr(self, "jinja_env", None)
         if jinja_env:
-            env = jinja_env.overlay()
+            # It could be `jinja_env.overlay()` instead, but that might
+            # might lead to confusion if the user expects changes
+            # to the original environment to be reflected here.
+            env = jinja_env
         else:
             env = jinja2.Environment()
 
