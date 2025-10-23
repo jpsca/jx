@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 import ast
 import re
 import typing as t
@@ -56,9 +57,9 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
         source:
             The template source code.
         base_path:
-            Absolute base path for all the template files
+            Absolute base path for all the template files, for relative imports.
         fullpath:
-            The absolute full path of the current template.
+            The absolute full path of the current template, for relative imports.
 
     Returns:
         A `Meta` object containing the extracted metadata.

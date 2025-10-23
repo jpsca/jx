@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 import pytest
 
 from jx import Catalog, MissingRequiredArgument, TemplateSyntaxError
@@ -17,6 +18,17 @@ def test_render_simple(folder):
     assert html.strip() == '<button id="btn1">Submit</button>'
 
 
+def test_render_simple_from_string():
+    source = """
+{# def bid, text="Click me!" #}
+<button id="{{ bid }}">{{ text }}</button>
+"""
+
+    cat = Catalog()
+    html = cat.render_string(source, bid="btn1", text="Submit")
+    assert html.strip() == '<button id="btn1">Submit</button>'
+
+
 def test_render_content(folder):
     (folder / "child.jinja").write_text("""
 <span>{{ content }}</span>
@@ -29,6 +41,19 @@ def test_render_content(folder):
 
     cat = Catalog(folder)
     html = cat.render("parent.jinja")
+    assert html.strip() == "<div><span>Hello</span></div>"
+
+
+def test_render_content_from_string(folder):
+    (folder / "child.jinja").write_text("""
+<span>{{ content }}</span>
+""")
+    source = """
+{# import "child.jinja" as Child #}
+<div><Child>Hello</Child></div>
+"""
+    cat = Catalog(folder)
+    html = cat.render_string(source)
     assert html.strip() == "<div><span>Hello</span></div>"
 
 
@@ -140,6 +165,21 @@ def test_render_globals(folder):
 
     cat = Catalog(folder, lorem="ipsum")
     assert cat.render("page.jinja") == '<div class="ipsum"><p>ipsum</p></div>'
+
+
+def test_render_globals_from_string(folder):
+    (folder / "child.jinja").write_text("""<p>{{ lorem }}</p>""")
+
+    (folder / "layout.jinja").write_text("""<div class="{{ lorem }}">{{ content }}</div>""")
+
+    source = """
+{# import "layout.jinja" as Layout #}
+{# import "child.jinja" as Child #}
+<Layout><Child /></Layout>
+"""
+
+    cat = Catalog(folder, lorem="ipsum")
+    assert cat.render_string(source) == '<div class="ipsum"><p>ipsum</p></div>'
 
 
 def test_collect_assets(folder):

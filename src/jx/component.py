@@ -1,7 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
-import re
+
 import typing as t
 from collections.abc import Callable
 
@@ -10,9 +10,6 @@ from markupsafe import Markup
 
 from .attrs import Attrs
 from .exceptions import MissingRequiredArgument
-
-
-rx_external_url = re.compile(r"^[a-z]+://", re.IGNORECASE)
 
 
 class Component:
@@ -85,7 +82,7 @@ class Component:
         content: str | None = None,
         attrs: Attrs | dict[str, t.Any] | None = None,
         caller: Callable[[str], str] | None = None,
-        **params: t.Any
+        **params: t.Any,
     ) -> Markup:
         content = content if content is not None else caller("") if caller else ""
         attrs = attrs.as_dict if isinstance(attrs, Attrs) else attrs or {}

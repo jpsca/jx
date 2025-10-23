@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 
 class JxException(Exception):
     """Base class for all Jx exceptions."""
@@ -18,6 +19,7 @@ class ImportError(JxException):
     Raised when an import fails.
     This is usually caused by a missing or inaccessible component.
     """
+
     def __init__(self, relpath: str, **kw) -> None:
         msg = f"Component not found: {relpath}"
         super().__init__(msg, **kw)

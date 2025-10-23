@@ -1,3 +1,7 @@
+"""
+Jx | Copyright (c) Juan-Pablo Scaletti
+"""
+
 import pytest
 
 

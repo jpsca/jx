@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 import typing as t
 from collections import UserString
 from functools import cached_property
@@ -215,6 +216,7 @@ class Attrs:
             if name in CLASS_KEYS:
                 if not self.__classes:
                     self.add_class(value)
+                continue
 
             name = name.replace("_", "-")
             if name not in self.__attributes:

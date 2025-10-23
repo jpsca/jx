@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,7 +24,7 @@ class CData:
     mtime: float
     code: CodeType | None = None
     required: tuple[str, ...] = ()
-    optional: dict[str, t.Any] = field(default_factory=dict) # { attr: default_value }
+    optional: dict[str, t.Any] = field(default_factory=dict)  # { attr: default_value }
     imports: dict[str, str] = field(default_factory=dict)  # { name: relpath }
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
@@ -31,6 +32,7 @@ class CData:
 
 
 class Catalog:
+
     # IDEA: This dict could be replaced by a dict-like object
     # that uses a LRU cache (to limit the memory used)
     # or even a shared Redis/Memcache cache.
@@ -40,11 +42,11 @@ class Catalog:
         self,
         folder: str | Path | None = None,
         *,
-        auto_reload: bool = True,
         jinja_env: jinja2.Environment | None = None,
+        extensions: list | None = None,
         filters: dict[str, t.Any] | None = None,
         tests: dict[str, t.Any] | None = None,
-        extensions: list | None = None,
+        auto_reload: bool = True,
         **globals: t.Any,
     ) -> None:
         """
@@ -54,19 +56,19 @@ class Catalog:
             folder:
                 Optional folder path to scan for components. It's a shortcut to
                 calling `add_folder` when only one is used.
+            jinja_env:
+                Optional Jinja2 environment to use for rendering.
+            extensions:
+                Optional extra Jinja2 extensions to add to the environment.
+            filters:
+                Optional extra Jinja2 filters to add to the environment.
+            tests:
+                Optional extra Jinja2 tests to add to the environment.
             auto_reload:
                 Whether to check the last-modified time of the components files and
                 automatically re-process them if they change. The performance impact of
-                leaving it on is minimal, but *might* be noticeable when rendering a page
-                that uses a large number of different components.
-            jinja_env:
-                Optional Jinja2 environment to use for rendering.
-            filters:
-                Optional extra Jinja2 filters to add to the environment.
-            extensions:
-                Optional extra Jinja2 extensions to add to the environment.
-            tests:
-                Optional extra Jinja2 tests to add to the environment.
+                leaving it on is minimal, but *might* be noticeable when rendering a
+                component that uses a large number of child components.
             **globals:
                 Variables to make available to all components by default.
 
@@ -84,11 +86,7 @@ class Catalog:
             self.add_folder(folder)
 
     def add_folder(
-        self,
-        path: str | Path,
-        *,
-        prefix: str = "",
-        preload: bool = True
+        self, path: str | Path, *, prefix: str = "", preload: bool = True
     ) -> None:
         """
         Add a folder path from which to search for components, optionally under a prefix.
@@ -141,9 +139,7 @@ class Catalog:
                 logger.debug(f"Component already exists: {relpath}")
                 continue
             cdata = CData(
-                base_path=base_path,
-                path=filepath,
-                mtime=filepath.stat().st_mtime
+                base_path=base_path, path=filepath, mtime=filepath.stat().st_mtime
             )
             self.components[relpath] = cdata
 
@@ -151,7 +147,9 @@ class Catalog:
             for relpath in self.components:
                 self.components[relpath] = self.get_component_data(relpath)
 
-    def render(self, relpath: str, globals: dict[str, t.Any] | None = None, **kwargs) -> str:
+    def render(
+        self, relpath: str, globals: dict[str, t.Any] | None = None, **kwargs
+    ) -> str:
         """
         Render a component with the given relative path and context.
 
@@ -174,6 +172,64 @@ class Catalog:
         co = self.get_component(relpath)
 
         globals = globals or {}
+        globals.update(
+            {
+                "assets": {
+                    "css": co.collect_css,
+                    "js": co.collect_js,
+                    "render_css": co.render_css,
+                    "render_js": co.render_js,
+                    "render": co.render_assets,
+                },
+            }
+        )
+        co.globals = globals
+
+        return co.render(**kwargs)
+
+    def render_string(
+        self, source: str, globals: dict[str, t.Any] | None = None, **kwargs
+    ) -> str:
+        """
+        Render a component from a string source.
+        Works like `render`, but the component is not cached and cannot do relative imports.
+
+        Arguments:
+            source:
+                The Jinja2 source code of the component to render.
+            globals:
+                Optional global variables to make available to the component and all its
+                imported components.
+            **kwargs:
+                Keyword arguments to pass to the component.
+                They will be available in the component's context but not to its imported components.
+
+        Returns:
+            The rendered component as a string.
+
+        """
+        meta = extract_metadata(source, base_path=Path(), fullpath=Path())
+        name = "<string>"
+
+        parser = JxParser(name=name, source=source, components=list(meta.imports.keys()))
+        parsed_source, slots = parser.parse()
+
+        code = self.jinja_env.compile(source=parsed_source, name=name, filename=name)
+        tmpl = jinja2.Template.from_code(self.jinja_env, code, self.jinja_env.globals)
+
+        co = Component(
+            relpath=name,
+            tmpl=tmpl,
+            get_component=self.get_component,
+            required=meta.required,
+            optional=meta.optional,
+            imports=meta.imports,
+            css=meta.css,
+            js=meta.js,
+            slots=slots,
+        )
+
+        globals = globals or {}
         globals.update({
             "assets": {
                 "css": co.collect_css,
@@ -181,7 +237,7 @@ class Catalog:
                 "render_css": co.render_css,
                 "render_js": co.render_js,
                 "render": co.render_assets,
-            },
+            }
         })
         co.globals = globals
 
@@ -189,8 +245,8 @@ class Catalog:
 
     def get_component_data(self, relpath: str) -> CData:
         """
-        Get the component data from the cache, or load it from the file system
-        if needed.
+        Get the component data from the cache.
+        If the file has been updated, the component is re-processed.
 
         Arguments:
             relpath:
@@ -214,15 +270,11 @@ class Catalog:
         meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
 
         parser = JxParser(
-            name=relpath,
-            source=source,
-            components=list(meta.imports.keys())
+            name=relpath, source=source, components=list(meta.imports.keys())
         )
         parsed_source, slots = parser.parse()
         code = self.jinja_env.compile(
-            source=parsed_source,
-            name=relpath,
-            filename=cdata.path.as_posix()
+            source=parsed_source, name=relpath, filename=cdata.path.as_posix()
         )
 
         cdata.code = code
@@ -247,9 +299,7 @@ class Catalog:
         cdata = self.get_component_data(relpath)
         assert cdata.code is not None
         tmpl = jinja2.Template.from_code(
-            self.jinja_env,
-            cdata.code,
-            self.jinja_env.globals
+            self.jinja_env, cdata.code, self.jinja_env.globals
         )
 
         co = Component(
@@ -302,11 +352,13 @@ class Catalog:
             env = jinja2.Environment()
 
         globals = globals or {}
-        globals.update({
-            # A unique ID generator for HTML elements, see `utils.get_random_id`
-            # docstring for more information.
-            "_get_random_id": utils.get_random_id,
-        })
+        globals.update(
+            {
+                # A unique ID generator for HTML elements, see `utils.get_random_id`
+                # docstring for more information.
+                "_get_random_id": utils.get_random_id,
+            }
+        )
         env.globals.update(globals)
 
         filters = filters or {}

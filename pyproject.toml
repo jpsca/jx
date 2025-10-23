@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: HTML",
     "Typing :: Typed",
 ]
-requires-python = ">=3.11,<4"
+requires-python = ">=3.12,<4"
 dependencies = [
     "jinja2 >= 3.0",
 ]
@@ -37,11 +37,13 @@ GitHub = "https://github.com/jpsca/jx"
 
 [dependency-groups]
 dev = [
-    "ipdb >= 0.13",
+    "ipdb",
     "pre-commit",
-    "ruff >= 0.2.0",
     "tox-uv",
-    "ty>=0.0.1a15",
+    "ty",
+]
+docs = [
+    "writeadoc>=0.7.0",
 ]
 test = [
     "pytest >= 7.2",
@@ -79,10 +81,9 @@ addopts = "--doctest-modules"
 legacy_tox_ini = """
 [tox]
 env_list =
-    3.11
-    3.12
-    3.13
     3.14
+    3.13
+    3.12
 
 [testenv]
 runner = uv-venv-lock-runner
@@ -97,7 +98,7 @@ commands =
 [tool.ruff]
 line-length = 90
 indent-width = 4
-target-version = "py311"
+target-version = "py312"
 exclude = [
   ".*",
   "_build",

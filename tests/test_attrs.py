@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 import pytest
 
 from jx.attrs import Attrs
@@ -125,11 +126,11 @@ def test_setdefault():
 
 
 def test_setdefault_classes():
-    attrs = Attrs(
-        {
-            "class": "a",
-        }
-    )
+    attrs = Attrs({"class": "a"})
+    attrs.setdefault(classes="a b c")
+    assert 'class="a"' == attrs.render()
+
+    attrs = Attrs({})
     attrs.setdefault(classes="a b c")
     assert 'class="a b c"' == attrs.render()
 

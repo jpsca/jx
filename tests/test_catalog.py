@@ -1,6 +1,7 @@
 """
-Jx | Copyright (c) Juan-Pablo Scaletti <juanpablo@jpscaletti.com>
+Jx | Copyright (c) Juan-Pablo Scaletti
 """
+
 import jinja2
 import pytest
 
@@ -25,6 +26,27 @@ def test_add_folder(folder):
     assert catalog.components["b.jinja"].path == folder / "b.jinja"
     assert catalog.components["b.jinja"].mtime > 0
     assert catalog.components["b.jinja"].code is not None
+
+
+def test_add_folder_no_preload(folder):
+    (folder / "a.jinja").write_text("AAAAA")
+    (folder / "b.jinja").write_text("BBBBB")
+
+    catalog = Catalog()
+    catalog.add_folder(folder, preload=False)
+
+    assert "a.jinja" in catalog.components
+    assert "b.jinja" in catalog.components
+
+    assert catalog.components["a.jinja"].base_path == folder
+    assert catalog.components["a.jinja"].path == folder / "a.jinja"
+    assert catalog.components["a.jinja"].mtime > 0
+    assert catalog.components["a.jinja"].code is None
+
+    assert catalog.components["b.jinja"].base_path == folder
+    assert catalog.components["b.jinja"].path == folder / "b.jinja"
+    assert catalog.components["b.jinja"].mtime > 0
+    assert catalog.components["b.jinja"].code is None
 
 
 def test_add_folder_nested(tmp_path):
