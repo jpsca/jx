@@ -81,9 +81,9 @@ addopts = "--doctest-modules"
 legacy_tox_ini = """
 [tox]
 env_list =
-    3.14
-    3.13
     3.12
+    3.13
+    3.14
 
 [testenv]
 runner = uv-venv-lock-runner
