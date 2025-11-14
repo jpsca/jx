@@ -27,4 +27,7 @@ docs-build:
 
 .PHONY: docs-deploy
 docs-deploy:
-	cd docs && uv run sh deploy.sh
+	rm -rf docs/build
+	cd docs && \
+		uv run python docs.py build --llm && \
+		rsync --recursive --delete --progress build code:/var/www/jx/

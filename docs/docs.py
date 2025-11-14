@@ -1,0 +1,37 @@
+"""
+# WriteaDoc Documentation
+
+- `python docs.py run` to start a local server with live reload.
+- `python docs.py build` to build the documentation for deployment.
+
+"""
+from writeadoc import Docs
+
+
+pages = [
+    "quickstart.md",
+    {
+        "title": "API",
+        "pages": [
+            "api/catalog.md",
+            "api/attrs.md",
+        ],
+    }
+]
+
+docs = Docs(
+    __file__,
+    pages=pages,
+    site={
+        "name": "Jx",
+        "description": "Python server-side components",
+        "base_url": "https://jx.scaletti.dev",
+        "lang": "en",
+        "version": "1.0",
+        "source_code": "https://github.com/jpsca/jx/",
+    },
+)
+
+
+if __name__ == "__main__":
+    docs.cli()

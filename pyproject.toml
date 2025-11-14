@@ -55,6 +55,13 @@ test = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+
+[tool.ty.src]
+exclude = [
+    "docs",
+]
+
+
 [tool.coverage.run]
 branch = true
 
