@@ -1,13 +1,12 @@
-<h1>
-  <img src="./docs/assets/images/logo-jx.png" height="100" align="top">
-</h1>
-
-Super components powers for your Jinja templates.
-
-<p>
-  <img alt="python: 3.12, 3.13, 3.14" src="./docs/python.svg">
-  <img alt="license: MIT" src="./docs/license.svg">
+<div align="center">
+  <h1><img alt="Jx" src="https://raw.githubusercontent.com/jpsca/jx/main/docs/assets/images/logo-jx.png" height="100" align="top"></h1>
+</div>
+<p align="center">
+  <img alt="python: 3.12, 3.13, 3.14" src="https://raw.githubusercontent.com/jpsca/jx/main/docs/python.svg">
+  <img alt="license: MIT" src="https://raw.githubusercontent.com/jpsca/jx/main/docs/license.svg">
 </p>
+
+### Python server-side components
 
 From chaos to clarity: The power of components in your server-side-rendered Python web app.
 

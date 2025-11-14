@@ -32,8 +32,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://jx.scaletti.dev/"
-GitHub = "https://github.com/jpsca/jx"
+Code = "https://github.com/jpsca/jx"
+Documentation = "https://jx.scaletti.dev/"
 
 [dependency-groups]
 dev = [
