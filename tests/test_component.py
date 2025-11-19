@@ -473,3 +473,30 @@ AFTER
 <link rel="stylesheet" href="before.css">
 BEFORE
 """.strip()
+
+
+def test_alpine_sintax(folder):
+    (folder / "greeting.jinja").write_text("""
+{#def message #}
+<button @click.prevent="alert('{{ message }}')">Say Hi</button>""")
+    cat = Catalog(folder, auto_reload=False)
+
+    html = cat.render("greeting.jinja", message="Hello world!")
+    print(html)
+    assert html == """<button @click.prevent="alert('Hello world!')">Say Hi</button>"""
+
+
+def test_alpine_sintax_in_component(folder):
+    (folder / "button.jinja").write_text(
+        """<button {{ attrs.render() }}>{{ content }}</button>"""
+    )
+
+    (folder / "greeting.jinja").write_text("""
+{# import "button.jinja" as Button #}
+<Button @click.prevent="alert('Hello world!')">Say Hi</Button>
+""")
+    cat = Catalog(folder, auto_reload=False)
+
+    html = cat.render("greeting.jinja")
+    print(html)
+    assert html == """<button @click.prevent="alert('Hello world!')">Say Hi</button>"""
