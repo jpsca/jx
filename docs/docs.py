@@ -5,6 +5,8 @@
 - `python docs.py build` to build the documentation for deployment.
 
 """
+from pathlib import Path
+
 from writeadoc import Docs
 
 
@@ -31,7 +33,7 @@ docs = Docs(
         "source_code": "https://github.com/jpsca/jx/",
     },
 )
-
+docs.catalog.add_folder(Path(__file__).parent / "demos")
 
 if __name__ == "__main__":
     docs.cli()

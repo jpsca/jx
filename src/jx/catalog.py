@@ -232,8 +232,8 @@ class Catalog:
         globals = globals or {}
         globals.update({
             "assets": {
-                "css": co.collect_css,
-                "js": co.collect_js,
+                "collect_css": co.collect_css,
+                "collect_js": co.collect_js,
                 "render_css": co.render_css,
                 "render_js": co.render_js,
                 "render": co.render_assets,
