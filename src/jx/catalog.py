@@ -172,17 +172,15 @@ class Catalog:
         co = self.get_component(relpath)
 
         globals = globals or {}
-        globals.update(
-            {
-                "assets": {
-                    "css": co.collect_css,
-                    "js": co.collect_js,
-                    "render_css": co.render_css,
-                    "render_js": co.render_js,
-                    "render": co.render_assets,
-                },
+        globals.update({
+            "assets": {
+                "collect_css": co.collect_css,
+                "collect_js": co.collect_js,
+                "render_css": co.render_css,
+                "render_js": co.render_js,
+                "render": co.render_assets,
             }
-        )
+        })
         co.globals = globals
 
         return co.render(**kwargs)

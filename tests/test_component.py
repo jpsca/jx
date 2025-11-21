@@ -310,7 +310,7 @@ def test_render_assets(folder):
     """.strip()
 
 
-def test_render_assets_in_layout(folder):
+def test_global_assets_render(folder):
     (folder / "layout.jinja").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
@@ -335,6 +335,207 @@ def test_render_assets_in_layout(folder):
 <script type="module" src="main.js"></script>
 <script type="module" src="layout.js"></script>
 <script type="module" src="https://example.com/layout.js"></script>
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_render_string(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{{ assets.render() }}
+<div>{{ content }}</div>
+""")
+
+    source ="""
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+"""
+
+    cat = Catalog(folder)
+    html = cat.render_string(source)
+    print(html)
+    assert html.strip() == """
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="/static/common/main.css">
+<link rel="stylesheet" href="layout.css">
+<script type="module" src="main.js"></script>
+<script type="module" src="layout.js"></script>
+<script type="module" src="https://example.com/layout.js"></script>
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_render_js(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{{ assets.render_js() }}
+<div>{{ content }}</div>
+""")
+
+    (folder / "main.jinja").write_text("""
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+""")
+
+    cat = Catalog(folder)
+    html = cat.render("main.jinja")
+    print(html)
+    assert html.strip() == """
+<script type="module" src="main.js"></script>
+<script type="module" src="layout.js"></script>
+<script type="module" src="https://example.com/layout.js"></script>
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_render_js_string(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{{ assets.render_js() }}
+<div>{{ content }}</div>
+""")
+
+    source = """
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+"""
+
+    cat = Catalog(folder)
+    html = cat.render_string(source)
+    print(html)
+    assert html.strip() == """
+<script type="module" src="main.js"></script>
+<script type="module" src="layout.js"></script>
+<script type="module" src="https://example.com/layout.js"></script>
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_render_css(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{{ assets.render_css() }}
+<div>{{ content }}</div>
+""")
+
+    (folder / "main.jinja").write_text("""
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+""")
+
+    cat = Catalog(folder)
+    html = cat.render("main.jinja")
+    print(html)
+    assert html.strip() == """
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="/static/common/main.css">
+<link rel="stylesheet" href="layout.css">
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_render_css_string(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{{ assets.render_css() }}
+<div>{{ content }}</div>
+""")
+
+    source = """
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+"""
+
+    cat = Catalog(folder)
+    html = cat.render_string(source)
+    print(html)
+    assert html.strip() == """
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="/static/common/main.css">
+<link rel="stylesheet" href="layout.css">
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_collect(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{% for url in assets.collect_css() -%}
+<link href="{{ url }}" rel="stylesheet">
+{% endfor -%}
+{% for url in assets.collect_js() -%}
+<script src="{{ url }}" type="module"></script>
+{% endfor -%}
+<div>{{ content }}</div>
+""")
+
+    (folder / "main.jinja").write_text("""
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+""")
+
+    cat = Catalog(folder)
+    html = cat.render("main.jinja")
+    print(html)
+    assert html.strip() == """
+<link href="main.css" rel="stylesheet">
+<link href="/static/common/main.css" rel="stylesheet">
+<link href="layout.css" rel="stylesheet">
+<script src="main.js" type="module"></script>
+<script src="layout.js" type="module"></script>
+<script src="https://example.com/layout.js" type="module"></script>
+<div>Hello</div>
+    """.strip()
+
+
+def test_global_assets_collect_string(folder):
+    (folder / "layout.jinja").write_text("""
+{# css "layout.css" #}
+{# js "layout.js", "https://example.com/layout.js" #}
+{% for url in assets.collect_css() -%}
+<link href="{{ url }}" rel="stylesheet">
+{% endfor -%}
+{% for url in assets.collect_js() -%}
+<script src="{{ url }}" type="module"></script>
+{% endfor -%}
+<div>{{ content }}</div>
+""")
+
+    source = """
+{# import "layout.jinja" as Layout #}
+{# css "main.css", "/static/common/main.css" #}
+{# js "main.js" #}
+<Layout>Hello</Layout>
+"""
+
+    cat = Catalog(folder)
+    html = cat.render_string(source)
+    print(html)
+    assert html.strip() == """
+<link href="main.css" rel="stylesheet">
+<link href="/static/common/main.css" rel="stylesheet">
+<link href="layout.css" rel="stylesheet">
+<script src="main.js" type="module"></script>
+<script src="layout.js" type="module"></script>
+<script src="https://example.com/layout.js" type="module"></script>
 <div>Hello</div>
     """.strip()
 
