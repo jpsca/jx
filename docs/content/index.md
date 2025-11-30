@@ -113,3 +113,33 @@ With components, **everything is clear**: you know where each piece lives, what 
 Try replacing all your templates with components, or just start with one page.
 </section>
 </div>
+
+
+## What Makes Components Better?
+
+Compared to Jinja's `{% include %}` or macros:
+
+### ✅ Clear Dependencies
+
+All imports are listed at the top; you can see exactly what a component uses.
+
+### ✅ Composable
+
+Components wrap content naturally using the `{{ content }}` variable or the slots feature, making them easy to nest and combine.
+
+### ✅ Type-Safe
+
+Required arguments are enforced; if you forget to pass a required prop, you get an error at load time, not render time.
+
+### ✅ Testable
+
+Each component can be tested independently with different props and content.
+
+### ✅ Portable
+
+With relative imports, you can move entire folders of related components without breaking anything.
+
+### ✅ Encapsulated Assets
+
+Each component can declare its own CSS and JS files, which are automatically collected and rendered.
+

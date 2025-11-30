@@ -13,12 +13,24 @@ from writeadoc import Docs
 pages = [
     "quickstart.md",
     {
+        "title": "Guides",
+        "pages": [
+            "guides/components.md",
+            "guides/imports.md",
+            "guides/arguments.md",
+            "guides/content-and-slots.md",
+            "guides/attrs.md",
+            "guides/assets.md",
+        ]
+    },
+    {
         "title": "API",
         "pages": [
             "api/catalog.md",
             "api/attrs.md",
         ],
-    }
+    },
+    "migration/from-jinjax.md",
 ]
 
 docs = Docs(
