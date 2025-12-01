@@ -1,7 +1,5 @@
 ---
 title: Quickstart
-imports:
-  DemoDashboard: quickstart/dashboard.jinja
 ---
 
 ## Install Jx
@@ -37,7 +35,7 @@ catalog = Catalog("components/")
 Create a new folder for your components. Inside this folder create a new file called `card.jinja` with the following content:
 
 ```html+jinja {title="components/card.jinja"}
-{# def title, url #}
+{#def title, url #}
 
 <div class="bg-white shadow rounded border p-4">
   <h2 class="m-0 text-gray-800">{{ title }}</h2>
@@ -56,7 +54,7 @@ def dashboard_view():
 ```
 
 ```html+jinja {title="components/dashboard.jinja"}
-{# import "card.jinja" as Card #}
+{#import "card.jinja" as Card #}
 
 <Card title="Trees" url="trees">
   We have the best trees

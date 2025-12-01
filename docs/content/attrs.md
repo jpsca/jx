@@ -3,7 +3,7 @@ title: Attrs
 description: Handling extra HTML attributes
 ---
 
-The `attrs` object is one of jx's most useful features. It collects any HTML attributes you pass to a component that aren't declared in its `{#def}` statement, letting you create flexible, reusable components.
+The `attrs` object is one of Jx's most useful features. It collects any HTML attributes you pass to a component that aren't declared in its `{#def}` statement, letting you create flexible, reusable components.
 
 ## The Problem Attrs Solves
 
@@ -484,6 +484,5 @@ This ensures accessibility without preventing user overrides.
 
 ## Next Steps
 
-- **[Assets](/guides/assets)** - Learn about CSS and JavaScript management
-- **[Components](/guides/components)** - Back to component basics
-- **[API: Attrs](/api/attrs)** - Full API reference for the Attrs class
+- **[Assets](/docs/assets)** - Learn about CSS and JavaScript management
+- **[API: Attrs](/docs/api/attrs)** - Full API reference for the Attrs class

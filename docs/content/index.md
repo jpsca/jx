@@ -51,7 +51,7 @@ title: Home
   {% for product in products %}
     <Product product={{ product }} />
   {% endfor %}
-  <Paginator items={{ products }} />
+  <Pagination items={{ products }} />
 </Layout>
 ```
 
@@ -102,7 +102,7 @@ title: Home
 <section markdown="1" class="home__spaghetti">
 ## Say no to spaghetti templates
 
-![Spaguetti code](/assets/images/spaghetti_code.png){ .left width="300" }
+![Spaghetti code](/assets/images/spaghetti_code.png){ .left width="300" }
 
 Your Python code should be easy to read and maintain.
 

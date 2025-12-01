@@ -2,13 +2,13 @@
 title: Migrating from JinjaX to Jx
 ---
 
-## Why jx?
+## Why Jx?
 
-jx is a reimagining of JinjaX that keeps the core idea; bringing React-style components to Jinja templates; while making several key improvements that result in clearer, more maintainable code.
+Jx is a reimagining of JinjaX that keeps the core idea; bringing React-style components to Jinja templates; while making several key improvements that result in clearer, more maintainable code.
 
 ## Philosophy: Explicit is Better Than Implicit
 
-The biggest change in jx is requiring **explicit imports**. While JinjaX's auto-discovery feels convenient at first, explicit imports provide substantial benefits that become invaluable as your project grows.
+The biggest change in Jx is requiring **explicit imports**. While JinjaX's auto-discovery feels convenient at first, explicit imports provide substantial benefits that become invaluable as your project grows.
 
 ## Key Differences
 
@@ -26,12 +26,12 @@ The biggest change in jx is requiring **explicit imports**. While JinjaX's auto-
 </Layout>
 ```
 
-**jx:**
+**Jx:**
 ```html+jinja
-{#def products #}
 {#import "layout.jinja" as Layout #}
 {#import "common/ui/card.jinja" as Card #}
 {#import "common/ui/product-card.jinja" as ProductCard #}
+{#def products #}
 
 <Layout title="Products">
   <Card>
@@ -55,7 +55,7 @@ The biggest change in jx is requiring **explicit imports**. While JinjaX's auto-
 
 #### Relative Imports: Even Better
 
-jx also supports **relative imports**, which JinjaX doesn't have at all. This is a game-changer for component organization:
+Jx also supports **relative imports**, which JinjaX doesn't have at all. This is a game-changer for component organization:
 
 ```html+jinja
 {# components/user/profile-card.jinja #}
@@ -112,7 +112,7 @@ app.wsgi_app = catalog.get_middleware(
 </Layout>
 ```
 
-**jx:**
+**Jx:**
 ```html+jinja
 {#css mypage.css #}
 {#js mypage.js #}
@@ -127,7 +127,7 @@ app.wsgi_app = catalog.get_middleware(
 
 - **No Middleware Required**: Asset URLs are rendered as-is. You handle serving them however makes sense for your app
 - **Cleaner API**: `assets.render()` instead of `catalog.render_assets()`; the `assets` object is a natural global in the template context
-- **More Flexible**: Want to use Vite? Webpack? A CDN? Just reference the URLs directly; jx doesn't process or rewrite them
+- **More Flexible**: Want to use Vite? Webpack? A CDN? Just reference the URLs directly; Jx doesn't process or rewrite them
 - **Granular Control**: Use `assets.collect_css()` and `assets.collect_js()` for full control, or `assets.render_css()` / `assets.render_js()` for convenience
 
 ### 3. Better Slot Syntax
@@ -146,7 +146,7 @@ app.wsgi_app = catalog.get_middleware(
 </Modal>
 ```
 
-**jx:**
+**Jx:**
 ```html+jinja
 {# In parent #}
 <Modal>
@@ -194,7 +194,7 @@ catalog.add_folder("vendor/ui", prefix="ui")  # Prefix with colon
 <ui:Button />        {# From vendor/ui/Button.jinja #}
 ```
 
-**jx:**
+**Jx:**
 ```python
 catalog.add_folder("components")
 catalog.add_folder("vendor/ui", prefix="ui")
@@ -314,7 +314,7 @@ If you were using JinjaX's middleware for serving component assets, you can remo
 
 ## The Bottom Line
 
-jx trades a small amount of upfront convenience (auto-discovery) for significant long-term benefits:
+Jx trades a small amount of upfront convenience (auto-discovery) for significant long-term benefits:
 
 - **Clearer code** (explicit dependencies, no magic)
 - **Easier debugging** (import errors vs runtime errors)
@@ -348,14 +348,14 @@ If you're building anything beyond a toy project, these benefits compound quickl
 - Renaming `Components.User.ProfileCard` means finding all references manually
 - Nested namespaces are verbose and repetitive
 
-**jx approach:**
+**Jx approach:**
 ```html+jinja
-{#def user, posts #}
 {#import "layouts/app.jinja" as App #}
 {#import "components/user/profile-card.jinja" as ProfileCard #}
 {#import "components/user/avatar.jinja" as Avatar #}
 {#import "components/feed/post-list.jinja" as PostList #}
 {#import "components/feed/post-card.jinja" as PostCard #}
+{#def user, posts #}
 
 <App title="User Profile">
   <ProfileCard user={{ user }}>
@@ -381,12 +381,12 @@ If you're building anything beyond a toy project, these benefits compound quickl
 If your user components are organized in `components/user/`, you can make them more portable:
 
 ```html+jinja
-{#def user, posts #}
 {#import "layouts/app.jinja" as App #}
 {#import "./profile-card.jinja" as ProfileCard #}
 {#import "./avatar.jinja" as Avatar #}
 {#import "components/feed/post-list.jinja" as PostList #}
 {#import "components/feed/post-card.jinja" as PostCard #}
+{#def user, posts #}
 
 <App title="User Profile">
   <ProfileCard user={{ user }}>
@@ -405,6 +405,6 @@ Now if you reorganize the user components, only this file's imports need updatin
 
 ## Conclusion
 
-jx takes everything that made JinjaX great and makes it better by embracing explicitness, simplicity, and familiar patterns. The result is code that's easier to write, easier to understand, and easier to maintain.
+Jx takes everything that made JinjaX great and makes it better by embracing explicitness, simplicity, and familiar patterns. The result is code that's easier to write, easier to understand, and easier to maintain.
 
-Give jx a try; we think you'll appreciate the clarity.
+Give Jx a try; we think you'll appreciate the clarity.

@@ -3,7 +3,7 @@ title: Assets
 description: Managing CSS and JavaScript in components
 ---
 
-One of jx's most powerful features is the ability to declare CSS and JavaScript files for each component. jx automatically collects these assets from all the components you use and provides simple functions to render them.
+Any component can declare the URLs of the CSS and JavaScript files that uses. Jx automatically collects these assets from all the components you use and provides simple functions to render them.
 
 ## Why Per-Component Assets?
 
@@ -45,7 +45,7 @@ Multiple files are comma-separated. Each file can be:
 
 ## The `assets` Global
 
-When you render a component, jx provides an `assets` global object with methods to collect and render assets.
+When you render a component, Jx provides an `assets` global object with methods to collect and render assets.
 
 ### `assets.render()`
 
@@ -152,7 +152,7 @@ Returns a list of all JS file URLs:
 
 ## How Asset Collection Works
 
-jx collects assets by walking the component tree:
+Jx collects assets by walking the component tree:
 
 1. Start with the root component you're rendering
 2. Collect its CSS and JS declarations
@@ -205,7 +205,7 @@ Each imported component's assets are collected recursively.
 
 ## Asset URLs
 
-jx doesn't process or rewrite asset URLs; they're used exactly as you write them.
+Jx doesn't process or rewrite asset URLs; they're used exactly as you write them.
 
 ### Relative URLs
 
@@ -509,20 +509,20 @@ Modern browsers support [CSS nesting](https://developer.mozilla.org/en-US/docs/W
 
 ## No Middleware Required
 
-Unlike some component libraries, jx doesn't require middleware to serve component assets. You serve them however you want:
+Unlike some component libraries, Jx doesn't require middleware to serve component assets. You serve them however you want:
 
 - **Static files**: Configure your web framework to serve from `static/`
 - **CDN**: Upload to S3/CloudFront and reference those URLs
 - **Build tools**: Use Vite/Webpack to bundle and serve
 - **Reverse proxy**: Nginx/Caddy serve static files
 
-jx just collects the URLs you declare and renders them as tags.
+Jx just collects the URLs you declare and renders them as tags.
 
 ## Performance Considerations
 
 ### Asset Deduplication
 
-jx automatically deduplicates assets. If multiple components declare the same CSS file, it's only included once:
+Jx automatically deduplicates assets. If multiple components declare the same CSS file, it's only included once:
 
 ```html+jinja
 {# card.jinja uses common.css #}
@@ -547,20 +547,3 @@ Assets are collected in dependency order:
 
 This ensures proper cascade and dependency resolution.
 
-### Browser Caching
-
-Use cache-busting strategies:
-
-```html+jinja
-{# With build tool hashes #}
-{#css /dist/card.abc123.css #}
-
-{# Or query strings #}
-{#css /static/card.css?v=1.2.3 #}
-```
-
-## Next Steps
-
-- **[Organization](/advanced/organization)** - Patterns for organizing components and assets
-- **[Framework Integration](/advanced/framework-integration)** - Using jx with Flask, FastAPI, Django
-- **[Components](/guides/components)** - Back to component basics

@@ -12,17 +12,10 @@ from writeadoc import Docs
 
 pages = [
     "quickstart.md",
-    {
-        "title": "Guides",
-        "pages": [
-            "guides/components.md",
-            "guides/imports.md",
-            "guides/arguments.md",
-            "guides/content-and-slots.md",
-            "guides/attrs.md",
-            "guides/assets.md",
-        ]
-    },
+    "catalog.md",
+    "components.md",
+    "attrs.md",
+    "assets.md",
     {
         "title": "API",
         "pages": [
@@ -30,7 +23,20 @@ pages = [
             "api/attrs.md",
         ],
     },
-    "migration/from-jinjax.md",
+    {
+        "title": "Recipes",
+        "pages": [
+            "recipes/layouts.md",
+            "recipes/icons.md",
+            "recipes/forms.md",
+            "recipes/modals.md",
+            "recipes/tabs.md",
+            "recipes/tables.md",
+            "recipes/htmx.md",
+            "recipes/alpinejs.md",
+        ],
+    },
+    "from-jinjax.md",
 ]
 
 docs = Docs(
