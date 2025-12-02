@@ -268,7 +268,7 @@ dev = [
     { name = "tox-uv" },
     { name = "ty" },
 ]
-docs = [{ name = "writeadoc", editable = "../writeadoc" }]
+docs = [{ name = "writeadoc", specifier = ">=0.9.1" }]
 test = [
     { name = "pytest", specifier = ">=7.2" },
     { name = "pytest-cov" },
@@ -741,8 +741,8 @@ wheels = [
 
 [[package]]
 name = "writeadoc"
-version = "0.9.0"
-source = { editable = "../writeadoc" }
+version = "0.9.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docstring-parser" },
     { name = "hecto" },
@@ -754,25 +754,7 @@ dependencies = [
     { name = "strictyaml" },
     { name = "watchdog" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "docstring-parser", specifier = ">=0.17.0" },
-    { name = "hecto", specifier = ">=2.0.1" },
-    { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "jx", specifier = ">=0.3.0" },
-    { name = "markdown", specifier = ">=3.8.2" },
-    { name = "pygments", specifier = ">=2.19.2" },
-    { name = "pymdown-extensions", specifier = ">=10.16" },
-    { name = "strictyaml", specifier = ">=1.7.3" },
-    { name = "watchdog", specifier = ">=6.0.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/7d/d4/7c947bf2306d26e70ef1882a9ed7e7b6ae0849880ffee02d56d2fcf0d37f/writeadoc-0.9.1.tar.gz", hash = "sha256:5a31e00cc772c0af4a716c428db6a90b53b099fbc730d785ff2bc9948b4412ea", size = 384803, upload-time = "2025-12-02T17:18:04.913Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/90/cac048c9f869bd435188d5be551d46a0188b92bc934f1a22550ae22fba18/writeadoc-0.9.1-py3-none-any.whl", hash = "sha256:5372df13203c78c295990bacfd08bf2cb1ff56c7b369fa58fbb9ef6bf80786a4", size = 394516, upload-time = "2025-12-02T17:18:03.82Z" },
 ]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ipdb", specifier = ">=0.13.13" },
-    { name = "ruff", specifier = ">=0.12.4" },
-    { name = "tox-uv" },
-    { name = "ty", specifier = ">=0.0.1a15" },
-]
-test = [{ name = "pytest", specifier = ">=8.4.1" }]

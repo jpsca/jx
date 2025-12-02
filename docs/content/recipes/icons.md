@@ -30,9 +30,56 @@ Components are perfect for SVG icons - encapsulate the SVG code once, reuse it e
 {#import "icons/icon-check.jinja" as IconCheck #}
 
 <IconCheck />
-<IconCheck size={{ 32 }} />
-<IconCheck size={{ 16 }} class="text-green" />
+<IconCheck size="32" />
+<IconCheck class="text-green" />
 ```
+
+/// tab | Preview
+<p class="preview">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-check"
+>
+  <polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="32"
+  height="32"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-check"
+>
+  <polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-check text-green"
+>
+  <polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+</p>
+///
 
 ## Generic Icon Wrapper
 
@@ -61,7 +108,9 @@ Create a base component that other icons extend:
 {#import "./icon.jinja" as Icon #}
 {#def size=24 #}
 
-<Icon size={{ size }} {{ attrs.render() }}>
+{% do attrs.set(size=size) %}
+
+<Icon attrs={{ attrs }}>
   <line x1="18" y1="6" x2="6" y2="18"></line>
   <line x1="6" y1="6" x2="18" y2="18"></line>
 </Icon>
@@ -71,12 +120,50 @@ Create a base component that other icons extend:
 {#import "./icon.jinja" as Icon #}
 {#def size=24 #}
 
-<Icon size={{ size }} {{ attrs.render() }}>
+{% do attrs.set(size=size) %}
+
+<Icon attrs={{ attrs }}>
   <line x1="3" y1="12" x2="21" y2="12"></line>
   <line x1="3" y1="6" x2="21" y2="6"></line>
   <line x1="3" y1="18" x2="21" y2="18"></line>
 </Icon>
 ```
+
+/// tab | Preview
+<p class="preview">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon"
+>
+  <line x1="18" y1="6" x2="6" y2="18"></line>
+  <line x1="6" y1="6" x2="18" y2="18"></line>
+</svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon"
+>
+  <line x1="3" y1="12" x2="21" y2="12"></line>
+  <line x1="3" y1="6" x2="21" y2="6"></line>
+  <line x1="3" y1="18" x2="21" y2="18"></line>
+</svg>
+</p>
+///
 
 ## Dynamic Icon Component
 
@@ -91,7 +178,6 @@ Load icons by name:
   "menu": '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>',
   "search": '<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>',
   "user": '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>',
-  "settings": '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>',
 } %}
 
 <svg
@@ -113,10 +199,61 @@ Load icons by name:
 ```html+jinja title="usage"
 {#import "icon.jinja" as Icon #}
 
-<Icon name="check" />
-<Icon name="x" size={{ 16 }} />
+<Icon name="x" size="16" />
 <Icon name="menu" class="text-gray-600" />
+<Icon name="search" />
 ```
+
+/// tab | Preview
+<p class="preview">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="16"
+  height="16"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-x"
+>
+<line x1="18" y1="6" x2="6" y2="18"></line>
+<line x1="6" y1="6" x2="18" y2="18"></line>
+</svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="16"
+  height="16"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-menu text-gray-600"
+>
+<line x1="3" y1="12" x2="21" y2="12"></line>
+<line x1="3" y1="6" x2="21" y2="6"></line>
+<line x1="3" y1="18" x2="21" y2="18"></line>
+</svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-search"
+>
+<circle cx="11" cy="11" r="8"></circle>
+<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+</svg>
+</p>
+///
 
 ## Icon Button
 
@@ -126,16 +263,16 @@ Combine icons with buttons:
 {#def label="" #}
 {#css icon-button.css #}
 
-<button
-  {{ attrs.render(class="icon-button") }}
-  {% if label %}aria-label="{{ label }}"{% endif %}
->
+{% do attrs.setdefault(type="button") %}
+{% do attrs.set(aria_label=label if label else None)}
+
+<button {{ attrs.render(class="btn btn-icon") }}>
   {{ content }}
 </button>
 ```
 
 ```html+jinja title="usage"
-{#import "icon-button.jinja" as IconButton #}
+{#import "btn-icon.jinja" as IconButton #}
 {#import "icons/icon-x.jinja" as IconX #}
 
 <IconButton label="Close" @click="close()">
@@ -143,11 +280,35 @@ Combine icons with buttons:
 </IconButton>
 ```
 
+/// tab | Preview
+<p class="preview">
+<button class="btn btn-icon" type="button" aria-label="Close">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="20"
+  height="20"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-x"
+>
+<line x1="18" y1="6" x2="6" y2="18"></line>
+<line x1="6" y1="6" x2="18" y2="18"></line>
+</svg>
+</button>
+</p>
+///
+
 ## Button with Icon and Text
 
 ```html+jinja title="components/button.jinja"
 {#def text="" #}
 {#css button.css #}
+
+{% do attrs.setdefault(type="button") %}
 
 <button {{ attrs.render(class="btn") }}>
   {% slot icon %}{% endslot %}
@@ -165,10 +326,33 @@ Combine icons with buttons:
 
 <Button text="Save">
   {% fill icon %}
-    <IconCheck size={{ 18 }} />
+    <IconCheck size="18" aria_hidden />
   {% endfill %}
 </Button>
 ```
+
+
+/// tab | Preview
+<p class="preview">
+<button class="btn" type="button">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="18"
+  height="18"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-x"
+>
+<polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+<span>Save</span>
+</button>
+</p>
+///
 
 ## Filled vs Stroke Icons
 
@@ -194,6 +378,49 @@ Combine icons with buttons:
 <IconHeart filled />             {# Filled #}
 <IconHeart filled class="text-red-500" />
 ```
+
+/// tab | Preview
+<p class="preview">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  class="icon icon-heart"
+>
+  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+</svg>
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  stroke="currentColor"
+  stroke-width="2"
+  class="icon icon-heart"
+>
+  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+</svg>
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  stroke="currentColor"
+  stroke-width="2"
+  class="icon icon-heart text-red-500"
+>
+  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+</svg>
+</p>
+///
 
 ## Spinner Icon
 
@@ -227,6 +454,24 @@ Combine icons with buttons:
 }
 ```
 
+/// tab | Preview
+<p class="preview">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  class="icon icon-spinner"
+>
+  <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+  <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+</svg>
+</p>
+///
+
 ## Icon with Badge
 
 ```html+jinja title="components/icon-badge.jinja"
@@ -249,11 +494,12 @@ Combine icons with buttons:
 
 .icon-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: red;
+  top: -10px;
+  right: -10px;
+  background: rgba(255,0,0,0.8);
   color: white;
   font-size: 10px;
+  font-weight: bold;
   padding: 2px 6px;
   border-radius: 10px;
 }
@@ -268,49 +514,16 @@ Combine icons with buttons:
 </IconBadge>
 ```
 
-## Organizing Icons
-
-Recommended folder structure:
-
-```
-components/
-  icons/
-    icon.jinja           # Base wrapper (optional)
-    icon-check.jinja
-    icon-x.jinja
-    icon-menu.jinja
-    icon-search.jinja
-    icon-user.jinja
-    icon-settings.jinja
-    icon-heart.jinja
-    icon-spinner.jinja
-    ...
-```
-
-## Icon Sprite Alternative
-
-For many icons, consider an SVG sprite:
-
-```html+jinja title="components/sprite-icon.jinja"
-{#def name, size=24 #}
-
-<svg
-  width="{{ size }}"
-  height="{{ size }}"
-  {{ attrs.render(class="icon icon-" ~ name) }}
->
-  <use href="/static/icons.svg#{{ name }}"></use>
+/// tab | Preview
+<p class="preview">
+<span class="icon-badge-wrapper">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="24" height="24">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
 </svg>
-```
-
-```html+jinja title="usage"
-{#import "sprite-icon.jinja" as Icon #}
-
-<Icon name="check" />
-<Icon name="x" size={{ 16 }} />
-```
-
-This loads icons from a single sprite file, reducing HTTP requests.
+<span class="icon-badge">42</span>
+</span>
+</p>
+///
 
 ## Tips
 
@@ -319,4 +532,4 @@ This loads icons from a single sprite file, reducing HTTP requests.
 3. **Add `aria-hidden="true"`** for decorative icons
 4. **Use `aria-label`** on icon-only buttons
 5. **Keep SVGs optimized** - remove unnecessary attributes
-6. **Consider a sprite** for apps with many icons
+
