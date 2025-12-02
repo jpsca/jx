@@ -255,6 +255,7 @@ html = catalog.render_string(source, name="World")
 ```
 
 Useful for:
+
 - Testing components
 - Dynamic templates from a database
 - Simple one-off renders
@@ -323,7 +324,7 @@ Now your components have access to everything registered in Flask's environment.
 
 ## Production Settings
 
-For production, disable auto-reload and consider preloading:
+For production, disable auto-reload.
 
 ```python
 import os

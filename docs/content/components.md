@@ -72,24 +72,6 @@ Import a component, then use it like an HTML tag:
 <Button text="Click me" />
 ```
 
-### File Naming
-
-Component files can use any naming convention:
-
-- `button.jinja`
-- `user-card.jinja`
-- `form_input.jinja`
-
-The **import alias** must be PascalCase to distinguish components from HTML:
-
-```html+jinja
-{#import "user-card.jinja" as UserCard #}
-{#import "form_input.jinja" as FormInput #}
-
-<UserCard />   {# Component #}
-<div />        {# HTML #}
-```
-
 ---
 
 ## Imports
@@ -100,6 +82,18 @@ Jx requires explicit imports before using components.
 
 ```html+jinja
 {#import "path/to/component.jinja" as Name #}
+```
+
+### File Naming
+
+Component files and folders can use any naming convention: `button.jinja`, `user-card.jinja`, `form_input.jinja`, etc. The **import alias**, however, must be `PascalCase` to distinguish components from HTML:
+
+```html+jinja
+{#import "user-card.jinja" as UserCard #}
+{#import "form_input.jinja" as FormInput #}
+
+<UserCard />   {# Component #}
+<div />        {# HTML #}
 ```
 
 ### Absolute Imports
@@ -171,7 +165,7 @@ Use `{#def ... #}` at the top of your component:
 
 ### Default Values
 
-Defaults can be strings, numbers, booleans, lists, or dicts:
+Defaults can be any python value: strings, numbers, booleans, lists, dicts, etc.
 
 ```html+jinja
 {#def
@@ -207,20 +201,6 @@ Defaults can be strings, numbers, booleans, lists, or dicts:
 ```html+jinja
 <Input required />          {# Same as required={{ true }} #}
 <Input disabled={{ false }} />
-```
-
-### Multiline Arguments
-
-For many arguments, use multiple lines:
-
-```html+jinja
-{#def
-  title,
-  subtitle="",
-  image_url="",
-  author="Anonymous",
-  tags=[]
-#}
 ```
 
 ### Dash to Underscore

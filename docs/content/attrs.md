@@ -3,7 +3,7 @@ title: Attrs
 description: Handling extra HTML attributes
 ---
 
-The `attrs` object is one of Jx's most useful features. It collects any HTML attributes you pass to a component that aren't declared in its `{#def}` statement, letting you create flexible, reusable components.
+The `attrs` object is one of Jx's most useful features. It collects any HTML attributes you pass to a component that aren't declared in its `{#def}` statement.
 
 ## The Problem Attrs Solves
 
@@ -131,6 +131,7 @@ You can pass additional attributes to merge:
 ```
 
 **Merging rules:**
+
 - `class`: Classes are appended (not replaced)
 - Other attributes: New values override old values
 - `True`: Renders as a boolean attribute (e.g., `disabled`)
@@ -155,6 +156,7 @@ Modifies attributes before rendering:
 ```
 
 **Options:**
+
 - `attrs.set(id="new-id")` - Set an attribute
 - `attrs.set(disabled=True)` - Add a boolean attribute
 - `attrs.set(class="extra-class")` - Add to existing classes
@@ -362,6 +364,7 @@ Attribute names with underscores are automatically converted to dashes:
 ```
 
 This is especially useful for:
+
 - `data-*` attributes: `data_id`, `data_action`
 - `aria-*` attributes: `aria_label`, `aria_hidden`
 - Framework attributes: `hx_get`, `x_show`, `v_if`

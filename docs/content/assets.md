@@ -223,37 +223,9 @@ Jx doesn't process or rewrite asset URLs; they're used exactly as you write them
 
 How these resolve depends on your HTML base path and server configuration.
 
-### Absolute Paths
-
-```html+jinja
-{#css /static/components/card.css #}
-{#js /static/components/card.js #}
-```
-
-**Output:**
-
-```html
-<link rel="stylesheet" href="/static/components/card.css">
-<script type="module" src="/static/components/card.js"></script>
-```
-
-### Full URLs
-
-```html+jinja
-{#css https://cdn.example.com/styles/card.css #}
-{#js https://cdn.example.com/scripts/card.js #}
-```
-
-**Output:**
-
-```html
-<link rel="stylesheet" href="https://cdn.example.com/styles/card.css">
-<script type="module" src="https://cdn.example.com/scripts/card.js"></script>
-```
-
 ## Organizing Assets
 
-### Option 1: Co-located Assets
+### Option 1: Use
 
 Keep assets next to components:
 
@@ -274,7 +246,7 @@ components/
 {#js /static/components/card/card.js #}
 ```
 
-### Option 2: Separate Assets Folder
+### Option 1: Put components assets in the static folder
 
 Keep components and assets separate:
 
@@ -291,12 +263,34 @@ static/
     button.js
 ```
 
+Use absolute paths
+
 ```html+jinja title="components/card.jinja"
 {#css /static/css/card.css #}
 {#js /static/js/card.js #}
 ```
 
-### Option 3: Build Tool Integration
+```html+jinja title="components/layout.jinja"
+{{ assets.render() }}
+```
+
+Or relative ones and use your web framework to resolve them:
+
+```html+jinja title="components/card.jinja"
+{#css css/card.css #}
+{#js js/card.js #}
+```
+
+```html+jinja title="components/layout.jinja"
+{% for name in assets.collect_css() %}
+  <link rel="stylesheet" href="{{ url_for('static', filename=name) }}">
+{% endfor %}
+{% for name in assets.collect_js() %}
+  <script type="module" src="{{ url_for('static', filename=name) }}"></script>
+{% endfor %}
+```
+
+### Option 2: Build Tool Integration
 
 Use Vite, Webpack, or another bundler:
 
@@ -305,157 +299,16 @@ Use Vite, Webpack, or another bundler:
 {#js /dist/card.js #}
 ```
 
-Your build tool generates the files with hashes for cache-busting:
+Your build tool will generates the files with hashes for cache-busting:
 
 ```html
 <link rel="stylesheet" href="/dist/card.abc123.css">
 <script type="module" src="/dist/card.def456.js"></script>
 ```
 
-## Common Patterns
-
-### Basic Layout
-
-```html+jinja title="components/layout.jinja"
-{#css layout.css #}
-{#js layout.js #}
-{#def title #}
-
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>{{ title }}</title>
-  {{ assets.render_css() }}
-</head>
-<body>
-  {{ content }}
-  {{ assets.render_js() }}
-</body>
-</html>
-```
-
-### Separate CSS and JS Placement
-
-```html+jinja
-<!DOCTYPE html>
-<html>
-<head>
-  {{ assets.render_css() }}
-</head>
-<body>
-  {{ content }}
-
-  {# Scripts at the bottom #}
-  {{ assets.render_js() }}
-</body>
-</html>
-```
-
-### Global + Component Styles
-
-```html+jinja
-<head>
-  {# Global styles first #}
-  <link rel="stylesheet" href="/static/global.css">
-  <link rel="stylesheet" href="/static/tailwind.css">
-
-  {# Then component styles #}
-  {{ assets.render_css() }}
-</head>
-```
-
-### Custom Asset Rendering
-
-```html+jinja
-<head>
-  {# Add integrity and crossorigin for CDN assets #}
-  {% for url in assets.collect_css() %}
-    {% if url.startswith('https://cdn.') %}
-      <link rel="stylesheet" href="{{ url }}"
-            integrity="sha384-..."
-            crossorigin="anonymous">
-    {% else %}
-      <link rel="stylesheet" href="{{ url }}">
-    {% endif %}
-  {% endfor %}
-</head>
-```
-
-### Conditional Loading
-
-```html+jinja
-{#def theme="light" #}
-
-<head>
-  {{ assets.render_css() }}
-
-  {% if theme == "dark" %}
-    <link rel="stylesheet" href="/static/dark-theme.css">
-  {% endif %}
-</head>
-```
-
-## Using External Libraries
-
-### CDN Libraries
-
-```html+jinja title="components/map.jinja"
-{#css https://unpkg.com/leaflet@1.9.4/dist/leaflet.css #}
-{#js https://unpkg.com/leaflet@1.9.4/dist/leaflet.js #}
-
-<div id="map"></div>
-```
-
-### NPM Libraries
-
-If you're using a build tool:
-
-```html+jinja title="components/chart.jinja"
-{#js /dist/chart.bundle.js #}  {# Built from node_modules/chart.js #}
-
-<canvas id="chart"></canvas>
-```
-
-### Mixing Global and Component Assets
-
-```html+jinja title="components/layout.jinja"
-<!DOCTYPE html>
-<html>
-<head>
-  {# Global framework #}
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-
-  {# Component assets #}
-  {{ assets.render() }}
-</head>
-<body>
-  {{ content }}
-</body>
-</html>
-```
-
 ## Best Practices
 
-### 1. Use Relative Paths for Component Assets
-
-```html+jinja
-{# ✅ Good - relative to your static folder #}
-{#css components/card.css #}
-
-{# ❌ Avoid - hard to move between projects #}
-{#css /home/user/myapp/static/components/card.css #}
-```
-
-### 2. Group Related Assets
-
-```html+jinja
-{# ✅ Good - related styles together #}
-{#css card.css, card-animations.css #}
-{#js card.js #}
-```
-
-### 3. Declare Third-Party Dependencies
+### 1. Declare Third-Party Dependencies
 
 ```html+jinja
 {# ✅ Good - explicit dependencies #}
@@ -463,7 +316,7 @@ If you're using a build tool:
 {#import "./component-using-library.jinja" as Component #}
 ```
 
-### 4. Keep Asset Files Small
+### 2. Keep Asset Files Small
 
 Each component should have focused styles and scripts:
 
@@ -476,9 +329,8 @@ Each component should have focused styles and scripts:
 {#css button-and-everything-else.css #}  {# ~50KB #}
 ```
 
-### 5. Use CSS Scoping
+### 3. Use CSS Scoping
 
-Always scope your component styles:
 
 ```css
 /* ✅ Good - scoped to component */
@@ -509,7 +361,7 @@ Modern browsers support [CSS nesting](https://developer.mozilla.org/en-US/docs/W
 
 ## No Middleware Required
 
-Unlike some component libraries, Jx doesn't require middleware to serve component assets. You serve them however you want:
+Jx doesn't require middleware to serve component assets. You serve them however you want:
 
 - **Static files**: Configure your web framework to serve from `static/`
 - **CDN**: Upload to S3/CloudFront and reference those URLs
@@ -517,6 +369,7 @@ Unlike some component libraries, Jx doesn't require middleware to serve componen
 - **Reverse proxy**: Nginx/Caddy serve static files
 
 Jx just collects the URLs you declare and renders them as tags.
+
 
 ## Performance Considerations
 
