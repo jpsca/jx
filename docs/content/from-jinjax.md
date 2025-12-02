@@ -45,11 +45,10 @@ The biggest change in Jx is requiring **explicit imports**. While JinjaX's auto-
 **Why this is better:**
 
 - **Clear Dependencies**: You can see at a glance which components a file uses; no hunting through the template to find component references
-- **Easier Refactoring**: Moving or renaming components is straightforward; your editor will show you exactly which imports need updating
 - **No Namespace Pollution**: You control the names. A deeply nested `common/forms/inputs/text-input.jinja` can be imported as simply `TextInput`
 - **Better Error Messages**: Missing imports fail immediately at load time, not at render time
 - **Standard Practice**: Follows the same pattern as Python modules, JavaScript imports, and virtually every modern language
-- **Future IDE Support**: Your editor could autocomplete imports, jump to definitions, and show you exactly where a component is defined
+- **Future IDE Support**: Your editor could autocomplete imports, jump to definitions, and aid in refactoring
 
 **Note on file naming:** Component files can use any naming convention you prefer (kebab-case, snake_case, PascalCase). Only the import alias (the `as ComponentName` part) must be PascalCase to distinguish components from HTML tags.
 
@@ -371,9 +370,7 @@ If you're building anything beyond a toy project, these benefits compound quickl
 ```
 
 - Clear dependencies listed at the top
-- Your IDE can navigate to any component definition
 - Clean component names without repetitive namespacing
-- Refactoring is IDE-assisted
 - Import errors fail fast at load time
 
 **Even better with relative imports:**

@@ -95,11 +95,12 @@ title: Home
 </section>
 
 <section markdown="1" class="home__actions">
-[Get started »](/docs/){ .button }
+  <p><a href="/docs/" class="btn btn--primary">Get started »</a></p>
 </section>
 
 <div markdown="1" class="bg">
 <section markdown="1" class="home__spaghetti">
+
 ## Say no to spaghetti templates
 
 ![Spaghetti code](/assets/images/spaghetti_code.png){ .left width="300" }
@@ -115,7 +116,8 @@ Try replacing all your templates with components, or just start with one page.
 </div>
 
 
-## What Makes Components Better?
+<section markdown="1" class="home__better">
+## Why components are better?
 
 Compared to Jinja's `{% include %}` or macros:
 
@@ -142,4 +144,4 @@ With relative imports, you can move entire folders of related components without
 ### ✅ Encapsulated Assets
 
 Each component can declare its own CSS and JS files, which are automatically collected and rendered.
-
+</section>

@@ -266,13 +266,13 @@ Combine icons with buttons:
 {% do attrs.setdefault(type="button") %}
 {% do attrs.set(aria_label=label if label else None)}
 
-<button {{ attrs.render(class="btn btn-icon") }}>
+<button {{ attrs.render(class="btn btn--icon") }}>
   {{ content }}
 </button>
 ```
 
 ```html+jinja title="usage"
-{#import "btn-icon.jinja" as IconButton #}
+{#import "btn--icon.jinja" as IconButton #}
 {#import "icons/icon-x.jinja" as IconX #}
 
 <IconButton label="Close" @click="close()">
@@ -282,7 +282,7 @@ Combine icons with buttons:
 
 /// tab | Preview
 <p class="preview">
-<button class="btn btn-icon" type="button" aria-label="Close">
+<button class="btn btn--icon" type="button" aria-label="Close">
 <svg
   xmlns="http://www.w3.org/2000/svg"
   width="20"

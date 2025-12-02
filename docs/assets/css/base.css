@@ -36,24 +36,15 @@ html {
 
   --color-accent: rgb(var(--rgb-accent));
 
-  --font-family: "Inter", sans-serif;
-  --font-family-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, Monospace;
+  --font-family: Inter, sans-serif;
+  --font-family-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
   --font-size: min(calc(1.6em + 1vw), 2.3rem);
-  --font-size-xx-small: 50%;
-  --font-size-x-small: 60%;
-  --font-size-small: 75%;
-  --font-size-medium: 100%;
-  --font-size-large: 115%;
-  --font-size-x-large: 135%;
-  --font-size-xx-large: 180%;
-  --font-size-xxx-large: 250%;
   --space-small: 0.5em;
   --space-medium: 1em;
   --space-large: 2em;
   --space-x-large: 3em;
   --space-xx-large: 4em;
   --transition-slow: 0.15s ease;
-  --transition-slow-slow: 0.3s ease;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -81,6 +72,29 @@ html.cs-dark {
   --rgb-white: var(--rgb-base-dark);
   --rgb-black: 255, 255, 255;
   --rgb-accent: 104, 167, 249;
+}
+
+html {
+  --font-size-xx-small: 0.5rem;
+  --font-size-x-small: 0.6rem;
+  --font-size-small: 0.75rem;
+  --font-size-medium: 1rem;
+  --font-size-large: 1rem;
+  --font-size-x-large: 1.2rem;
+  --font-size-xx-large: 1.3rem;
+  --font-size-xxx-large: 1.8rem;
+}
+@media (min-width: 64rem) {
+  html {
+    --font-size-xx-small: 0.5rem;
+    --font-size-x-small: 0.6rem;
+    --font-size-small: 0.75rem;
+    --font-size-medium: 1rem;
+    --font-size-large: 1.15rem;
+    --font-size-x-large: 1.5rem;
+    --font-size-xx-large: 1.8rem;
+    --font-size-xxx-large: 2.5rem;
+  }
 }
 
 /******* RESET *******/
@@ -177,11 +191,15 @@ h1 {
 }
 
 h2 {
-  font-size: var(--font-size-x-large);
+  font-size: var(--font-size-xx-large);
   letter-spacing: -0.015em
 }
 
 h3 {
+  font-size: var(--font-size-x-large)
+}
+
+h4 {
   font-size: var(--font-size-large)
 }
 
@@ -271,69 +289,100 @@ video::cue {
 
 @media (prefers-color-scheme: light) {
   html:not(.cs-dark) .only-dark {
-    display: none;
+    display: none !important;
   }
 }
 @media (prefers-color-scheme: dark) {
   html:not(.cs-light) .only-light {
-    display: none;
+    display: none !important;
   }
 }
 html.cs-dark .only-light,
 html.cs-light .only-dark {
-  display: none;
+  display: none !important;
 }
 
+.hidden {
+  display: none !important;
+}
 
 /******* BUTTONS *******/
 
-.button {
-  appearance: none;
-  font-size: 0.8em;
-  letter-spacing: -0.02em;
-  border-radius: 1.5em;
-  padding: 0.9em 1em 0.9em 1.2em;
-  background: transparent;
-  color: var(--color-gray);
-  display: inline-flex;
-  gap: 0.4em;
+.btn {
+  --btn-fg: #090909;
+  --btn-bg: #f5f5f5;
+  --btn-shadow: 1px 1px 2px 2px rgba(0, 0, 0, 0.1);
+  --btn-outline: color-mix(in srgb, #a4a4a4 80%, transparent);
+  --btn-outline-focus: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  --btn-bg-hover: color-mix(in srgb, var(--btn-bg), #000 4%);
+  --btn-bg-active: color-mix(in srgb, var(--btn-bg), #000 7%);
+  --btn-border-active: color-mix(in srgb, var(--btn-bg), #000 14%);
+  --btn-shadow-active: inset 1px 2px 4px rgba(30, 30, 30, 0.2), 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn {
   align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  line-height: 1em;
-  margin: 0.5em 0;
-  box-shadow: 0 0 0 0 rgba(0,0,0, 0.1);
-  transition: background var(--transition-slow), box-shadow var(--transition-slow);
-}
-.button[href] {
+  appearance: button;
+  box-sizing: border-box;
   cursor: pointer;
+  display: inline-flex;
+  gap: 0.5em;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  font-family: inherit;
+  justify-content: center;
+  line-height: 1;
+  min-inline-size: min-content;
+  overflow: hidden;
+  pointer-events: auto;
+  position: relative;
+  text-align: center;
+  text-decoration: none !important;
+  touch-action: manipulation;
+  user-select: none;
+  transition-duration: 100ms;
+  transition-property: color, background-color, box-shadow, outline;
+  transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  vertical-align: middle;
+  white-space: nowrap;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  color: var(--btn-fg) !important;
+  background-color: var(--btn-bg);
+  border: none;
+  outline-width: 1px;
+  outline-style: solid;
+  outline-color: var(--btn-outline);
+  outline-offset: 0;
+  box-shadow: var(--btn-shadow);
+  padding: 0.5em 0.75em;
+  font-size: 0.9em;
 }
-.button:active {
-  box-shadow: none;
-  color: var(--color-gray);
+.btn:is(:hover,:focus-visible):not([disabled],[data-disabled]) {
+  background-color: var(--btn-bg-hover, var(--btn-bg));
+  outline-color: var(--btn-outline-hover, var(--btn-outline));
+  box-shadow: var(--btn-shadow-hover, var(--btn-shadow));
+  text-decoration: none;
 }
-.button:is(:hover, :focus) {
-  box-shadow: 0 0 3px 3px rgba(0,0,0, 0.1), 0 0 6px 6px rgba(255,255,255, 0.2);
-  color: var(--color-gray);
+.btn:focus-visible:not([disabled],[data-disabled]) {
+  isolation: isolate;
+  outline-color: var(--btn-outline-focus, var(--btn-outline));
+  outline-width: 4px;
 }
-.button:active {
-  box-shadow: 0 0 0 1px rgba(var(--rgb-black), 0.1);
+.btn:is(:active,[data-active]):not([disabled],[data-disabled]) {
+  background-color: var(--btn-bg-active, var(--btn-bg));
+  outline-color: var(--btn-border-active, var(--btn-border));
+  box-shadow: var(--btn-shadow-active, var(--btn-shadow));
+  translate: 0 1px;
+  text-decoration: none;
+  outline-width: 1px;
 }
-.button svg {
-  height: 1em;
-  stroke-width: 3px;
+.btn.btn--primary {
+  --btn-fg: #fff;
+  --btn-bg: var(--color-accent);
+  --btn-outline: color-mix(in srgb, var(--color-accent) 50%, transparent);
 }
-button.button svg {
-  fill: currentColor
-}
-
-.button--primary, .button--primary:is(:hover, :focus, :active) {
-  background: var(--color-accent);
-  color: var(--color-white);
-}
-.button--secondary {
-  background: var(--color-base-darker);
-  color: var(--color-gray);
+.btn.btn--icon {
+  padding: 0.3em;
 }
 
 /******* CODE *******/
@@ -344,7 +393,6 @@ code {
   font-family: var(--font-family-mono);
   font-size: 0.9em;
   font-style: normal;
-  font-weight: 400;
   letter-spacing: normal;
   line-height: 1.2;
   padding: 0.2em 0.4em
@@ -681,7 +729,7 @@ html.cs-dark .highlight {
 }
 .autodoc-label {
   font-size: 0.6em !important;
-  color: #36464e !important;
+  color: var(--doc-label-fg-color, #79c0ff) !important;
   font-weight: 400;
   padding: 0.1rem 0.4rem !important;
 }
@@ -748,10 +796,12 @@ html.cs-dark .highlight {
 
 .page__content hr:before {
   color: var(--color-base-darkest);
-  content: '----+----';
+  content: '-+-+-+-+-';
   font-weight: 500;
   letter-spacing: 0.1em;
   line-height: 1;
+  width: 100%;
+  text-align: center;
 }
 
 .page__content blockquote {
@@ -770,7 +820,8 @@ html.cs-dark .highlight {
 .page__content .highlight {
   border-radius: 0.4rem;
   position: relative;
-  display: flow-root;
+  display: flex;
+  flex-direction: column;
 }
 
 .page__content .highlight pre {
@@ -779,6 +830,7 @@ html.cs-dark .highlight {
   white-space: pre;
   letter-spacing: normal;
   line-height: 1.2;
+  flex-grow: 1;
 }
 
 .page__content .highlight pre code {
@@ -804,7 +856,6 @@ html.cs-dark .highlight {
 }
 
 .page__content h1 {
-  font-size: 1.5em;
   padding-top: 0.08em;
 }
 
@@ -818,8 +869,16 @@ html.cs-dark .highlight {
 }
 
 .page__content h2 {
-  color: var(--color-accent);
   padding-top: 0.1em;
+}
+
+.page__content h1,
+.page__content h2 {
+  text-shadow: 1px 1px 0 rgb(255 255 255 / 50%);
+}
+
+.page__content h2 {
+  color: var(--color-accent);
 }
 
 .page__content h3 {
@@ -866,6 +925,15 @@ html.cs-dark .highlight {
   opacity: 0.8;
 }
 
+.page__content .text-center {
+  text-align: center;
+}
+.page__content .text-right {
+  text-align: right;
+}
+.page__content .text-left {
+  text-align: left;
+}
 
 /******* Page - Images *******/
 
@@ -892,11 +960,11 @@ html.cs-dark .highlight {
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.cs-light) .page__content img.invert {
+  html:not(.cs-light) img.invert {
     filter: invert(100%);
   }
 }
-html.cs-dark .page__content img.invert {
+html.cs-dark img.invert {
   filter: invert(100%);
 }
 
