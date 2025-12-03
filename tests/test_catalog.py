@@ -87,6 +87,22 @@ def test_add_folder_with_prefix(tmp_path):
     assert catalog.components["@bla/b.jinja"].code is not None
 
 
+def test_dot_in_prefix(tmp_path):
+    folder = tmp_path / "views"
+    folder.mkdir()
+    (folder / "a.jinja").write_text("AAAAA")
+
+    catalog = Catalog()
+    catalog.add_folder(folder, prefix="ui.forms")
+
+    assert "@ui.forms/a.jinja" in catalog.components
+
+    assert catalog.components["@ui.forms/a.jinja"].base_path == folder
+    assert catalog.components["@ui.forms/a.jinja"].path == folder / "a.jinja"
+    assert catalog.components["@ui.forms/a.jinja"].mtime > 0
+    assert catalog.components["@ui.forms/a.jinja"].code is not None
+
+
 def test_add_same_folder_many_times(folder):
     (folder / "a.jinja").write_text("AAAAA")
     (folder / "b.jinja").write_text("BBBBB")
