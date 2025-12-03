@@ -145,3 +145,5 @@ With relative imports, you can move entire folders of related components without
 
 Each component can declare its own CSS and JS files, which are automatically collected and rendered.
 </section>
+
+----

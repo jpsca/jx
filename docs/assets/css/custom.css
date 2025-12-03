@@ -32,9 +32,6 @@
       text-align: center;
       line-height: 0.9;
       letter-spacing: -0.02em;
-      background-image: linear-gradient(180deg, var(--color-gray) 20%, var(--color-base-dark) 100%);
-      background-clip: text;
-      color: transparent;
     }
     @media (min-width: 58rem) {
       padding: 3rem 2rem;
@@ -44,18 +41,6 @@
 
     @media (min-width: 64rem) {
       h1 { font-size: 6rem; }
-    }
-
-    .g1 {
-      background-image: linear-gradient(180deg, var(--color-gray-light) 0%, #4a9af8 100%);
-      background-clip: text;
-      color: transparent;
-    }
-    .g2 {
-      background-image: linear-gradient(170deg, #f472b6 10%, #fbbf24 70%);
-      background-image: linear-gradient(170deg, color(display-p3 1 0 0.679) 10%, color(display-p3 1 0.815 0) 70%);
-      background-clip: text;
-      color: transparent;
     }
   }
 
@@ -68,11 +53,50 @@
     font-weight: 800;
   }
 
+  section {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2rem;
+    font-size: 1.1rem;
+
+    h2 {
+      font-size: 2em;
+    }
+    h3 {
+      margin-bottom: 0.5rem;
+    }
+    p {
+      margin-bottom: 1.5em;
+    }
+    img {
+      display: block;
+      margin: 0 auto;
+      max-width: 150px;
+    }
+
+    @media (min-width: 64rem) {
+      font-size: 1.3rem;
+
+      img {
+        max-width: 300px;
+      }
+    }
+  }
+
   .home__code {
+    max-width: 90rem;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
     gap: 2em;
+    padding-left: 0;
+    padding-right: 0;
+
+    p {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
 
     @media (min-width: 58rem) {
       gap: 1em;
@@ -100,7 +124,8 @@
   }
 
   .home__actions {
-    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
 
     p {
       display: flex;
@@ -110,46 +135,24 @@
     }
 
     .btn {
-      font-size: 1.2em;
-      padding: 0.9em 1.5em;
+      font-size: 1em;
+      padding: 0.9em 2.5em;
       border-radius: 1rem;
-    }
-  }
 
-  .page__content {
-    max-width: 100%;
-    padding: 0 0 4rem
-  }
-  section {
-    max-width: 80rem;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 2rem;
-
-    p {
-      margin-bottom: 1.5em;
-    }
-  }
-
-  .home__spaghetti,
-  .home__better {
-    margin-top: 2rem;
-    font-size: 1.3em;
-
-    img {
-      display: block;
-      margin: 0 auto;
+      @media (max-width: 36rem) {
+        width: 100%;
+      }
     }
   }
 
   .home__better {
     max-width: 61rem;
-
-    h3 {
-      margin-bottom: 0.5rem;
-    }
   }
 
+  .page__content {
+    max-width: 100%;
+    padding: 0 0 4rem
+  };
   .footer {
     display: flex;
     padding: 4rem 2rem;
