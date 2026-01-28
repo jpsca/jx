@@ -28,8 +28,8 @@ pages = [
         "pages": [
             "recipes/layouts.md",
             "recipes/icons.md",
-            "recipes/modals.md",
-            "recipes/tabs.md",
+            # "recipes/modals.md",
+            # "recipes/tabs.md",
             "recipes/htmx.md",
             "recipes/alpinejs.md",
         ],

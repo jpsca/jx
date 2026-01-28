@@ -9,7 +9,7 @@ description = "Replace your HTML templates with Python server-Side components"
 authors = [
     {name = "Juan Pablo Scaletti", email = "juanpablo@jpscaletti.com"},
 ]
-license = { "file" = "MIT-LICENSE" }
+license = "MIT"
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
