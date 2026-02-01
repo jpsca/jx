@@ -2,4 +2,5 @@
 title: jx.Attrs class
 ---
 
-::: jx.attrs.Attrs
+::: api jx.attrs.Attrs
+:::

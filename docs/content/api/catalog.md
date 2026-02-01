@@ -2,4 +2,5 @@
 title: Catalog class
 ---
 
-::: jx.Catalog
+::: api jx.Catalog
+:::

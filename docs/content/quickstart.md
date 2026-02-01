@@ -6,21 +6,21 @@ title: Quickstart
 
 Run the following command:
 
-/// tab | Using "**pip**"
+::: tab | Using "**pip**"
 
 ```bash
 pip install jx
 ```
 
-///
+:::
 
-/// tab | Using "**uv**"
+::: tab | Using "**uv**"
 
 ```bash
 uv add jx
 ```
 
-///
+:::
 
 ## Create a catalog
 
@@ -65,7 +65,7 @@ def dashboard_view():
 </Card>
 ```
 
-/// tab | Preview
+::: tab | Preview
 <div class="demo">
 <div class="bg-white shadow rounded border p-4 mb-3">
   <h2 class="m-0 text-gray-800">Trees</h2>
@@ -78,9 +78,9 @@ def dashboard_view():
   <a href="/spades" class="text-teal-600">Read more</a>
 </div>
 </div>
-///
+:::
 
-/// tab | HTML
+::: tab | HTML
 
 ```html
 <div class="bg-white shadow rounded border p-4 mb-3">
@@ -95,4 +95,4 @@ def dashboard_view():
 </div>
 ```
 
-///
+:::

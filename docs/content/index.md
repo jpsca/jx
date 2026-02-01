@@ -2,11 +2,11 @@
 title: Home
 ---
 
-<section markdown="1" class="home__code">
-<div markdown="1">
+::::::: div home__section home__code
+::::: div
 **Before**: strongly coupled, verbose, chaotic 😵.
 
-/// tab | view.html
+::: tab | view.html
 
 ```html+jinja
 {% extends "layout.html" %}
@@ -34,12 +34,13 @@ title: Home
 {% endblock %}
 ```
 
-///
-</div>
-<div markdown="1">
+:::
+:::::
+
+::::: div
 **After**: decoupled, re-usable, clean ✨.
 
-/// tab | view.jinja
+::: tab | view.jinja
 
 ```html+jinja
 {# import "layout.jinja" as Layout #}
@@ -55,9 +56,9 @@ title: Home
 </Layout>
 ```
 
-///
+:::
 
-/// tab | product.jinja
+::: tab | product.jinja
 
 ```html+jinja
 {# import "card.jinja" as Card #}
@@ -72,9 +73,9 @@ title: Home
 </Card>
 ```
 
-///
+:::
 
-/// tab | card.jinja
+::: tab | card.jinja
 
 ```html+jinja
 {# def title, img_url #}
@@ -90,17 +91,16 @@ title: Home
 </div>
 ```
 
-///
-</div>
-</section>
+:::
+:::::
+:::::::
 
-<section markdown="1" class="home__actions">
-  <p><a href="/docs/" class="btn btn--primary">Get started »</a></p>
-</section>
+::::: div home__section home__actions
+[Get started »](/docs/){ .btn .btn--primary }
+:::::
 
-<div markdown="1" class="bg">
-<section markdown="1" class="home__spaghetti">
-
+:::::: div bg
+::::: div home__section home__spaghetti
 ## Say no to spaghetti templates
 
 ![Spaghetti code](/assets/images/spaghetti_code.png){ .left width="300" }
@@ -112,11 +112,10 @@ Yet, template code often breaks even **the most basic standards**: long methods,
 With components, **everything is clear**: you know where each piece lives, what states it can be in, and exactly what data it needs.
 
 Try replacing all your templates with components, or just start with one page.
-</section>
-</div>
+:::::
+::::::
 
-
-<section markdown="1" class="home__better">
+::::: div home__section home__better
 ## Why components are better?
 
 Compared to Jinja's `{% include %}` or macros:
@@ -144,6 +143,6 @@ With relative imports, you can move entire folders of related components without
 ### ✅ Encapsulated Assets
 
 Each component can declare its own CSS and JS files, which are automatically collected and rendered.
-</section>
+:::::
 
 ----

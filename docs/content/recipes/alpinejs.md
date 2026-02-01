@@ -5,9 +5,9 @@ description: Using Jx components with Alpine.js for reactive interactions
 
 [Alpine.js](https://alpinejs.dev) is a lightweight JavaScript framework that adds reactivity directly in your HTML. It's perfect for adding interactivity to Jx components without a build step.
 
-/// warning
+::: warning
 This page is a work in progress and may contain errors.
-///
+:::
 
 ## Setup
 

@@ -5,9 +5,9 @@ description: Using Jx components with htmx for dynamic interactions
 
 [htmx](https://htmx.org) gives you AJAX, CSS transitions, WebSockets, and Server-Sent Events directly in HTML. It pairs beautifully with Jx components.
 
-/// warning
+::: warning
 This page is a work in progress and may contain errors.
-///
+:::
 
 ## Setup
 

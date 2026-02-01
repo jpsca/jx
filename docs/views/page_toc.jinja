@@ -1,9 +1,7 @@
 {% macro render_toc(items) %}
 	<ul>
-	{% for item in items -%}
-	<li class="level--{{ item.level }}"><a href="#{{ item.id }}">{{ item.html|safe }}</a>
-	{%- if item.children %}{{ render_toc(item.children) }}{% endif -%}
-	</li>
+	{% for level, id, text in items -%}
+	<li class="level--{{ level }}"><a href="#{{ id }}">{{ text|safe }}</a></li>
 	{% endfor %}
 	</ul>
 {% endmacro %}

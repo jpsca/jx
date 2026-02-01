@@ -34,7 +34,7 @@ Components are perfect for SVG icons - encapsulate the SVG code once, reuse it e
 <IconCheck class="text-green" />
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +79,7 @@ Components are perfect for SVG icons - encapsulate the SVG code once, reuse it e
   <polyline points="20 6 9 17 4 12"></polyline>
 </svg>
 </p>
-///
+:::
 
 ## Generic Icon Wrapper
 
@@ -129,7 +129,7 @@ Create a base component that other icons extend:
 </Icon>
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -163,7 +163,7 @@ Create a base component that other icons extend:
   <line x1="3" y1="18" x2="21" y2="18"></line>
 </svg>
 </p>
-///
+:::
 
 ## Dynamic Icon Component
 
@@ -204,7 +204,7 @@ Load icons by name:
 <Icon name="search" />
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -253,7 +253,7 @@ Load icons by name:
 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 </svg>
 </p>
-///
+:::
 
 ## Icon Button
 
@@ -280,7 +280,7 @@ Combine icons with buttons:
 </IconButton>
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <button class="btn btn--icon" type="button" aria-label="Close">
 <svg
@@ -300,7 +300,7 @@ Combine icons with buttons:
 </svg>
 </button>
 </p>
-///
+:::
 
 ## Button with Icon and Text
 
@@ -332,7 +332,7 @@ Combine icons with buttons:
 ```
 
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <button class="btn" type="button">
 <svg
@@ -352,7 +352,7 @@ Combine icons with buttons:
 <span>Save</span>
 </button>
 </p>
-///
+:::
 
 ## Filled vs Stroke Icons
 
@@ -379,7 +379,7 @@ Combine icons with buttons:
 <IconHeart filled class="text-red-500" />
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -393,7 +393,6 @@ Combine icons with buttons:
 >
   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
 </svg>
-
 <svg
   xmlns="http://www.w3.org/2000/svg"
   width="24"
@@ -406,7 +405,6 @@ Combine icons with buttons:
 >
   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
 </svg>
-
 <svg
   xmlns="http://www.w3.org/2000/svg"
   width="24"
@@ -420,7 +418,7 @@ Combine icons with buttons:
   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
 </svg>
 </p>
-///
+:::
 
 ## Spinner Icon
 
@@ -454,7 +452,7 @@ Combine icons with buttons:
 }
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -470,7 +468,7 @@ Combine icons with buttons:
   <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
 </svg>
 </p>
-///
+:::
 
 ## Icon with Badge
 
@@ -514,7 +512,7 @@ Combine icons with buttons:
 </IconBadge>
 ```
 
-/// tab | Preview
+::: tab | Preview
 <p class="preview">
 <span class="icon-badge-wrapper">
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="24" height="24">
@@ -523,7 +521,7 @@ Combine icons with buttons:
 <span class="icon-badge">42</span>
 </span>
 </p>
-///
+:::
 
 ## Tips
 
