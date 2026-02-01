@@ -58,7 +58,9 @@ where = ["src"]
 
 [tool.ty.src]
 exclude = [
+    "benchmark",
     "docs",
+    "tests",
 ]
 
 
