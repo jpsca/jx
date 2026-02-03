@@ -32,6 +32,17 @@
       text-align: center;
       line-height: 0.9;
       letter-spacing: -0.02em;
+
+      .g1 {
+        background: linear-gradient(to bottom right, #fbbf24, #fb923c);
+      }
+      .g2 {
+        background: linear-gradient(to bottom right, #34d399, #3b82f6);
+      }
+      .g1, .g2 {
+        background-clip: text;
+        color: transparent;
+      }
     }
     @media (min-width: 58rem) {
       padding: 3rem 2rem;

@@ -22,7 +22,8 @@ html {
   --rgb-gray-light: 105, 115, 125;
   --rgb-gray-lighter: 170, 180, 190;
 
-  --rgb-accent: 73,149,247;
+  /* --rgb-accent: 73,149,247; */
+  --rgb-accent: 95,152,241;
 
   --color-base: rgb(var(--rgb-base));
   --color-base-dark: rgb(var(--rgb-base-dark));
