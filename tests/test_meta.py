@@ -63,7 +63,7 @@ def test_def_with_type_annotations():
 {# def
     title: str,
     count: int = 0,
-    items: list = [],
+    items: list[str] = [],
     data: dict[str, int] = {}
 #}
 <div>{{ title }}</div>
@@ -77,6 +77,40 @@ def test_def_with_type_annotations():
         "items": ([], list),
         "data": ({}, dict),
     }
+
+
+def test_unknown_types():
+    source = """
+{# def
+    name: Any,
+    items: list[Whatever] = []
+#}
+<div>Hello {{ name }}</div>
+"""
+    base = Path("dummy")
+    meta = extract_metadata(source, base, base / "test.jinja")
+
+    assert meta.required == {"name": None}
+    assert meta.optional == {"items": ([], list)}
+
+
+def test_unsupported_type_annotations():
+    """Test that unsupported type annotations (union types, qualified names) return None."""
+    source = """
+{# def
+    value: int | str,
+    data: typing.List = []
+#}
+<div>{{ value }}</div>
+"""
+    base = Path("dummy")
+    meta = extract_metadata(source, base, base / "test.jinja")
+
+    # Union types (ast.BinOp) and qualified names (ast.Attribute) are not supported
+    # and should return None for the type
+    assert meta.required == {"value": None}
+    assert meta.optional == {"data": ([], None)}
+
 
 
 def test_def_with_allowed_expressions():
@@ -101,7 +135,6 @@ def test_def_with_allowed_expressions():
         "length": (5, None),
         "power": (8, None),
     }
-
 
 def test_invalid_argument():
     """Test that invalid arguments raise an exception."""

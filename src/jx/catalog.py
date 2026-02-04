@@ -99,8 +99,8 @@ class Catalog:
 
         Relative imports cannot go outside the folder.
 
-        Components added with a prefix must be imported using the prefix followed
-        by a colon: `prefix:sub/folder/component.jinja`. If the importing is
+        Components added with a prefix must be imported using the `@prefix/`
+        syntax: `@prefix/sub/folder/component.jinja`. If the importing is
         done from within a component with the prefix itself, a relative
         import can also be used, e.g.: `./component.jinja`.
 

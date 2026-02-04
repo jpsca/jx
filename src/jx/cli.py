@@ -158,7 +158,7 @@ def check(paths: list[Path]) -> int:
     return 1 if total_errors > 0 else 0
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     parser = argparse.ArgumentParser(
         prog="jx",
         description="Jx component validation tool",
