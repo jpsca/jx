@@ -12,7 +12,7 @@ import jinja2
 
 from . import utils
 from .component import Component
-from .exceptions import ImportError
+from .exceptions import FileEncodingError, ImportError
 from .meta import extract_metadata
 from .parser import JxParser
 from .utils import logger
@@ -275,7 +275,10 @@ class Catalog:
 
             # Need to recompile - read file and parse while holding the lock
             # to prevent other threads from seeing partial state
-            source = cdata.path.read_text()
+            try:
+                source = cdata.path.read_text(encoding="utf-8")
+            except UnicodeDecodeError as err:
+                raise FileEncodingError(cdata.path.as_posix()) from err
             meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
 
             parser = JxParser(

@@ -5,7 +5,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 import jinja2
 import pytest
 
-from jx import Catalog, ImportError
+from jx import Catalog, FileEncodingError, ImportError
 
 
 def test_add_folder(folder):
@@ -256,3 +256,14 @@ def test_get_signature_unknown_component(folder):
 
     with pytest.raises(ImportError, match="Component not found: unknown.jinja"):
         catalog.get_signature("unknown.jinja")
+
+
+def test_file_encoding_error(folder):
+    # Write invalid UTF-8 bytes (Latin-1 encoded text)
+    (folder / "bad.jinja").write_bytes(b"<div>\xe9\xe8\xe0</div>")
+
+    catalog = Catalog()
+    catalog.add_folder(folder, preload=False)
+
+    with pytest.raises(FileEncodingError, match="Cannot read .*/bad.jinja: not valid UTF-8"):
+        catalog.render("bad.jinja")

@@ -89,3 +89,13 @@ class MaxRecursionDepthError(JxException):
     def __init__(self, max_depth: int, **kw) -> None:
         msg = f"Maximum component nesting depth exceeded ({max_depth})"
         super().__init__(msg, **kw)
+
+
+class FileEncodingError(JxException):
+    """
+    Raised when a component file cannot be read due to encoding issues.
+    """
+
+    def __init__(self, path: str, **kw) -> None:
+        msg = f"Cannot read {path}: not valid UTF-8"
+        super().__init__(msg, **kw)
