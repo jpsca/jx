@@ -12,7 +12,7 @@ import jinja2
 
 from . import utils
 from .component import Component
-from .exceptions import ImportError, JxException
+from .exceptions import ImportError
 from .meta import extract_metadata
 from .parser import JxParser
 from .utils import logger
@@ -309,8 +309,7 @@ class Catalog:
         """
         with self._lock:
             cdata = self.get_component_data(relpath)
-            if cdata.code is None:
-                raise JxException(f"Component '{relpath}' failed to compile")
+            assert cdata.code is not None  # for type checker
             tmpl = jinja2.Template.from_code(
                 self.jinja_env, cdata.code, self.jinja_env.globals
             )
@@ -327,6 +326,44 @@ class Catalog:
                 slots=cdata.slots,
             )
             return co
+
+    def list_components(self) -> list[str]:
+        """
+        Return all registered component paths.
+
+        Returns:
+            A list of component relative paths (e.g., ["button.jinja", "card.jinja"]).
+
+        """
+        with self._lock:
+            return list(self.components.keys())
+
+    def get_signature(self, relpath: str) -> dict[str, t.Any]:
+        """
+        Return a component's signature including its arguments and metadata.
+
+        Arguments:
+            relpath:
+                The path of the component, including the extension, relative to its view folder.
+                e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
+
+        Returns:
+            A dictionary containing:
+                - required: tuple of required argument names
+                - optional: dict of optional arguments with their default values
+                - slots: tuple of slot names
+                - css: tuple of CSS file URLs
+                - js: tuple of JS file URLs
+
+        """
+        cdata = self.get_component_data(relpath)
+        return {
+            "required": cdata.required,
+            "optional": cdata.optional,
+            "slots": cdata.slots,
+            "css": cdata.css,
+            "js": cdata.js,
+        }
 
     # Private
 

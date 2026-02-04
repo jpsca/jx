@@ -163,3 +163,96 @@ def test_reuse_jinja_env():
 
     assert catalog.jinja_env.filters["custom_filter"]("Test") == "Filtered: Test"
     assert catalog.jinja_env.globals["custom_global"] == "Global Value"
+
+
+def test_list_components(folder):
+    (folder / "button.jinja").write_text("<button>Click</button>")
+    (folder / "card.jinja").write_text("<div>Card</div>")
+
+    catalog = Catalog(folder)
+    components = catalog.list_components()
+
+    assert isinstance(components, list)
+    assert set(components) == {"button.jinja", "card.jinja"}
+
+
+def test_list_components_empty():
+    catalog = Catalog()
+    components = catalog.list_components()
+
+    assert components == []
+
+
+def test_list_components_with_prefix(tmp_path):
+    folder1 = tmp_path / "views1"
+    folder1.mkdir()
+    (folder1 / "a.jinja").write_text("A")
+
+    folder2 = tmp_path / "views2"
+    folder2.mkdir()
+    (folder2 / "b.jinja").write_text("B")
+
+    catalog = Catalog()
+    catalog.add_folder(folder1)
+    catalog.add_folder(folder2, prefix="ui")
+
+    components = catalog.list_components()
+    assert set(components) == {"a.jinja", "@ui/b.jinja"}
+
+
+def test_get_signature(folder):
+    (folder / "button.jinja").write_text(
+        '{#def label, size="md", disabled=False #}\n'
+        '{#css "/static/button.css" #}\n'
+        '{#js "/static/button.js" #}\n'
+        "<button>{{ label }}</button>"
+    )
+
+    catalog = Catalog(folder)
+    sig = catalog.get_signature("button.jinja")
+
+    assert sig["required"] == ("label",)
+    assert sig["optional"] == {"size": "md", "disabled": False}
+    assert sig["slots"] == ()
+    assert sig["css"] == ("/static/button.css",)
+    assert sig["js"] == ("/static/button.js",)
+
+
+def test_get_signature_with_slots(folder):
+    (folder / "card.jinja").write_text(
+        "{#def title #}\n"
+        "<div>\n"
+        "  <h2>{{ title }}</h2>\n"
+        "  {% slot content %}Default{% endslot %}\n"
+        "  {% slot footer %}{% endslot %}\n"
+        "</div>"
+    )
+
+    catalog = Catalog(folder)
+    sig = catalog.get_signature("card.jinja")
+
+    assert sig["required"] == ("title",)
+    assert sig["optional"] == {}
+    assert sig["slots"] == ("content", "footer")
+    assert sig["css"] == ()
+    assert sig["js"] == ()
+
+
+def test_get_signature_no_metadata(folder):
+    (folder / "simple.jinja").write_text("<div>Simple</div>")
+
+    catalog = Catalog(folder)
+    sig = catalog.get_signature("simple.jinja")
+
+    assert sig["required"] == ()
+    assert sig["optional"] == {}
+    assert sig["slots"] == ()
+    assert sig["css"] == ()
+    assert sig["js"] == ()
+
+
+def test_get_signature_unknown_component(folder):
+    catalog = Catalog(folder)
+
+    with pytest.raises(ImportError, match="Component not found: unknown.jinja"):
+        catalog.get_signature("unknown.jinja")

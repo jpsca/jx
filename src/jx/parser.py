@@ -185,19 +185,25 @@ class JxParser:
         """
         start, curr = match.span(0)
         lineno = source[:start].count("\n") + 1
+        line_start = source.rfind("\n", 0, start) + 1
+        col = start - line_start
 
         tag = match.group("tag")
         if validate_tags and tag not in self.components:
             line = self.source.split("\n")[lineno - 1]
             raise TemplateSyntaxError(
-                f"[{self.name}:{lineno}] Unknown component `{tag}`\n{line}"
+                f"[{self.name}:{lineno}:{col}] Unknown component `{tag}`\n"
+                f"  {line}\n"
+                f"  {' ' * col}^"
             )
 
-        raw_attrs, end = self._parse_opening_tag(source, lineno=lineno, start=curr - 1)
+        raw_attrs, end = self._parse_opening_tag(source, lineno=lineno, col=col, start=curr - 1)
         if end == -1:
             line = self.source.split("\n")[lineno - 1]
             raise TemplateSyntaxError(
-                f"[{self.name}:{lineno}] Syntax error: `{tag}`\n{line}"
+                f"[{self.name}:{lineno}:{col}] Syntax error: `{tag}`\n"
+                f"  {line}\n"
+                f"  {' ' * col}^"
             )
 
         inline = source[end - 2 : end] == "/>"
@@ -209,7 +215,9 @@ class JxParser:
             if index == -1:
                 line = self.source.split("\n")[lineno - 1]
                 raise TemplateSyntaxError(
-                    f"[{self.name}:{lineno}] Unclosed component `{tag}`\n{line}"
+                    f"[{self.name}:{lineno}:{col}] Unclosed component `{tag}`\n"
+                    f"  {line}\n"
+                    f"  {' ' * col}^"
                 )
 
             content = source[end:index]
@@ -305,7 +313,7 @@ class JxParser:
     # Private
 
     def _parse_opening_tag(
-        self, source: str, *, lineno: int, start: int
+        self, source: str, *, lineno: int, col: int, start: int
     ) -> tuple[str, int]:
         """
         Parses the opening tag and returns the raw attributes and the position
@@ -325,8 +333,11 @@ class JxParser:
             if not in_single_quotes and not in_double_quotes:
                 if ch2 == "{{":
                     if in_braces:
+                        line = self.source.split("\n")[lineno - 1]
                         raise TemplateSyntaxError(
-                            f"[{self.name}:{lineno}] Unmatched braces"
+                            f"[{self.name}:{lineno}:{col}] Unmatched braces\n"
+                            f"  {line}\n"
+                            f"  {' ' * col}^"
                         )
                     in_braces = True
                     i += 2
@@ -334,8 +345,11 @@ class JxParser:
 
                 if ch2 == "}}":
                     if not in_braces:
+                        line = self.source.split("\n")[lineno - 1]
                         raise TemplateSyntaxError(
-                            f"[{self.name}:{lineno}] Unmatched braces"
+                            f"[{self.name}:{lineno}:{col}] Unmatched braces\n"
+                            f"  {line}\n"
+                            f"  {' ' * col}^"
                         )
                     in_braces = False
                     i += 2
