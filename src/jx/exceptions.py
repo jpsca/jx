@@ -57,3 +57,13 @@ class InvalidImport(JxException):
     """
     Raised when the import cannot be parsed
     """
+
+
+class PathTraversalError(JxException):
+    """
+    Raised when an import path attempts to escape the component root directory.
+    """
+
+    def __init__(self, path: str, **kw) -> None:
+        msg = f"Import path escapes component root: {path}"
+        super().__init__(msg, **kw)

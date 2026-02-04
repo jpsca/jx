@@ -10,6 +10,7 @@ from jx.meta import (
     DuplicateDefDeclaration,
     InvalidArgument,
     InvalidImport,
+    PathTraversalError,
     extract_metadata,
 )
 
@@ -165,6 +166,43 @@ def test_invalid_relative_import():
 """
     with pytest.raises(InvalidImport):
         extract_metadata(source, base, base / "test.jinja")
+
+
+def test_path_traversal_attack():
+    """Test that path traversal attempts are blocked."""
+    base = Path("/app/views")
+    source = """
+{# import "../../../etc/passwd" as Secret #}
+<div>{{ Secret() }}</div>
+"""
+    with pytest.raises(PathTraversalError) as exc_info:
+        extract_metadata(source, base, base / "test.jinja")
+    assert "escapes component root" in str(exc_info.value)
+
+
+def test_path_traversal_from_nested_component():
+    """Test that path traversal is blocked even from deeply nested components."""
+    base = Path("/app/views")
+    source = """
+{# import "../../../../etc/passwd" as Secret #}
+<div>{{ Secret() }}</div>
+"""
+    # Paths starting with ".." are also relative and validated
+    with pytest.raises(PathTraversalError) as exc_info:
+        extract_metadata(source, base, base / "deep/nested/component.jinja")
+    assert "escapes component root" in str(exc_info.value)
+
+
+def test_path_traversal_with_dot_prefix():
+    """Test that path traversal with dot prefix is blocked."""
+    base = Path("/app/views")
+    source = """
+{# import "./../../../etc/passwd" as Secret #}
+<div>{{ Secret() }}</div>
+"""
+    with pytest.raises(PathTraversalError) as exc_info:
+        extract_metadata(source, base, base / "test.jinja")
+    assert "escapes component root" in str(exc_info.value)
 
 
 def test_css_metadata():

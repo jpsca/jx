@@ -8,7 +8,12 @@ import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .exceptions import DuplicateDefDeclaration, InvalidArgument, InvalidImport
+from .exceptions import (
+    DuplicateDefDeclaration,
+    InvalidArgument,
+    InvalidImport,
+    PathTraversalError,
+)
 from .parser import re_tag_name
 
 
@@ -92,7 +97,9 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
             expr = RX_INTER_COMMENTS.sub("", expr).replace("\n", " ")
             import_path, import_name = parse_import_expr(expr)
             if import_path.startswith("."):
-                import_path = (fullpath.parent / import_path).resolve().relative_to(base_path).as_posix()
+                resolved = (fullpath.parent / import_path).resolve()
+                validate_import_path(import_path, resolved, base_path)
+                import_path = resolved.relative_to(base_path).as_posix()
             meta.imports[import_name] = import_path
             continue
 
@@ -166,3 +173,23 @@ def parse_import_expr(expr: str) -> tuple[str, str]:
     if not match:
         raise InvalidImport(expr)
     return match.group(1), match.group(2)
+
+
+def validate_import_path(path: str, resolved: Path, base_path: Path) -> None:
+    """
+    Validate that the resolved import path does not escape the component root.
+
+    Arguments:
+        path:
+            The original import path string (for error messages).
+        resolved:
+            The resolved absolute path of the import.
+        base_path:
+            The base path that all imports must stay within.
+
+    Raises:
+        PathTraversalError: If the resolved path escapes the base path.
+
+    """
+    if not resolved.is_relative_to(base_path):
+        raise PathTraversalError(path)
