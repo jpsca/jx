@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import threading
 import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,7 +12,7 @@ import jinja2
 
 from . import utils
 from .component import Component
-from .exceptions import ImportError
+from .exceptions import ImportError, JxException
 from .meta import extract_metadata
 from .parser import JxParser
 from .utils import logger
@@ -73,6 +74,7 @@ class Catalog:
                 Variables to make available to all components by default.
 
         """
+        self._lock = threading.RLock()  # Protects self.components access
         self.components = {}
         self.jinja_env = self._make_jinja_env(
             jinja_env=jinja_env,
@@ -133,19 +135,25 @@ class Catalog:
         else:
             logger.debug(f"Adding folder `{base_path}`")
 
-        for filepath in base_path.rglob("*.jinja"):
-            relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"
-            if relpath in self.components:
-                logger.debug(f"Component already exists: {relpath}")
-                continue
-            cdata = CData(
-                base_path=base_path, path=filepath, mtime=filepath.stat().st_mtime
-            )
-            self.components[relpath] = cdata
+        with self._lock:
+            for filepath in base_path.rglob("*.jinja"):
+                relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"
+                if relpath in self.components:
+                    logger.debug(f"Component already exists: {relpath}")
+                    continue
+                cdata = CData(
+                    base_path=base_path, path=filepath, mtime=filepath.stat().st_mtime
+                )
+                self.components[relpath] = cdata
 
+            if preload:
+                # Take a snapshot of keys to avoid "dict changed size during iteration"
+                relpaths = list(self.components.keys())
+
+        # Preload outside the lock to avoid holding it during compilation
         if preload:
-            for relpath in self.components:
-                self.components[relpath] = self.get_component_data(relpath)
+            for relpath in relpaths:
+                self.get_component_data(relpath)
 
     def render(
         self, relpath: str, globals: dict[str, t.Any] | None = None, **kwargs
@@ -252,37 +260,42 @@ class Catalog:
                 e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
 
         """
-        cdata = self.components.get(relpath)
-        if not cdata:
-            raise ImportError(relpath)
+        with self._lock:
+            cdata = self.components.get(relpath)
+            if not cdata:
+                raise ImportError(relpath)
 
-        mtime = cdata.path.stat().st_mtime if self.auto_reload else 0
-        if cdata.code is not None:
-            if self.auto_reload:
-                if mtime == cdata.mtime:
+            mtime = cdata.path.stat().st_mtime if self.auto_reload else 0
+            if cdata.code is not None:
+                if self.auto_reload:
+                    if mtime == cdata.mtime:
+                        return cdata
+                else:
                     return cdata
-            else:
-                return cdata
 
-        source = cdata.path.read_text()
-        meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
+            # Need to recompile - read file and parse while holding the lock
+            # to prevent other threads from seeing partial state
+            source = cdata.path.read_text()
+            meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
 
-        parser = JxParser(
-            name=relpath, source=source, components=list(meta.imports.keys())
-        )
-        parsed_source, slots = parser.parse()
-        code = self.jinja_env.compile(
-            source=parsed_source, name=relpath, filename=cdata.path.as_posix()
-        )
+            parser = JxParser(
+                name=relpath, source=source, components=list(meta.imports.keys())
+            )
+            parsed_source, slots = parser.parse()
+            code = self.jinja_env.compile(
+                source=parsed_source, name=relpath, filename=cdata.path.as_posix()
+            )
 
-        cdata.code = code
-        cdata.required = meta.required
-        cdata.optional = meta.optional
-        cdata.imports = meta.imports
-        cdata.css = meta.css
-        cdata.js = meta.js
-        cdata.slots = slots
-        return cdata
+            # Update all fields atomically (from other threads' perspective)
+            cdata.mtime = mtime
+            cdata.code = code
+            cdata.required = meta.required
+            cdata.optional = meta.optional
+            cdata.imports = meta.imports
+            cdata.css = meta.css
+            cdata.js = meta.js
+            cdata.slots = slots
+            return cdata
 
     def get_component(self, relpath: str) -> Component:
         """
@@ -294,24 +307,26 @@ class Catalog:
                 e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
 
         """
-        cdata = self.get_component_data(relpath)
-        assert cdata.code is not None
-        tmpl = jinja2.Template.from_code(
-            self.jinja_env, cdata.code, self.jinja_env.globals
-        )
+        with self._lock:
+            cdata = self.get_component_data(relpath)
+            if cdata.code is None:
+                raise JxException(f"Component '{relpath}' failed to compile")
+            tmpl = jinja2.Template.from_code(
+                self.jinja_env, cdata.code, self.jinja_env.globals
+            )
 
-        co = Component(
-            relpath=relpath,
-            tmpl=tmpl,
-            get_component=self.get_component,
-            required=cdata.required,
-            optional=cdata.optional,
-            imports=cdata.imports,
-            css=cdata.css,
-            js=cdata.js,
-            slots=cdata.slots,
-        )
-        return co
+            co = Component(
+                relpath=relpath,
+                tmpl=tmpl,
+                get_component=self.get_component,
+                required=cdata.required,
+                optional=cdata.optional,
+                imports=cdata.imports,
+                css=cdata.css,
+                js=cdata.js,
+                slots=cdata.slots,
+            )
+            return co
 
     # Private
 
