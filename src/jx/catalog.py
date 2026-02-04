@@ -285,6 +285,7 @@ class Catalog:
                 name=relpath, source=source, components=list(meta.imports.keys())
             )
             parsed_source, slots = parser.parse()
+            logger.debug(f"Parsed {relpath}:\n{parsed_source}")
             code = self.jinja_env.compile(
                 source=parsed_source, name=relpath, filename=cdata.path.as_posix()
             )
