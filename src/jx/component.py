@@ -9,7 +9,10 @@ import jinja2
 from markupsafe import Markup
 
 from .attrs import Attrs
-from .exceptions import MissingRequiredArgument
+from .exceptions import MaxRecursionDepthError, MissingRequiredArgument
+
+
+MAX_COMPONENT_DEPTH = 100
 
 
 class Component:
@@ -84,6 +87,14 @@ class Component:
         caller: Callable[[str], str] | None = None,
         **params: t.Any,
     ) -> Markup:
+        # Check recursion depth
+        depth = self.globals.get("_depth", 0)
+        if depth > MAX_COMPONENT_DEPTH:
+            raise MaxRecursionDepthError(MAX_COMPONENT_DEPTH)
+
+        # Increment depth for child components
+        self.globals = {**self.globals, "_depth": depth + 1}
+
         content = content if content is not None else caller("") if caller else ""
         attrs = attrs.as_dict if isinstance(attrs, Attrs) else attrs or {}
         params = {**attrs, **params}

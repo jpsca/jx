@@ -67,3 +67,13 @@ class PathTraversalError(JxException):
     def __init__(self, path: str, **kw) -> None:
         msg = f"Import path escapes component root: {path}"
         super().__init__(msg, **kw)
+
+
+class MaxRecursionDepthError(JxException):
+    """
+    Raised when component nesting exceeds the maximum allowed depth.
+    """
+
+    def __init__(self, max_depth: int, **kw) -> None:
+        msg = f"Maximum component nesting depth exceeded ({max_depth})"
+        super().__init__(msg, **kw)

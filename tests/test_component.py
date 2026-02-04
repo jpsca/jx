@@ -4,7 +4,12 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 
 import pytest
 
-from jx import Catalog, MissingRequiredArgument, TemplateSyntaxError
+from jx import (
+    Catalog,
+    MaxRecursionDepthError,
+    MissingRequiredArgument,
+    TemplateSyntaxError,
+)
 
 
 def test_render_simple(folder):
@@ -701,3 +706,20 @@ def test_alpine_sintax_in_component(folder):
     html = cat.render("greeting.jinja")
     print(html)
     assert html == """<button @click.prevent="alert('Hello world!')">Say Hi</button>"""
+
+
+def test_recursion_depth_limit(folder):
+    """Test that deeply nested components raise MaxRecursionDepthError."""
+    # Create a component that infinitely recurses without termination
+    (folder / "infinite.jinja").write_text("""
+{# import "infinite.jinja" as Infinite #}
+{# def level=1 #}
+<div>Level {{ level }}</div>
+<Infinite level={{ level + 1 }} />
+""")
+
+    cat = Catalog(folder)
+    with pytest.raises(MaxRecursionDepthError) as exc_info:
+        cat.render("infinite.jinja")
+    assert "Maximum component nesting depth exceeded" in str(exc_info.value)
+    assert "100" in str(exc_info.value)
