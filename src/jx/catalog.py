@@ -24,8 +24,8 @@ class CData:
     path: Path
     mtime: float
     code: CodeType | None = None
-    required: tuple[str, ...] = ()
-    optional: dict[str, t.Any] = field(default_factory=dict)  # { attr: default_value }
+    required: dict[str, type | None] = field(default_factory=dict)  # { attr: type or None }
+    optional: dict[str, tuple[t.Any, type | None]] = field(default_factory=dict)  # { attr: (default, type or None) }
     imports: dict[str, str] = field(default_factory=dict)  # { name: relpath }
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
@@ -349,8 +349,8 @@ class Catalog:
 
         Returns:
             A dictionary containing:
-                - required: tuple of required argument names
-                - optional: dict of optional arguments with their default values
+                - required: dict of required argument names mapped to their type (or None)
+                - optional: dict of optional arguments mapped to (default_value, type or None)
                 - slots: tuple of slot names
                 - css: tuple of CSS file URLs
                 - js: tuple of JS file URLs

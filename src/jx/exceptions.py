@@ -36,6 +36,18 @@ class MissingRequiredArgument(JxException):
         super().__init__(msg, **kw)
 
 
+class InvalidPropType(JxException):
+    """
+    Raised when a component prop has an invalid type.
+    """
+
+    def __init__(
+        self, component: str, arg: str, expected: type, got: type, **kw
+    ) -> None:
+        msg = f"{component}: `{arg}` expected {expected.__name__}, got {got.__name__}"
+        super().__init__(msg, **kw)
+
+
 class DuplicateDefDeclaration(JxException):
     """
     Raised when a component has more then one `{#def ... #}` declarations.

@@ -20,7 +20,7 @@ def test_empty_source():
     source = ""
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
-    assert meta.required == ()
+    assert meta.required == {}
     assert meta.optional == {}
     assert meta.imports == {}
     assert meta.css == ()
@@ -33,7 +33,7 @@ def test_source_without_metadata():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.required == ()
+    assert meta.required == {}
     assert meta.optional == {}
     assert meta.imports == {}
     assert meta.css == ()
@@ -53,8 +53,30 @@ def test_def_metadata():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.required == ("name",)
-    assert meta.optional == {"age": 18, "is_active": True}
+    assert meta.required == {"name": None}
+    assert meta.optional == {"age": (18, None), "is_active": (True, None)}
+
+
+def test_def_with_type_annotations():
+    """Test extraction of arguments with type annotations."""
+    source = """
+{# def
+    title: str,
+    count: int = 0,
+    items: list = [],
+    data: dict[str, int] = {}
+#}
+<div>{{ title }}</div>
+"""
+    base = Path("dummy")
+    meta = extract_metadata(source, base, base / "test.jinja")
+
+    assert meta.required == {"title": str}
+    assert meta.optional == {
+        "count": (0, int),
+        "items": ([], list),
+        "data": ({}, dict),
+    }
 
 
 def test_def_with_allowed_expressions():
@@ -73,11 +95,11 @@ def test_def_with_allowed_expressions():
     meta = extract_metadata(source, base, base / "test.jinja")
 
     assert meta.optional == {
-        "max_items": 20,
-        "min_value": 5,
-        "total": 6,
-        "length": 5,
-        "power": 8
+        "max_items": (20, None),
+        "min_value": (5, None),
+        "total": (6, None),
+        "length": (5, None),
+        "power": (8, None),
     }
 
 
@@ -277,8 +299,8 @@ def test_comments_in_metadata():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.required == ("name",)
-    assert meta.optional == {"age": 18}
+    assert meta.required == {"name": None}
+    assert meta.optional == {"age": (18, None)}
 
 
 def test_multiple_metadata_blocks():
@@ -293,8 +315,8 @@ def test_multiple_metadata_blocks():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
 
-    assert meta.required == ("name",)
-    assert meta.optional == {"age": 21}
+    assert meta.required == {"name": None}
+    assert meta.optional == {"age": (21, None)}
     assert meta.imports == {"Button": "button.jinja"}
     assert meta.css == ("/style.css", )
     assert meta.js == ("/script.js", )
@@ -320,6 +342,6 @@ def test_empty_meta_declarations():
 """
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
-    assert meta.required == ()
+    assert meta.required == {}
     assert meta.optional == {}
     assert meta.imports == {}

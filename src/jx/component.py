@@ -9,7 +9,7 @@ import jinja2
 from markupsafe import Markup
 
 from .attrs import Attrs
-from .exceptions import MaxRecursionDepthError, MissingRequiredArgument
+from .exceptions import InvalidPropType, MaxRecursionDepthError, MissingRequiredArgument
 
 
 MAX_COMPONENT_DEPTH = 100
@@ -35,8 +35,8 @@ class Component:
         relpath: str,
         tmpl: jinja2.Template,
         get_component: Callable[[str], "Component"],
-        required: tuple[str, ...] = (),
-        optional: dict[str, t.Any] | None = None,
+        required: dict[str, type | None] | None = None,
+        optional: dict[str, tuple[t.Any, type | None]] | None = None,
         imports: dict[str, str] | None = None,
         css: tuple[str, ...] = (),
         js: tuple[str, ...] = (),
@@ -53,9 +53,9 @@ class Component:
             get_component:
                 A callable that retrieves a component by its name/relpath.
             required:
-                A tuple of required attribute names.
+                A dictionary of required attribute names mapped to their type (or None).
             optional:
-                A dictionary of optional attributes and their default values.
+                A dictionary of optional attributes mapped to (default_value, type or None).
             imports:
                 A dictionary of imported component names as "name": "relpath" pairs.
             css:
@@ -70,7 +70,7 @@ class Component:
         self.tmpl = tmpl
         self.get_component = get_component
 
-        self.required = required
+        self.required = required or {}
         self.optional = optional or {}
         self.imports = imports or {}
         self.css = css
@@ -120,13 +120,20 @@ class Component:
     ) -> tuple[dict[str, t.Any], dict[str, t.Any]]:
         props = {}
 
-        for key in self.required:
+        for key, expected_type in self.required.items():
             if key not in kw:
                 raise MissingRequiredArgument(self.relpath, key)
-            props[key] = kw.pop(key)
+            value = kw.pop(key)
+            if expected_type is not None and not isinstance(value, expected_type):
+                raise InvalidPropType(self.relpath, key, expected_type, type(value))
+            props[key] = value
 
-        for key in self.optional:
-            props[key] = kw.pop(key, self.optional[key])
+        for key, (default, expected_type) in self.optional.items():
+            value = kw.pop(key, default)
+            if expected_type is not None and not isinstance(value, expected_type):
+                raise InvalidPropType(self.relpath, key, expected_type, type(value))
+            props[key] = value
+
         extra = kw.copy()
         return props, extra
 

@@ -211,8 +211,8 @@ def test_get_signature(folder):
     catalog = Catalog(folder)
     sig = catalog.get_signature("button.jinja")
 
-    assert sig["required"] == ("label",)
-    assert sig["optional"] == {"size": "md", "disabled": False}
+    assert sig["required"] == {"label": None}
+    assert sig["optional"] == {"size": ("md", None), "disabled": (False, None)}
     assert sig["slots"] == ()
     assert sig["css"] == ("/static/button.css",)
     assert sig["js"] == ("/static/button.js",)
@@ -231,7 +231,7 @@ def test_get_signature_with_slots(folder):
     catalog = Catalog(folder)
     sig = catalog.get_signature("card.jinja")
 
-    assert sig["required"] == ("title",)
+    assert sig["required"] == {"title": None}
     assert sig["optional"] == {}
     assert sig["slots"] == ("content", "footer")
     assert sig["css"] == ()
@@ -244,7 +244,7 @@ def test_get_signature_no_metadata(folder):
     catalog = Catalog(folder)
     sig = catalog.get_signature("simple.jinja")
 
-    assert sig["required"] == ()
+    assert sig["required"] == {}
     assert sig["optional"] == {}
     assert sig["slots"] == ()
     assert sig["css"] == ()

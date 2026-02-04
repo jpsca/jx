@@ -3,6 +3,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
 import ast
+import builtins
 import re
 import typing as t
 from dataclasses import dataclass, field
@@ -47,8 +48,8 @@ ALLOWED_NAMES_IN_EXPRESSION_VALUES = {
 
 @dataclass(slots=True)
 class Meta:
-    required: tuple[str, ...] = ()
-    optional: dict[str, t.Any] = field(default_factory=dict) # { attr: default_value }
+    required: dict[str, type | None] = field(default_factory=dict)  # { attr: type or None }
+    optional: dict[str, tuple[t.Any, type | None]] = field(default_factory=dict)  # { attr: (default, type or None) }
     imports: dict[str, str] = field(default_factory=dict)  # { component_name: relpath }
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
@@ -125,10 +126,41 @@ def read_metadata_item(source: str, rx_start: re.Pattern) -> str:
     return source[start.end():].strip()
 
 
-def parse_args_expr(expr: str) -> tuple[tuple[str, ...], dict[str, t.Any]]:
+def annotation_to_type(annotation: ast.expr | None) -> type | None:
+    """
+    Convert an AST annotation node to a Python type.
+    Returns None if the annotation is not a supported builtin type.
+
+    ::: note
+    For generic types like `list[str]` or `dict[str, int]`, only the base
+    type (`list`, `dict`) is extracted. The generic parameters are discarded.
+    This is sufficient for basic `isinstance()` validation but won't validate
+    element types.
+
+    To preserve full generic type info in the future, we could use
+    `eval(ast.unparse(annotation), {"__builtins__": {}}, vars(builtins))`
+    which returns the actual generic type object, which can be used with more
+    advanced type checking libraries like `typeguard` or manual element validation.
+    :::
+    """
+    if annotation is None:
+        return None
+
+    # For generics like `list[str]`, extract the base type
+    if isinstance(annotation, ast.Subscript):
+        annotation = annotation.value
+
+    if isinstance(annotation, ast.Name):
+        result = getattr(builtins, annotation.id, None)
+        return result if isinstance(result, type) else None
+
+    return None
+
+
+def parse_args_expr(expr: str) -> tuple[dict[str, type | None], dict[str, tuple[t.Any, type | None]]]:
     expr = expr.strip(" *,/")
-    required = []
-    optional = {}
+    required: dict[str, type | None] = {}
+    optional: dict[str, tuple[t.Any, type | None]] = {}
 
     try:
         p = ast.parse(f"def component(*,\n{expr}\n): pass")
@@ -136,15 +168,15 @@ def parse_args_expr(expr: str) -> tuple[tuple[str, ...], dict[str, t.Any]]:
         raise InvalidArgument(err) from err
 
     args = p.body[0].args  # type: ignore
-    arg_names = [arg.arg for arg in args.kwonlyargs]
-    for name, value in zip(arg_names, args.kw_defaults):  # noqa: B905
-        if value is None:
-            required.append(name)
+    for arg, default in zip(args.kwonlyargs, args.kw_defaults):  # noqa: B905
+        arg_type = annotation_to_type(arg.annotation)
+        if default is None:
+            required[arg.arg] = arg_type
             continue
-        expr = ast.unparse(value)
-        optional[name] = eval_expression(expr)
+        default_expr = ast.unparse(default)
+        optional[arg.arg] = (eval_expression(default_expr), arg_type)
 
-    return tuple(required), optional
+    return required, optional
 
 
 def eval_expression(input_string: str) -> t.Any:

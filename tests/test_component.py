@@ -6,6 +6,7 @@ import pytest
 
 from jx import (
     Catalog,
+    InvalidPropType,
     MaxRecursionDepthError,
     MissingRequiredArgument,
     TemplateSyntaxError,
@@ -723,3 +724,65 @@ def test_recursion_depth_limit(folder):
         cat.render("infinite.jinja")
     assert "Maximum component nesting depth exceeded" in str(exc_info.value)
     assert "100" in str(exc_info.value)
+
+
+def test_prop_type_validation(folder):
+    """Test that props with type annotations are validated."""
+    (folder / "typed.jinja").write_text("""
+{# def title: str, count: int = 0 #}
+<div>{{ title }} ({{ count }})</div>
+""")
+
+    cat = Catalog(folder)
+
+    # Valid types
+    html = cat.render("typed.jinja", title="Hello", count=5)
+    assert html.strip() == "<div>Hello (5)</div>"
+
+    # Invalid required prop type
+    with pytest.raises(InvalidPropType) as exc_info:
+        cat.render("typed.jinja", title=123)
+    assert "title" in str(exc_info.value)
+    assert "expected str" in str(exc_info.value)
+    assert "got int" in str(exc_info.value)
+
+    # Invalid optional prop type
+    with pytest.raises(InvalidPropType) as exc_info:
+        cat.render("typed.jinja", title="Hello", count="five")
+    assert "count" in str(exc_info.value)
+    assert "expected int" in str(exc_info.value)
+    assert "got str" in str(exc_info.value)
+
+
+def test_prop_type_validation_without_annotation(folder):
+    """Test that props without type annotations skip validation."""
+    (folder / "untyped.jinja").write_text("""
+{# def title, count=0 #}
+<div>{{ title }} ({{ count }})</div>
+""")
+
+    cat = Catalog(folder)
+
+    # Any type should work when no annotation
+    html = cat.render("untyped.jinja", title=123, count="five")
+    assert html.strip() == "<div>123 (five)</div>"
+
+
+def test_prop_type_validation_list(folder):
+    """Test type validation with list type."""
+    (folder / "list_typed.jinja").write_text("""
+{# def items: list #}
+<ul>{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul>
+""")
+
+    cat = Catalog(folder)
+
+    # Valid list
+    html = cat.render("list_typed.jinja", items=["a", "b"])
+    assert html.strip() == "<ul><li>a</li><li>b</li></ul>"
+
+    # Invalid type (string instead of list)
+    with pytest.raises(InvalidPropType) as exc_info:
+        cat.render("list_typed.jinja", items="not a list")
+    assert "items" in str(exc_info.value)
+    assert "expected list" in str(exc_info.value)
