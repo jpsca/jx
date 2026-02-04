@@ -4,7 +4,7 @@ title: Migrating from JinjaX to Jx
 
 ## Why Jx?
 
-Jx is a reimagining of JinjaX that keeps the core idea; bringing React-style components to Jinja templates; while making several key improvements that result in clearer, more maintainable code.
+Jx is a reimagining of JinjaX that keeps the core idea -- bringing React-style components to Jinja templates -- while making several key improvements that result in clearer, more maintainable code.
 
 ## Philosophy: Explicit is Better Than Implicit
 

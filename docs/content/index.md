@@ -38,7 +38,7 @@ title: Home
 :::::
 
 ::::: div
-**After**: decoupled, re-usable, clean ✨.
+**After**: decoupled, reusable, clean ✨.
 
 ::: tab | view.jinja
 
@@ -116,7 +116,7 @@ Try replacing all your templates with components, or just start with one page.
 ::::::
 
 ::::: div home__section home__better
-## Why components are better?
+## Why are components better?
 
 Compared to Jinja's `{% include %}` or macros:
 

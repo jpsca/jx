@@ -264,7 +264,7 @@ Combine icons with buttons:
 {#css icon-button.css #}
 
 {% do attrs.setdefault(type="button") %}
-{% do attrs.set(aria_label=label if label else None)}
+{% do attrs.set(aria_label=label if label else None) %}
 
 <button {{ attrs.render(class="btn btn--icon") }}>
   {{ content }}

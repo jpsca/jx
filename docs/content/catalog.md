@@ -43,7 +43,7 @@ catalog.add_folder("components/")
 
 ### `auto_reload`
 
-When `True` (default), jx checks if component files have changed and reloads them automatically. Great for development.
+When `True` (default), Jx checks if component files have changed and reloads them automatically. Great for development.
 
 For production, set to `False` to skip file modification checks:
 

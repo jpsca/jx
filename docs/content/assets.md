@@ -3,7 +3,7 @@ title: Assets
 description: Managing CSS and JavaScript in components
 ---
 
-Any component can declare the URLs of the CSS and JavaScript files that uses. Jx automatically collects these assets from all the components you use and provides simple functions to render them.
+Any component can declare the URLs of the CSS and JavaScript files it uses. Jx automatically collects these assets from all the components you use and provides simple functions to render them.
 
 ## Why Per-Component Assets?
 
@@ -225,9 +225,7 @@ How these resolve depends on your HTML base path and server configuration.
 
 ## Organizing Assets
 
-### Option 1: Use
-
-Keep assets next to components:
+### Option 1: Keep assets next to components
 
 ```
 components/
@@ -246,7 +244,7 @@ components/
 {#js /static/components/card/card.js #}
 ```
 
-### Option 1: Put components assets in the static folder
+### Option 2: Put component assets in a static folder
 
 Keep components and assets separate:
 
@@ -263,7 +261,7 @@ static/
     button.js
 ```
 
-Use absolute paths
+Use absolute paths:
 
 ```html+jinja title="components/card.jinja"
 {#css /static/css/card.css #}
@@ -290,7 +288,7 @@ Or relative ones and use your web framework to resolve them:
 {% endfor %}
 ```
 
-### Option 2: Build Tool Integration
+### Option 3: Build tool integration
 
 Use Vite, Webpack, or another bundler:
 
@@ -299,7 +297,7 @@ Use Vite, Webpack, or another bundler:
 {#js /dist/card.js #}
 ```
 
-Your build tool will generates the files with hashes for cache-busting:
+Your build tool will generate the files with hashes for cache-busting:
 
 ```html
 <link rel="stylesheet" href="/dist/card.abc123.css">

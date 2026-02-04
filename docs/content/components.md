@@ -163,9 +163,29 @@ Use `{#def ... #}` at the top of your component:
 - `title` - Required (no default)
 - `count` - Optional (defaults to `0`)
 
+
+#### Type Annotations
+
+Arguments can also have type annotations:                                                                                   
+
+```html+jinja                                                                                           
+{#def
+    title: str,
+    count: int = 0,
+    items: list[str] = [],
+    data: dict[str, int] = {}
+#}
+```
+
+For primitive types (`int`, `str`, `bool`, `list`, `dict`, etc.), Jx validates at runtime that passed arguments match the declared types.
+
+**However, this is limited to simple types**. For example, for arguments with types like `list[str]`, Jx only checks that the argument is a list, not that its elements are
+strings. The same is true for `dict[str, int]`, `tuple[int, ...]`, etc. It also cannot check any union types like `int | str`.
+
+
 ### Default Values
 
-Defaults can be any python value: strings, numbers, booleans, lists, dicts, etc.
+Defaults can be any Python value: strings, numbers, booleans, lists, dicts, etc.
 
 ```html+jinja
 {#def
@@ -333,7 +353,40 @@ Unfilled slots use their default content.
 </div>
 ```
 
-## Next Steps
+## Validation
 
-- **[Attrs](/docs/attrs)** - Handle extra HTML attributes
-- **[Assets](/docs/assets)** - Learn about CSS and JavaScript management
+You can easily validate your components using the CLI tool `jx` installs. Just run:
+
+```bash
+❯❯ jx check PATH_TO_FOLDER 
+```
+
+Example:
+
+```bash
+❯❯ jx check docs/views/
+
+✓ autodoc.md.jinja - OK
+✓ banner_archived.jinja - OK
+✓ color_scheme.jinja - OK
+✓ footer.jinja - OK
+✓ header.jinja - OK
+✓ humans.txt.jinja - OK
+✓ index.jinja - OK
+✓ language_selector.jinja - OK
+✓ layout.jinja - OK
+✓ llm.jinja - OK
+✓ metadata.jinja - OK
+✓ page.jinja - OK
+✓ page_nav.jinja - OK
+✓ page_pager.jinja - OK
+✓ page_toc.jinja - OK
+✓ robots.txt.jinja - OK
+✓ search.jinja - OK
+✓ sidebar.jinja - OK
+✓ sitemap.xml.jinja - OK
+✓ toc.jinja - OK
+✓ version_selector.jinja - OK
+
+21 components checked, 0 errors
+```
