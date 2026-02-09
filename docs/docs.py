@@ -30,9 +30,18 @@ pages = [
             "recipes/icons.md",
             # "recipes/modals.md",
             # "recipes/tabs.md",
-            "recipes/htmx.md",
-            "recipes/alpinejs.md",
         ],
+    },
+    {
+        "title": "Working with",
+        "pages": [
+            ""
+            "working/flask.md",
+            "working/django.md",
+            "working/fastapi.md",
+            "working/htmx.md",
+            "working/alpinejs.md",
+        ]
     },
     "from-jinjax.md",
 ]
