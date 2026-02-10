@@ -43,6 +43,7 @@ pages = [
             "working/alpinejs.md",
         ]
     },
+    "cli.md",
     "from-jinjax.md",
 ]
 
