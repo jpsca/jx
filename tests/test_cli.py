@@ -2,8 +2,17 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import json
 
-from jx.cli import check, find_component_tags, suggest_component, suggest_tag
+from jx.cli import (
+    CheckError,
+    check,
+    check_all,
+    find_component_tags,
+    format_error,
+    suggest_component,
+    suggest_tag,
+)
 
 
 def test_find_component_tags():
@@ -169,3 +178,131 @@ def test_check_nonexistent_path(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "No components found" in captured.out
+
+
+def test_check_all_valid(folder):
+    """Test check_all returns no errors for valid components."""
+    (folder / "button.jinja").write_text(
+        "{#def label #}\n<button>{{ label }}</button>"
+    )
+    (folder / "card.jinja").write_text(
+        '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
+    )
+
+    errors, checked = check_all([folder])
+    assert checked == 2
+    assert errors == []
+
+
+def test_check_all_with_errors(folder):
+    """Test check_all returns structured errors."""
+    (folder / "button.jinja").write_text("<button>Click</button>")
+    (folder / "card.jinja").write_text("<div><Buttn /></div>")
+
+    errors, checked = check_all([folder])
+    assert checked == 2
+    assert len(errors) == 1
+    assert errors[0].file == "card.jinja"
+    assert errors[0].line == 1
+    assert "Buttn" in errors[0].message
+    assert errors[0].suggestion == "Button"
+
+
+def test_check_all_single_file(folder):
+    """Test check_all with a single file path."""
+    file_path = folder / "button.jinja"
+    file_path.write_text("{#def label #}\n<button>{{ label }}</button>")
+
+    errors, checked = check_all([file_path])
+    assert checked == 1
+    assert errors == []
+
+
+def test_check_all_empty(tmp_path):
+    """Test check_all with no components returns zero checked."""
+    empty_folder = tmp_path / "empty"
+    empty_folder.mkdir()
+
+    errors, checked = check_all([empty_folder])
+    assert checked == 0
+    assert errors == []
+
+
+def test_check_json_format_valid(folder, capsys):
+    """Test JSON output format with valid components."""
+    (folder / "button.jinja").write_text("<button>Click</button>")
+
+    exit_code = check([folder], format="json")
+    assert exit_code == 0
+
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["checked"] == 1
+    assert result["errors"] == []
+
+
+def test_check_json_format_with_errors(folder, capsys):
+    """Test JSON output format with errors."""
+    (folder / "button.jinja").write_text("<button>Click</button>")
+    (folder / "card.jinja").write_text("<div><Buttn /></div>")
+
+    exit_code = check([folder], format="json")
+    assert exit_code == 1
+
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["checked"] == 2
+    assert len(result["errors"]) == 1
+    assert result["errors"][0]["file"] == "card.jinja"
+    assert result["errors"][0]["line"] == 1
+    assert "Buttn" in result["errors"][0]["message"]
+    assert result["errors"][0]["suggestion"] == "Button"
+
+
+def test_check_json_format_no_components(tmp_path, capsys):
+    """Test JSON output format with no components."""
+    empty_folder = tmp_path / "empty"
+    empty_folder.mkdir()
+
+    exit_code = check([empty_folder], format="json")
+    assert exit_code == 0
+
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["checked"] == 0
+    assert result["errors"] == []
+
+
+def test_check_unclosed_component_tag(folder, capsys):
+    """Test that an unclosed component tag is detected."""
+    (folder / "footer.jinja").write_text("<footer>Footer</footer>")
+    (folder / "page.jinja").write_text(
+        '{#import "footer.jinja" as Footer #}\n<Footer>\n  <p>content</p>'
+    )
+
+    exit_code = check([folder])
+    assert exit_code == 1
+
+    captured = capsys.readouterr()
+    assert "Unclosed component" in captured.out
+    assert "Footer" in captured.out
+
+
+def test_format_error_with_line():
+    """Test format_error with a line number."""
+    error = CheckError(file="card.jinja", line=4, message="Unknown component 'Foo'")
+    assert format_error(error) == "card.jinja:4 - Unknown component 'Foo'"
+
+
+def test_format_error_without_line():
+    """Test format_error without a line number."""
+    error = CheckError(file="card.jinja", line=None, message="Not valid UTF-8")
+    assert format_error(error) == "card.jinja - Not valid UTF-8"
+
+
+def test_format_error_with_suggestion():
+    """Test format_error includes suggestion."""
+    error = CheckError(
+        file="card.jinja", line=4, message="Unknown component 'Buttn'", suggestion="Button"
+    )
+    assert format_error(error) == "card.jinja:4 - Unknown component 'Buttn' (did you mean 'Button'?)"

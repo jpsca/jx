@@ -3,15 +3,25 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
 import argparse
+import json
 import re
 import sys
+from dataclasses import asdict, dataclass
 from difflib import get_close_matches
 from pathlib import Path
 
 from .catalog import Catalog
 from .exceptions import JxException
 from .meta import extract_metadata
-from .parser import RX_TAG_NAME
+from .parser import RX_TAG_NAME, JxParser
+
+
+@dataclass
+class CheckError:
+    file: str
+    line: int | None
+    message: str
+    suggestion: str | None = None
 
 
 def find_component_tags(source: str) -> list[tuple[str, int]]:
@@ -33,34 +43,36 @@ def check_component(
     catalog: Catalog,
     relpath: str,
     all_components: set[str],
-) -> list[str]:
+) -> list[CheckError]:
     """
     Check a single component for issues.
 
     Returns:
-        List of error messages (empty if no errors).
+        List of CheckError objects (empty if no errors).
     """
-    errors = []
+    errors: list[CheckError] = []
     cdata = catalog.components[relpath]
 
     try:
         source = cdata.path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        return [f"{relpath} - Not valid UTF-8"]
+        return [CheckError(file=relpath, line=None, message="Not valid UTF-8")]
 
     try:
         meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
     except JxException as err:
-        return [f"{relpath} - {err}"]
+        return [CheckError(file=relpath, line=None, message=str(err))]
 
     # Check that all imports exist
     for _import_name, import_path in meta.imports.items():
         if import_path not in all_components:
             suggestion = suggest_component(import_path, all_components)
-            msg = f"{relpath} - Unknown import '{import_path}'"
-            if suggestion:
-                msg += f" (did you mean '{suggestion}'?)"
-            errors.append(msg)
+            errors.append(CheckError(
+                file=relpath,
+                line=None,
+                message=f"Unknown import '{import_path}'",
+                suggestion=suggestion,
+            ))
 
     # Build set of available component names for this file
     available = set(meta.imports.keys())
@@ -71,15 +83,27 @@ def check_component(
             # Check if it exists in the catalog without being imported
             matching = [c for c in all_components if component_matches_tag(c, tag)]
             if matching:
-                errors.append(
-                    f"{relpath}:{line_num} - Component '{tag}' used but not imported"
-                )
+                errors.append(CheckError(
+                    file=relpath,
+                    line=line_num,
+                    message=f"Component '{tag}' used but not imported",
+                ))
             else:
                 suggestion = suggest_tag(tag, available, all_components)
-                msg = f"{relpath}:{line_num} - Unknown component '{tag}'"
-                if suggestion:
-                    msg += f" (did you mean '{suggestion}'?)"
-                errors.append(msg)
+                errors.append(CheckError(
+                    file=relpath,
+                    line=line_num,
+                    message=f"Unknown component '{tag}'",
+                    suggestion=suggestion,
+                ))
+
+    # Parse the template to catch syntax errors (unclosed tags, unmatched braces, etc.)
+    try:
+        components = list(meta.imports.keys())
+        parser = JxParser(name=relpath, source=source, components=components)
+        parser.parse(validate_tags=False)
+    except JxException as err:
+        errors.append(CheckError(file=relpath, line=None, message=str(err)))
 
     return errors
 
@@ -116,20 +140,66 @@ def suggest_tag(tag: str, imported: set[str], all_components: set[str]) -> str |
     return matches[0] if matches else None
 
 
-def check(paths: list[Path]) -> int:
+def check_all(paths: list[Path]) -> tuple[list[CheckError], int]:
     """
-    Check components in the given paths.
+    Check all components in the given paths.
 
     Returns:
-        Exit code (0 for success, 1 for errors).
+        Tuple of (list of errors, number of components checked).
     """
     catalog = Catalog()
 
     for path in paths:
         if path.is_dir():
             catalog.add_folder(path, preload=False)
-        elif path.is_file():
+        elif path.is_file():  # pragma: no cover
             # Single file - add its parent folder
+            catalog.add_folder(path.parent, preload=False)
+
+    all_components = set(catalog.components.keys())
+    all_errors: list[CheckError] = []
+    checked = 0
+
+    for relpath in sorted(all_components):
+        errors = check_component(catalog, relpath, all_components)
+        checked += 1
+        all_errors.extend(errors)
+
+    return all_errors, checked
+
+
+def format_error(error: CheckError) -> str:
+    """Format a CheckError as a human-readable string."""
+    if error.line is not None:
+        msg = f"{error.file}:{error.line} - {error.message}"
+    else:
+        msg = f"{error.file} - {error.message}"
+    if error.suggestion:
+        msg += f" (did you mean '{error.suggestion}'?)"
+    return msg
+
+
+def check(paths: list[Path], *, format: str = "text") -> int:
+    """
+    Check components in the given paths.
+
+    Returns:
+        Exit code (0 for success, 1 for errors).
+    """
+    if format == "json":
+        errors, checked = check_all(paths)
+        print(json.dumps({
+            "checked": checked,
+            "errors": [asdict(e) for e in errors],
+        }))
+        return 1 if errors else 0
+
+    # Text format: preserve original per-file output
+    catalog = Catalog()
+    for path in paths:
+        if path.is_dir():
+            catalog.add_folder(path, preload=False)
+        elif path.is_file():
             catalog.add_folder(path.parent, preload=False)
 
     all_components = set(catalog.components.keys())
@@ -147,7 +217,7 @@ def check(paths: list[Path]) -> int:
 
         if errors:
             for error in errors:
-                print(f"\u2717 {error}")
+                print(f"\u2717 {format_error(error)}")
             total_errors += len(errors)
         else:
             print(f"\u2713 {relpath} - OK")
@@ -172,11 +242,17 @@ def main() -> None:  # pragma: no cover
         type=Path,
         help="Paths to component folders or files",
     )
+    check_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)",
+    )
 
     args = parser.parse_args()
 
     if args.command == "check":
-        sys.exit(check(args.paths))
+        sys.exit(check(args.paths, format=args.format))
     else:
         parser.print_help()
         sys.exit(1)
