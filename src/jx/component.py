@@ -27,6 +27,7 @@ class Component:
         "js",
         "slots",
         "globals",
+        "asset_resolver",
     )
 
     def __init__(
@@ -41,6 +42,7 @@ class Component:
         css: tuple[str, ...] = (),
         js: tuple[str, ...] = (),
         slots: tuple[str, ...] = (),
+        asset_resolver: Callable[[str, str], str] | None = None,
     ) -> None:
         """
         Internal object that represents a Jx component.
@@ -64,6 +66,9 @@ class Component:
                 A tuple of JS file URLs.
             slots:
                 A tuple of slot names.
+            asset_resolver:
+                A callable that transforms asset URLs. Receives (url, prefix) and
+                returns the resolved URL.
 
         """
         self.relpath = relpath
@@ -76,6 +81,7 @@ class Component:
         self.css = css
         self.js = js
         self.slots = slots
+        self.asset_resolver = asset_resolver
 
         self.globals: dict[str, t.Any] = {}
 
@@ -143,11 +149,20 @@ class Component:
         child.globals = self.globals
         return child
 
+    def _resolve_url(self, url: str) -> str:
+        if not self.asset_resolver:
+            return url
+        prefix = ""
+        if self.relpath.startswith("@"):
+            prefix = self.relpath.split("/", 1)[0][1:]
+        return self.asset_resolver(url, prefix)
+
     def collect_css(self, _visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of CSS files for the component and its children.
         """
-        urls = dict.fromkeys(self.css, 1)
+        resolved = [self._resolve_url(url) for url in self.css]
+        urls = dict.fromkeys(resolved, 1)
         _visited = _visited or set()
         _visited.add(self.relpath)
 
@@ -166,7 +181,8 @@ class Component:
         """
         Returns a list of JS files for the component and its children.
         """
-        urls = dict.fromkeys(self.js, 1)
+        resolved = [self._resolve_url(url) for url in self.js]
+        urls = dict.fromkeys(resolved, 1)
         _visited = _visited or set()
         _visited.add(self.relpath)
 

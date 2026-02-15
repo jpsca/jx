@@ -267,3 +267,155 @@ def test_file_encoding_error(folder):
 
     with pytest.raises(FileEncodingError, match="Cannot read .*/bad.jinja: not valid UTF-8"):
         catalog.render("bad.jinja")
+
+
+# ---- Asset folder / package tests ----
+
+
+def test_add_folder_with_assets(tmp_path):
+    components = tmp_path / "components"
+    components.mkdir()
+    (components / "a.jinja").write_text("A")
+
+    assets = tmp_path / "assets"
+    assets.mkdir()
+
+    catalog = Catalog()
+    catalog.add_folder(components, prefix="ui", assets=assets)
+
+    assert catalog.get_assets_dir("ui") == assets.resolve()
+    assert "@ui/a.jinja" in catalog.components
+
+
+def test_get_assets_dir_none(tmp_path):
+    components = tmp_path / "components"
+    components.mkdir()
+    (components / "a.jinja").write_text("A")
+
+    catalog = Catalog()
+    catalog.add_folder(components, prefix="ui")
+
+    assert catalog.get_assets_dir("ui") is None
+    assert catalog.get_assets_dir("nonexistent") is None
+
+
+def test_add_package(tmp_path):
+    """add_package reads JX_COMPONENTS and JX_ASSETS from a module."""
+    import types
+
+    components = tmp_path / "pkg_components"
+    components.mkdir()
+    (components / "btn.jinja").write_text("<button />")
+
+    assets = tmp_path / "pkg_assets"
+    assets.mkdir()
+
+    # Create a fake module with JX_COMPONENTS and JX_ASSETS
+    fake_mod = types.ModuleType("fake_ui_kit")
+    fake_mod.JX_COMPONENTS = components
+    fake_mod.JX_ASSETS = assets
+
+    import sys
+    sys.modules["fake_ui_kit"] = fake_mod
+    try:
+        catalog = Catalog()
+        catalog.add_package("fake_ui_kit", prefix="ui")
+
+        assert "@ui/btn.jinja" in catalog.components
+        assert catalog.get_assets_dir("ui") == assets.resolve()
+    finally:
+        del sys.modules["fake_ui_kit"]
+
+
+def test_add_package_no_jx_components(tmp_path):
+    """add_package raises ValueError if JX_COMPONENTS is missing."""
+    import types
+
+    fake_mod = types.ModuleType("fake_empty")
+    import sys
+    sys.modules["fake_empty"] = fake_mod
+    try:
+        catalog = Catalog()
+        with pytest.raises(ValueError, match="JX_COMPONENTS"):
+            catalog.add_package("fake_empty", prefix="x")
+    finally:
+        del sys.modules["fake_empty"]
+
+
+def test_add_package_no_assets(tmp_path):
+    """add_package works when JX_ASSETS is not set (assets=None)."""
+    import types
+
+    components = tmp_path / "pkg_components"
+    components.mkdir()
+    (components / "a.jinja").write_text("A")
+
+    fake_mod = types.ModuleType("fake_no_assets")
+    fake_mod.JX_COMPONENTS = components
+
+    import sys
+    sys.modules["fake_no_assets"] = fake_mod
+    try:
+        catalog = Catalog()
+        catalog.add_package("fake_no_assets", prefix="na")
+
+        assert "@na/a.jinja" in catalog.components
+        assert catalog.get_assets_dir("na") is None
+    finally:
+        del sys.modules["fake_no_assets"]
+
+
+def test_collect_assets(tmp_path):
+    """collect_assets copies files from assets dirs to output."""
+    components = tmp_path / "components"
+    components.mkdir()
+    (components / "a.jinja").write_text("A")
+
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "button.css").write_text(".btn {}")
+    sub = assets / "sub"
+    sub.mkdir()
+    (sub / "card.css").write_text(".card {}")
+
+    output = tmp_path / "output"
+
+    catalog = Catalog()
+    catalog.add_folder(components, prefix="ui", assets=assets)
+    collected = catalog.collect_assets(output)
+
+    assert len(collected) == 2
+    prefixes = [c[0] for c in collected]
+    assert all(p == "ui" for p in prefixes)
+
+    assert (output / "ui" / "button.css").read_text() == ".btn {}"
+    assert (output / "ui" / "sub" / "card.css").read_text() == ".card {}"
+
+
+def test_collect_assets_multiple_prefixes(tmp_path):
+    """collect_assets handles multiple prefixes."""
+    comp1 = tmp_path / "comp1"
+    comp1.mkdir()
+    (comp1 / "a.jinja").write_text("A")
+
+    assets1 = tmp_path / "assets1"
+    assets1.mkdir()
+    (assets1 / "a.css").write_text("a")
+
+    comp2 = tmp_path / "comp2"
+    comp2.mkdir()
+    (comp2 / "b.jinja").write_text("B")
+
+    assets2 = tmp_path / "assets2"
+    assets2.mkdir()
+    (assets2 / "b.css").write_text("b")
+
+    output = tmp_path / "output"
+
+    catalog = Catalog()
+    catalog.add_folder(comp1, prefix="one", assets=assets1)
+    catalog.add_folder(comp2, prefix="two", assets=assets2)
+    catalog.collect_assets(output)
+
+    assert (output / "one" / "a.css").read_text() == "a"
+    assert (output / "two" / "b.css").read_text() == "b"

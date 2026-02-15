@@ -786,3 +786,164 @@ def test_prop_type_validation_list(folder):
         cat.render("list_typed.jinja", items="not a list")
     assert "items" in str(exc_info.value)
     assert "expected list" in str(exc_info.value)
+
+
+# ---- Asset Resolver Tests ----
+
+
+def test_asset_resolver_basic(tmp_path):
+    """Resolver transforms URLs for prefixed components with an assets dir."""
+    components = tmp_path / "pkg_components"
+    components.mkdir()
+    (components / "button.jinja").write_text('{#css button.css #}\n<button />')
+
+    assets = tmp_path / "pkg_assets"
+    assets.mkdir()
+
+    def resolver(url, prefix):
+        return f"/pkg/{prefix}/{url}"
+
+    cat = Catalog(asset_resolver=resolver)
+    cat.add_folder(components, prefix="ui", assets=assets)
+
+    co = cat.get_component("@ui/button.jinja")
+    css = co.collect_css()
+    assert css == ["/pkg/ui/button.css"]
+
+
+def test_asset_resolver_skips_no_assets_dir(tmp_path):
+    """Resolver is NOT called for a prefix that has no assets dir."""
+    components = tmp_path / "local"
+    components.mkdir()
+    (components / "card.jinja").write_text('{#css card.css #}\n<div />')
+
+    calls = []
+
+    def resolver(url, prefix):
+        calls.append((url, prefix))
+        return f"/pkg/{prefix}/{url}"
+
+    cat = Catalog(asset_resolver=resolver)
+    cat.add_folder(components, prefix="local")  # no assets= param
+
+    co = cat.get_component("@local/card.jinja")
+    css = co.collect_css()
+    assert css == ["card.css"]  # pass-through, not resolved
+    assert calls == []  # resolver was never called
+
+
+def test_asset_resolver_skips_unprefixed(tmp_path):
+    """Resolver is NOT called for unprefixed components without assets dir."""
+    components = tmp_path / "local"
+    components.mkdir()
+    (components / "card.jinja").write_text('{#css card.css #}\n<div />')
+
+    calls = []
+
+    def resolver(url, prefix):
+        calls.append((url, prefix))
+        return f"/resolved/{url}"
+
+    cat = Catalog(asset_resolver=resolver)
+    cat.add_folder(components)
+
+    co = cat.get_component("card.jinja")
+    css = co.collect_css()
+    assert css == ["card.css"]
+    assert calls == []
+
+
+def test_asset_resolver_with_children(tmp_path):
+    """Child components from different prefixes resolve correctly."""
+    pkg_dir = tmp_path / "pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "button.jinja").write_text('{#css button.css #}\n<button />')
+
+    pkg_assets = tmp_path / "pkg_assets"
+    pkg_assets.mkdir()
+
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    (local_dir / "page.jinja").write_text(
+        '{#import "@ui/button.jinja" as Button #}\n'
+        '{#css page.css #}\n'
+        '<Button />'
+    )
+
+    def resolver(url, prefix):
+        return f"/pkg/{prefix}/{url}"
+
+    cat = Catalog(asset_resolver=resolver)
+    cat.add_folder(local_dir)
+    cat.add_folder(pkg_dir, prefix="ui", assets=pkg_assets)
+
+    co = cat.get_component("page.jinja")
+    css = co.collect_css()
+    # page.css is local (no assets dir), passes through
+    # button.css is from @ui (has assets dir), gets resolved
+    assert css == ["page.css", "/pkg/ui/button.css"]
+
+
+def test_asset_resolver_js(tmp_path):
+    """Resolver also works for JS assets."""
+    components = tmp_path / "pkg"
+    components.mkdir()
+    (components / "widget.jinja").write_text(
+        '{#js widget.js #}\n<div>widget</div>'
+    )
+
+    assets = tmp_path / "assets"
+    assets.mkdir()
+
+    def resolver(url, prefix):
+        return f"/pkg/{prefix}/{url}"
+
+    cat = Catalog(asset_resolver=resolver)
+    cat.add_folder(components, prefix="ui", assets=assets)
+
+    co = cat.get_component("@ui/widget.jinja")
+    js = co.collect_js()
+    assert js == ["/pkg/ui/widget.js"]
+
+
+def test_asset_resolver_render_integration(tmp_path):
+    """Full render pipeline applies resolver in assets.render_css()."""
+    pkg_dir = tmp_path / "pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "button.jinja").write_text(
+        '{#css button.css #}\n<button>{{ content }}</button>'
+    )
+
+    pkg_assets = tmp_path / "assets"
+    pkg_assets.mkdir()
+
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    (local_dir / "page.jinja").write_text(
+        '{#import "@ui/button.jinja" as Button #}\n'
+        '{#css page.css #}\n'
+        '{{ assets.render_css() }}\n'
+        '<Button>click</Button>'
+    )
+
+    def resolver(url, prefix):
+        return f"/pkg/{prefix}/{url}"
+
+    cat = Catalog(asset_resolver=resolver)
+    cat.add_folder(local_dir)
+    cat.add_folder(pkg_dir, prefix="ui", assets=pkg_assets)
+
+    html = cat.render("page.jinja")
+    assert '<link rel="stylesheet" href="page.css">' in html
+    assert '<link rel="stylesheet" href="/pkg/ui/button.css">' in html
+
+
+def test_no_resolver_backward_compatible(tmp_path):
+    """Without asset_resolver, everything works exactly as before."""
+    components = tmp_path / "views"
+    components.mkdir()
+    (components / "btn.jinja").write_text('{#css btn.css #}\n<button />')
+
+    cat = Catalog(components)
+    co = cat.get_component("btn.jinja")
+    assert co.collect_css() == ["btn.css"]
