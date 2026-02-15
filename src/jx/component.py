@@ -149,7 +149,7 @@ class Component:
         child.globals = self.globals
         return child
 
-    def _resolve_url(self, url: str) -> str:
+    def resolve_url(self, url: str) -> str:
         if not self.asset_resolver:
             return url
         prefix = ""
@@ -161,7 +161,7 @@ class Component:
         """
         Returns a list of CSS files for the component and its children.
         """
-        resolved = [self._resolve_url(url) for url in self.css]
+        resolved = [self.resolve_url(url) for url in self.css]
         urls = dict.fromkeys(resolved, 1)
         _visited = _visited or set()
         _visited.add(self.relpath)
@@ -181,7 +181,7 @@ class Component:
         """
         Returns a list of JS files for the component and its children.
         """
-        resolved = [self._resolve_url(url) for url in self.js]
+        resolved = [self.resolve_url(url) for url in self.js]
         urls = dict.fromkeys(resolved, 1)
         _visited = _visited or set()
         _visited.add(self.relpath)

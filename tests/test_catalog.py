@@ -283,11 +283,11 @@ def test_add_folder_with_assets(tmp_path):
     catalog = Catalog()
     catalog.add_folder(components, prefix="ui", assets=assets)
 
-    assert catalog.get_assets_dir("ui") == assets.resolve()
+    assert catalog.get_assets_folder("ui") == assets.resolve()
     assert "@ui/a.jinja" in catalog.components
 
 
-def test_get_assets_dir_none(tmp_path):
+def test_get_assets_folder_none(tmp_path):
     components = tmp_path / "components"
     components.mkdir()
     (components / "a.jinja").write_text("A")
@@ -295,8 +295,8 @@ def test_get_assets_dir_none(tmp_path):
     catalog = Catalog()
     catalog.add_folder(components, prefix="ui")
 
-    assert catalog.get_assets_dir("ui") is None
-    assert catalog.get_assets_dir("nonexistent") is None
+    assert catalog.get_assets_folder("ui") is None
+    assert catalog.get_assets_folder("nonexistent") is None
 
 
 def test_add_package(tmp_path):
@@ -322,7 +322,7 @@ def test_add_package(tmp_path):
         catalog.add_package("fake_ui_kit", prefix="ui")
 
         assert "@ui/btn.jinja" in catalog.components
-        assert catalog.get_assets_dir("ui") == assets.resolve()
+        assert catalog.get_assets_folder("ui") == assets.resolve()
     finally:
         del sys.modules["fake_ui_kit"]
 
@@ -360,7 +360,7 @@ def test_add_package_no_assets(tmp_path):
         catalog.add_package("fake_no_assets", prefix="na")
 
         assert "@na/a.jinja" in catalog.components
-        assert catalog.get_assets_dir("na") is None
+        assert catalog.get_assets_folder("na") is None
     finally:
         del sys.modules["fake_no_assets"]
 

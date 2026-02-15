@@ -76,17 +76,17 @@ class Catalog:
                 component that uses a large number of child components.
             asset_resolver:
                 Optional callable that transforms asset URLs for components from
-                folders registered with an ``assets`` directory.
-                Receives ``(url, prefix)`` and returns the resolved URL.
+                folders registered with an `assets` folder.
+                Receives `(url, prefix)` and returns the resolved URL.
                 Only invoked for components whose prefix has a registered assets
-                directory; all other asset URLs pass through unchanged.
+                folder; all other asset URLs pass through unchanged.
             **globals:
                 Variables to make available to all components by default.
 
         """
         self._lock = threading.RLock()  # Protects self.components access
         self.components = {}
-        self._assets_dirs: dict[str, Path] = {}
+        self.assets_folders: dict[str, Path] = {}
         self.asset_resolver = asset_resolver
         self.jinja_env = self._make_jinja_env(
             jinja_env=jinja_env,
@@ -104,8 +104,8 @@ class Catalog:
         path: str | Path,
         *,
         prefix: str = "",
-        assets: str | Path | None = None,
         preload: bool = True,
+        assets: str | Path | None = None,
     ) -> None:
         """
         Add a folder path from which to search for components, optionally under a prefix.
@@ -136,22 +136,24 @@ class Catalog:
             prefix:
                 Optional path prefix that all the components in the folder
                 will have. The default is empty.
-            assets:
-                Optional path to a directory containing CSS/JS assets for
-                this folder's components. When set, the ``asset_resolver``
-                will be invoked for asset URLs from these components.
             preload:
                 Whether to preload the data of components in the folder.
                 If set to `True` (the default), the component data will be loaded into
                 memory when the folder is added, instead of just before rendering it.
                 This makes the first render faster at the expense of a few
                 microseconds upfront.
+            assets:
+                Optional path to a folder containing CSS/JS assets for
+                this folder's components. When set, the `asset_resolver`
+                will be invoked for asset URLs from these components.
 
         """
         base_path = Path(path).resolve()
         prefix = prefix.replace("\\", "/").strip("./@ ")
         if assets is not None:
-            self._assets_dirs[prefix] = Path(assets).resolve()
+            if not prefix:
+                raise ValueError("Cannot register assets folder without a prefix")
+            self.assets_folders[prefix] = Path(assets).resolve()
         prefix = f"@{prefix}/" if prefix else ""
         if prefix:
             logger.debug(f"Adding folder `{base_path}` with the prefix `{prefix}`")
@@ -184,15 +186,15 @@ class Catalog:
         """
         Register components (and optionally assets) from an installed Python package.
 
-        The package module must expose a ``JX_COMPONENTS`` attribute pointing to
-        the components directory (e.g. via ``importlib.resources.files``).
-        It may also expose ``JX_ASSETS`` pointing to an assets directory.
+        The package module must expose a `JX_COMPONENTS` attribute pointing to
+        the components folder (e.g. via `importlib.resources.files`).
+        It may also expose `JX_ASSETS` pointing to an assets folder.
 
         Arguments:
             package_name:
-                The importable package name (e.g. ``"my_ui_kit"``).
+                The importable package name (e.g. `"my_ui_kit"`).
             prefix:
-                Optional prefix for the components (e.g. ``"ui"``).
+                Optional prefix for the components (e.g. `"ui"`).
             preload:
                 Whether to preload component data.
 
@@ -206,34 +208,34 @@ class Catalog:
         assets = getattr(mod, "JX_ASSETS", None)
         self.add_folder(components, prefix=prefix, assets=assets, preload=preload)
 
-    def get_assets_dir(self, prefix: str) -> Path | None:
+    def get_assets_folder(self, prefix: str) -> Path | None:
         """
-        Return the registered assets directory for a given prefix, or ``None``.
+        Return the registered assets folder for a given prefix, or `None`.
 
         Arguments:
             prefix:
-                The prefix to look up (e.g. ``"ui"``).
+                The prefix to look up (e.g. `"ui"`).
 
         """
         prefix = prefix.replace("\\", "/").strip("./@ ")
-        return self._assets_dirs.get(prefix)
+        return self.assets_folders.get(prefix)
 
     def collect_assets(self, output: str | Path) -> list[tuple[str, Path]]:
         """
-        Copy all registered package assets to an output directory.
+        Copy all registered package assets to an output folder.
 
-        For each prefix that has a registered assets directory, files are
-        copied to ``<output>/<prefix>/``. Returns a list of
-        ``(prefix, relative_path)`` tuples for every file copied.
+        For each prefix that has a registered assets folder, files are
+        copied to `<output>/<prefix>/`. Returns a list of
+        `(prefix, relative_path)` tuples for every file copied.
 
         Arguments:
             output:
-                Destination directory.
+                Destination folder.
 
         """
         output = Path(output)
         collected: list[tuple[str, Path]] = []
-        for prefix, assets_dir in self._assets_dirs.items():
+        for prefix, assets_dir in self.assets_folders.items():
             dest_dir = output / prefix if prefix else output
             for src_file in assets_dir.rglob("*"):
                 if src_file.is_file():
@@ -464,10 +466,10 @@ class Catalog:
 
     def _resolve_asset_url(self, url: str, prefix: str) -> str:
         """
-        Resolve an asset URL through the configured ``asset_resolver``.
-        Only invoked for prefixes that have a registered assets directory.
+        Resolve an asset URL through the configured `asset_resolver`.
+        Only invoked for prefixes that have a registered assets folder.
         """
-        if self.asset_resolver and prefix in self._assets_dirs:
+        if self.asset_resolver and prefix in self.assets_folders:
             return self.asset_resolver(url, prefix)
         return url
 

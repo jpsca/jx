@@ -42,7 +42,7 @@ Components inside a package typically declare asset URLs relative to the package
 <button class="btn">{{ label }}</button>
 ```
 
-But these files live in `site-packages`, not in your web server's static directory. An `asset_resolver` bridges this gap by transforming asset URLs at render time.
+But these files live in `site-packages`, not in your web server's static folder. An `asset_resolver` bridges this gap by transforming asset URLs at render time.
 
 ### The `asset_resolver` Callback
 
@@ -58,9 +58,9 @@ catalog.add_package("my_ui_kit", prefix="ui")
 
 With this resolver, `button.css` declared in a `@ui/` component becomes `/pkg/ui/button.css` in the rendered HTML.
 
-The resolver is **only invoked** for components whose prefix has a registered assets directory. Components from regular folders, even if they use a prefix, are not affected. This means your local components' asset URLs pass through unchanged.
+The resolver is **only invoked** for components whose prefix has a registered assets folder. Components from regular folders, even if they use a prefix, are not affected. This means your local components' asset URLs pass through unchanged.
 
-The only drawback is that you must manually add code to serve package assets **during development**. In production, you'd use `collect_assets` instead.
+A drawback is that you must manually add code to serve package assets **during development**. In production, you'd use `collect_assets` instead.
 
 ### Flask Example
 
@@ -79,7 +79,7 @@ catalog.add_package("my_ui_kit", prefix="ui")
 
 @app.route("/pkg/<prefix>/<path:filename>")
 def serve_package_assets(prefix, filename):
-    assets_dir = catalog.get_assets_dir(prefix)
+    assets_dir = catalog.get_assets_folder(prefix)
     if assets_dir is None:
         abort(404)
     return send_from_directory(assets_dir, filename)
@@ -90,7 +90,7 @@ def serve_package_assets(prefix, filename):
 
 ```python
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from jx import Catalog
 
@@ -104,7 +104,7 @@ catalog.add_package("my_ui_kit", prefix="ui")
 
 @app.get("/pkg/{prefix}/{filename:path}")
 def serve_package_assets(prefix: str, filename: str):
-    assets_dir = catalog.get_assets_dir(prefix)
+    assets_dir = catalog.get_assets_folder(prefix)
     if assets_dir is None:
         raise HTTPException(404)
     return FileResponse(assets_dir / filename)
@@ -112,7 +112,7 @@ def serve_package_assets(prefix: str, filename: str):
 
 ## Collecting Assets for Production
 
-In production, you typically want static files served by Nginx, a CDN, or your framework's static file handler rather than a Python route. The `collect_assets` method copies all registered package assets to an output directory:
+In production, you typically want static files served by Nginx, a CDN, or your framework's static file handler rather than a Python route. The `collect_assets` method copies all registered package assets to an output folder:
 
 ```python
 catalog.collect_assets("static/pkg")
@@ -165,8 +165,8 @@ catalog = Catalog(
 
 A Jx-compatible package exposes two module-level attributes:
 
-- **`JX_COMPONENTS`** (required): Path to the directory containing `.jinja` component files.
-- **`JX_ASSETS`** (optional): Path to the directory containing CSS/JS assets.
+- **`JX_COMPONENTS`** (required): Path to the folder containing `.jinja` component files.
+- **`JX_ASSETS`** (optional): Path to the folder containing CSS/JS assets.
 
 ### Package Structure
 
