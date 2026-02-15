@@ -795,7 +795,7 @@ def test_asset_resolver_basic(tmp_path):
     """Resolver transforms URLs for prefixed components with an assets dir."""
     components = tmp_path / "pkg_components"
     components.mkdir()
-    (components / "button.jinja").write_text('{#css button.css #}\n<button />')
+    (components / "button.jinja").write_text("{#css button.css #}\n<button />")
 
     assets = tmp_path / "pkg_assets"
     assets.mkdir()
@@ -815,7 +815,7 @@ def test_asset_resolver_skips_no_assets_dir(tmp_path):
     """Resolver is NOT called for a prefix that has no assets dir."""
     components = tmp_path / "local"
     components.mkdir()
-    (components / "card.jinja").write_text('{#css card.css #}\n<div />')
+    (components / "card.jinja").write_text("{#css card.css #}\n<div />")
 
     calls = []
 
@@ -836,7 +836,7 @@ def test_asset_resolver_skips_unprefixed(tmp_path):
     """Resolver is NOT called for unprefixed components without assets dir."""
     components = tmp_path / "local"
     components.mkdir()
-    (components / "card.jinja").write_text('{#css card.css #}\n<div />')
+    (components / "card.jinja").write_text("{#css card.css #}\n<div />")
 
     calls = []
 
@@ -857,7 +857,7 @@ def test_asset_resolver_with_children(tmp_path):
     """Child components from different prefixes resolve correctly."""
     pkg_dir = tmp_path / "pkg"
     pkg_dir.mkdir()
-    (pkg_dir / "button.jinja").write_text('{#css button.css #}\n<button />')
+    (pkg_dir / "button.jinja").write_text("{#css button.css #}\n<button />")
 
     pkg_assets = tmp_path / "pkg_assets"
     pkg_assets.mkdir()
@@ -889,7 +889,7 @@ def test_asset_resolver_js(tmp_path):
     components = tmp_path / "pkg"
     components.mkdir()
     (components / "widget.jinja").write_text(
-        '{#js widget.js #}\n<div>widget</div>'
+        "{#js widget.js #}\n<div>widget</div>"
     )
 
     assets = tmp_path / "assets"
@@ -911,7 +911,7 @@ def test_asset_resolver_render_integration(tmp_path):
     pkg_dir = tmp_path / "pkg"
     pkg_dir.mkdir()
     (pkg_dir / "button.jinja").write_text(
-        '{#css button.css #}\n<button>{{ content }}</button>'
+        "{#css button.css #}\n<button>{{ content }}</button>"
     )
 
     pkg_assets = tmp_path / "assets"
@@ -942,7 +942,7 @@ def test_no_resolver_backward_compatible(tmp_path):
     """Without asset_resolver, everything works exactly as before."""
     components = tmp_path / "views"
     components.mkdir()
-    (components / "btn.jinja").write_text('{#css btn.css #}\n<button />')
+    (components / "btn.jinja").write_text("{#css btn.css #}\n<button />")
 
     cat = Catalog(components)
     co = cat.get_component("btn.jinja")
