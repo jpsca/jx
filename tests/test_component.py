@@ -87,8 +87,9 @@ def test_unknown_child(folder):
 <div><Child>Hello</Child></div>
 """)
 
+    cat = Catalog(folder)
     with pytest.raises(TemplateSyntaxError, match="Unknown component `Child`.*"):
-        Catalog(folder)
+        cat.render("parent.jinja")
 
 
 def test_missing_required_prop(folder):

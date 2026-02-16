@@ -15,7 +15,7 @@ import jinja2
 
 from . import utils
 from .component import Component
-from .exceptions import FileEncodingError, ImportError
+from .exceptions import FileEncodingError, ImportError, JxException
 from .meta import extract_metadata
 from .parser import JxParser
 from .utils import logger
@@ -178,7 +178,10 @@ class Catalog:
         # Preload outside the lock to avoid holding it during compilation
         if preload:
             for relpath in relpaths:
-                self.get_component_data(relpath)
+                try:
+                    self.get_component_data(relpath)
+                except (JxException, jinja2.TemplateSyntaxError):
+                    pass
 
     add_path = add_folder  # alias
 
