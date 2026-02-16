@@ -2,8 +2,11 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import importlib
+import shutil
 import threading
 import typing as t
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import CodeType
@@ -48,6 +51,7 @@ class Catalog:
         filters: dict[str, t.Any] | None = None,
         tests: dict[str, t.Any] | None = None,
         auto_reload: bool = True,
+        asset_resolver: Callable[[str, str], str] | None = None,
         **globals: t.Any,
     ) -> None:
         """
@@ -70,12 +74,20 @@ class Catalog:
                 automatically re-process them if they change. The performance impact of
                 leaving it on is minimal, but *might* be noticeable when rendering a
                 component that uses a large number of child components.
+            asset_resolver:
+                Optional callable that transforms asset URLs for components from
+                folders registered with an `assets` folder.
+                Receives `(url, prefix)` and returns the resolved URL.
+                Only invoked for components whose prefix has a registered assets
+                folder; all other asset URLs pass through unchanged.
             **globals:
                 Variables to make available to all components by default.
 
         """
         self._lock = threading.RLock()  # Protects self.components access
         self.components = {}
+        self.assets_folders: dict[str, Path] = {}
+        self.asset_resolver = asset_resolver
         self.jinja_env = self._make_jinja_env(
             jinja_env=jinja_env,
             globals=globals,
@@ -88,7 +100,12 @@ class Catalog:
             self.add_folder(folder)
 
     def add_folder(
-        self, path: str | Path, *, prefix: str = "", preload: bool = True
+        self,
+        path: str | Path,
+        *,
+        prefix: str = "",
+        preload: bool = True,
+        assets: str | Path | None = None,
     ) -> None:
         """
         Add a folder path from which to search for components, optionally under a prefix.
@@ -125,10 +142,18 @@ class Catalog:
                 memory when the folder is added, instead of just before rendering it.
                 This makes the first render faster at the expense of a few
                 microseconds upfront.
+            assets:
+                Optional path to a folder containing CSS/JS assets for
+                this folder's components. When set, the `asset_resolver`
+                will be invoked for asset URLs from these components.
 
         """
         base_path = Path(path).resolve()
         prefix = prefix.replace("\\", "/").strip("./@ ")
+        if assets is not None:
+            if not prefix:
+                raise ValueError("Cannot register assets folder without a prefix")
+            self.assets_folders[prefix] = Path(assets).resolve()
         prefix = f"@{prefix}/" if prefix else ""
         if prefix:
             logger.debug(f"Adding folder `{base_path}` with the prefix `{prefix}`")
@@ -154,6 +179,72 @@ class Catalog:
         if preload:
             for relpath in relpaths:
                 self.get_component_data(relpath)
+
+    def add_package(
+        self, package_name: str, *, prefix: str = "", preload: bool = True
+    ) -> None:
+        """
+        Register components (and optionally assets) from an installed Python package.
+
+        The package module must expose a `JX_COMPONENTS` attribute pointing to
+        the components folder (e.g. via `importlib.resources.files`).
+        It may also expose `JX_ASSETS` pointing to an assets folder.
+
+        Arguments:
+            package_name:
+                The importable package name (e.g. `"my_ui_kit"`).
+            prefix:
+                Optional prefix for the components (e.g. `"ui"`).
+            preload:
+                Whether to preload component data.
+
+        """
+        mod = importlib.import_module(package_name)
+        components = getattr(mod, "JX_COMPONENTS", None)
+        if components is None:
+            raise ValueError(
+                f"Package '{package_name}' does not have a JX_COMPONENTS attribute"
+            )
+        assets = getattr(mod, "JX_ASSETS", None)
+        self.add_folder(components, prefix=prefix, assets=assets, preload=preload)
+
+    def get_assets_folder(self, prefix: str) -> Path | None:
+        """
+        Return the registered assets folder for a given prefix, or `None`.
+
+        Arguments:
+            prefix:
+                The prefix to look up (e.g. `"ui"`).
+
+        """
+        prefix = prefix.replace("\\", "/").strip("./@ ")
+        return self.assets_folders.get(prefix)
+
+    def collect_assets(self, output: str | Path) -> list[tuple[str, Path]]:
+        """
+        Copy all registered package assets to an output folder.
+
+        For each prefix that has a registered assets folder, files are
+        copied to `<output>/<prefix>/`. Returns a list of
+        `(prefix, relative_path)` tuples for every file copied.
+
+        Arguments:
+            output:
+                Destination folder.
+
+        """
+        output = Path(output)
+        collected: list[tuple[str, Path]] = []
+        for prefix, assets_dir in self.assets_folders.items():
+            dest_dir = output / prefix if prefix else output
+            for src_file in assets_dir.rglob("*"):
+                if src_file.is_file():
+                    rel = src_file.relative_to(assets_dir)
+                    dest = dest_dir / rel
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_file, dest)
+                    collected.append((prefix, rel))
+        return collected
 
     def render(
         self, relpath: str, globals: dict[str, t.Any] | None = None, **kwargs
@@ -233,6 +324,7 @@ class Catalog:
             css=meta.css,
             js=meta.js,
             slots=slots,
+            asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
         )
 
         globals = globals or {}
@@ -328,6 +420,7 @@ class Catalog:
                 css=cdata.css,
                 js=cdata.js,
                 slots=cdata.slots,
+                asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
             )
             return co
 
@@ -370,6 +463,15 @@ class Catalog:
         }
 
     # Private
+
+    def _resolve_asset_url(self, url: str, prefix: str) -> str:
+        """
+        Resolve an asset URL through the configured `asset_resolver`.
+        Only invoked for prefixes that have a registered assets folder.
+        """
+        if self.asset_resolver and prefix in self.assets_folders:
+            return self.asset_resolver(url, prefix)
+        return url
 
     def _make_jinja_env(
         self,

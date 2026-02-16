@@ -44,6 +44,7 @@ pages = [
         ]
     },
     "cli.md",
+    "installable.md",
     "from-jinjax.md",
 ]
 
