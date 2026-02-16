@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from jx import Catalog
-from jx.cli import load_catalog, main
+from jx.cli import _is_file_path, load_catalog, main
 
 
 def test_load_catalog_invalid_format(capsys):
@@ -58,6 +58,89 @@ def test_load_catalog_dotted_attribute():
     # jx.Catalog.__name__ is "Catalog" (a string)
     result = load_catalog("jx:Catalog.__name__")
     assert result == "Catalog"
+
+
+# -- File path detection --
+
+
+def test_is_file_path_with_slash():
+    assert _is_file_path("docs/docs.py") is True
+
+
+def test_is_file_path_with_py_extension():
+    assert _is_file_path("setup.py") is True
+
+
+def test_is_file_path_with_module_path():
+    assert _is_file_path("myapp.setup") is False
+
+
+# -- load_catalog from file path --
+
+
+def test_load_catalog_file_path(tmp_path):
+    """Test load_catalog with a file path instead of module path."""
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text(
+        "from jx import Catalog\n"
+        "catalog = Catalog()\n"
+    )
+    result = load_catalog(f"{setup_file}:catalog")
+    assert isinstance(result, Catalog)
+
+
+def test_load_catalog_file_path_nested_attr(tmp_path):
+    """Test load_catalog with a file path and dotted attribute."""
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text(
+        "from jx import Catalog\n"
+        "class docs:\n"
+        "    catalog = Catalog()\n"
+    )
+    result = load_catalog(f"{setup_file}:docs.catalog")
+    assert isinstance(result, Catalog)
+
+
+def test_load_catalog_file_path_not_found(capsys):
+    """Test load_catalog with a file path that doesn't exist."""
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog("nonexistent/file.py:catalog")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "File not found" in captured.out
+
+
+def test_load_catalog_file_path_missing_attr(tmp_path, capsys):
+    """Test load_catalog with a file path but missing attribute."""
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text("x = 1\n")
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog(f"{setup_file}:catalog")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Could not resolve" in captured.out
+
+
+def test_main_check_file_path(tmp_path, capsys):
+    """Test main check subcommand with a file path argument."""
+    folder = tmp_path / "components"
+    folder.mkdir()
+    (folder / "alert.jinja").write_text("<div>Alert</div>")
+
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{folder}', preload=False)\n"
+    )
+
+    with patch.object(sys, "argv", ["jx", "check", f"{setup_file}:catalog"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
+
+    captured = capsys.readouterr()
+    assert "alert.jinja - OK" in captured.out
 
 
 def test_main_no_command(capsys):

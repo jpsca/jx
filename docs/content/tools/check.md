@@ -5,13 +5,18 @@ description: Command-line tools for validating Jx components
 
 Jx includes a command-line tool for validating your components. This helps catch errors early, and can be especially useful in CI pipelines.
 
-Point the checker at your catalog instance using its Python import path:
+Point the checker at your catalog instance using its Python import path. The format is `module.path:attribute` — the module is imported and the attribute is used as the `Catalog` instance.
 
 ```sh
 $ jx check myapp.setup:catalog
 ```
 
-The format is `module.path:attribute` — the module is imported and the attribute is used as the `Catalog` instance.
+You can also use `path/to/file.py:attribute` — the file is imported and the attribute is used as the `Catalog` instance.
+
+```sh
+$ jx check docs/docs.py:catalog
+```
+
 
 ## What It Checks
 
