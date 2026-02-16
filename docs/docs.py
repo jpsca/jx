@@ -43,8 +43,13 @@ pages = [
             "working/alpinejs.md",
         ]
     },
-    "cli.md",
     "installable.md",
+    {
+        "title": "Tools",
+        "pages": [
+            "tools/check.md",
+        ]
+    },
     "from-jinjax.md",
 ]
 

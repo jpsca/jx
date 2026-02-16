@@ -130,18 +130,11 @@ static/pkg/
 
 You can run this as part of your build or deploy step:
 
-```python title="collect.py"
-from myapp import catalog
-
-catalog.collect_assets("static/pkg")
-print("Assets collected.")
-```
-
 ```bash
-python collect.py
+jx collect_assets myapp.setup:catalog ./static/pkg
 ```
 
-After collecting, update your resolver (or remove it entirely) to point to the static path:
+After collecting, update your resolver to point to the static path:
 
 ```python
 # Production: assets already at /static/pkg/<prefix>/
