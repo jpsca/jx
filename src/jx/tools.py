@@ -20,6 +20,7 @@ class CheckError:
     line: int | None
     message: str
     suggestion: str | None = None
+    abs_path: str | None = None
 
 
 def find_component_tags(source: str) -> list[tuple[str, int]]:
@@ -50,16 +51,17 @@ def check_component(
     """
     errors: list[CheckError] = []
     cdata = catalog.components[relpath]
+    abs_path = str(cdata.path)
 
     try:
         source = cdata.path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        return [CheckError(file=relpath, line=None, message="Not valid UTF-8")]
+        return [CheckError(file=relpath, line=None, message="Not valid UTF-8", abs_path=abs_path)]
 
     try:
         meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
     except JxException as err:
-        return [CheckError(file=relpath, line=None, message=str(err))]
+        return [CheckError(file=relpath, line=None, message=str(err), abs_path=abs_path)]
 
     # Check that all imports exist
     for _import_name, import_path in meta.imports.items():
@@ -70,6 +72,7 @@ def check_component(
                 line=None,
                 message=f"Unknown import '{import_path}'",
                 suggestion=suggestion,
+                abs_path=abs_path,
             ))
 
     # Build set of available component names for this file
@@ -85,6 +88,7 @@ def check_component(
                     file=relpath,
                     line=line_num,
                     message=f"Component '{tag}' used but not imported",
+                    abs_path=abs_path,
                 ))
             else:
                 suggestion = suggest_tag(tag, available, all_components)
@@ -93,6 +97,7 @@ def check_component(
                     line=line_num,
                     message=f"Unknown component '{tag}'",
                     suggestion=suggestion,
+                    abs_path=abs_path,
                 ))
 
     # Parse the template to catch syntax errors (unclosed tags, unmatched braces, etc.)
@@ -101,7 +106,7 @@ def check_component(
         parser = JxParser(name=relpath, source=source, components=components)
         parser.parse(validate_tags=False)
     except JxException as err:
-        errors.append(CheckError(file=relpath, line=None, message=str(err)))
+        errors.append(CheckError(file=relpath, line=None, message=str(err), abs_path=abs_path))
 
     return errors
 
