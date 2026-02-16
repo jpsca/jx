@@ -48,6 +48,7 @@ pages = [
         "title": "Tools",
         "pages": [
             "tools/check.md",
+            "tools/vscode.md",
         ]
     },
     "from-jinjax.md",

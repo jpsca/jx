@@ -96,16 +96,3 @@ def dashboard_view():
 ```
 
 :::
-
-
-## VisualStudio Code extension
-
-If you are using VisualStudio Code, install the [Jinja-Jx extension](https://github.com/jpsca/jx-vscode).
-
-![Jinja-Jx extension](/assets/images/jinja-jx.png)
-
-This extension offers:
-
-- Syntax highlighting of Jx-specific constructs like `import`, `def`, `css`, `js`, etc. and PascalCase component tags (e.g., `<MyComponent>`)
-- Add go-to-definition from import paths and component tags to jump to the component file
-- Check for syntax errors and validate import paths on save
