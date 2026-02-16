@@ -2,238 +2,208 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
-import json
+import sys
+from unittest.mock import patch
 
-from jx.cli import (
-    CheckError,
-    check,
-    check_all,
-    find_component_tags,
-    format_error,
-    suggest_component,
-    suggest_tag,
-)
+import pytest
+
+from jx import Catalog
+from jx.cli import _is_file_path, load_catalog, main
 
 
-def test_find_component_tags():
-    source = """
-<div>
-  <Button label="Click" />
-  <Card title="Hello">
-    <CloseBtn />
-  </Card>
-</div>
-"""
-    tags = find_component_tags(source)
-    assert ("Button", 3) in tags
-    assert ("Card", 4) in tags
-    assert ("CloseBtn", 5) in tags
+def test_load_catalog_invalid_format(capsys):
+    """Test load_catalog with invalid format (no colon)."""
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog("no_colon_here")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Invalid catalog path" in captured.out
 
 
-def test_suggest_tag():
-    imported = {"Button", "Card", "Layout"}
-    all_components = {"button.jinja", "card.jinja", "layout.jinja"}
+def test_load_catalog_missing_module(capsys):
+    """Test load_catalog with a module that doesn't exist."""
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog("nonexistent.module:catalog")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Could not import module" in captured.out
 
-    assert suggest_tag("Buttn", imported, all_components) == "Button"
-    assert suggest_tag("Crad", imported, all_components) == "Card"
-    assert suggest_tag("XYZ123", imported, all_components) is None
+
+def test_load_catalog_missing_attribute(capsys):
+    """Test load_catalog with a missing attribute."""
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog("jx:nonexistent_attr")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Could not resolve" in captured.out
 
 
-def test_check_valid_components(folder):
-    (folder / "button.jinja").write_text(
-        "{#def label #}\n<button>{{ label }}</button>"
+def test_load_catalog_missing_nested_attribute(capsys):
+    """Test load_catalog with a missing nested attribute."""
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog("jx:Catalog.nonexistent")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Could not resolve" in captured.out
+
+
+def test_load_catalog_success():
+    """Test load_catalog successfully imports a catalog."""
+    catalog = load_catalog("jx:Catalog")
+    assert catalog is Catalog
+
+
+def test_load_catalog_dotted_attribute():
+    """Test load_catalog with a dotted attribute path."""
+    # jx.Catalog.__name__ is "Catalog" (a string)
+    result = load_catalog("jx:Catalog.__name__")
+    assert result == "Catalog"
+
+
+# -- File path detection --
+
+
+def test_is_file_path_with_slash():
+    assert _is_file_path("docs/docs.py") is True
+
+
+def test_is_file_path_with_py_extension():
+    assert _is_file_path("setup.py") is True
+
+
+def test_is_file_path_with_module_path():
+    assert _is_file_path("myapp.setup") is False
+
+
+# -- load_catalog from file path --
+
+
+def test_load_catalog_file_path(tmp_path):
+    """Test load_catalog with a file path instead of module path."""
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text(
+        "from jx import Catalog\n"
+        "catalog = Catalog()\n"
     )
-    (folder / "card.jinja").write_text(
-        '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
+    result = load_catalog(f"{setup_file}:catalog")
+    assert isinstance(result, Catalog)
+
+
+def test_load_catalog_file_path_nested_attr(tmp_path):
+    """Test load_catalog with a file path and dotted attribute."""
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text(
+        "from jx import Catalog\n"
+        "class docs:\n"
+        "    catalog = Catalog()\n"
+    )
+    result = load_catalog(f"{setup_file}:docs.catalog")
+    assert isinstance(result, Catalog)
+
+
+def test_load_catalog_file_path_not_found(capsys):
+    """Test load_catalog with a file path that doesn't exist."""
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog("nonexistent/file.py:catalog")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "File not found" in captured.out
+
+
+def test_load_catalog_file_path_missing_attr(tmp_path, capsys):
+    """Test load_catalog with a file path but missing attribute."""
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text("x = 1\n")
+    with pytest.raises(SystemExit) as exc_info:
+        load_catalog(f"{setup_file}:catalog")
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Could not resolve" in captured.out
+
+
+def test_main_check_file_path(tmp_path, capsys):
+    """Test main check subcommand with a file path argument."""
+    folder = tmp_path / "components"
+    folder.mkdir()
+    (folder / "alert.jinja").write_text("<div>Alert</div>")
+
+    setup_file = tmp_path / "mysetup.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{folder}', preload=False)\n"
     )
 
-    exit_code = check([folder])
-    assert exit_code == 0
-
-
-def test_check_unknown_component(folder, capsys):
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Buttn /></div>")
-
-    exit_code = check([folder])
-    assert exit_code == 1
+    with patch.object(sys, "argv", ["jx", "check", f"{setup_file}:catalog"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
 
     captured = capsys.readouterr()
-    assert "Unknown component 'Buttn'" in captured.out
-    assert "did you mean 'Button'?" in captured.out
+    assert "alert.jinja - OK" in captured.out
 
 
-def test_check_unknown_import(folder, capsys):
+def test_main_no_command(capsys):
+    """Test main with no subcommand prints help and exits."""
+    with patch.object(sys, "argv", ["jx"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
+
+
+def test_main_check(tmp_path, capsys):
+    """Test main with check subcommand."""
+    # Create a valid component
+    folder = tmp_path / "components"
+    folder.mkdir()
     (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text(
-        '{#import "buton.jinja" as Button #}\n<Button />'
+
+    # Create a module that exposes a catalog
+    setup_file = tmp_path / "testsetup.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{folder}', preload=False)\n"
     )
 
-    exit_code = check([folder])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "Unknown import 'buton.jinja'" in captured.out
-    assert "did you mean 'button.jinja'?" in captured.out
-
-
-def test_check_not_imported(folder, capsys):
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Button /></div>")
-
-    exit_code = check([folder])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "Component 'Button' used but not imported" in captured.out
-
-
-def test_check_single_file(folder, capsys):
-    """Test checking a single file instead of a directory."""
-    file_path = folder / "button.jinja"
-    file_path.write_text("{#def label #}\n<button>{{ label }}</button>")
-
-    exit_code = check([file_path])
-    assert exit_code == 0
+    with patch.object(sys, "argv", ["jx", "check", "testsetup:catalog"]):
+        sys.path.insert(0, str(tmp_path))
+        try:
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            assert exc_info.value.code == 0
+        finally:
+            sys.path.pop(0)
+            sys.modules.pop("testsetup", None)
 
     captured = capsys.readouterr()
     assert "button.jinja - OK" in captured.out
 
 
-def test_check_no_components(tmp_path, capsys):
-    """Test checking an empty directory with no components."""
-    empty_folder = tmp_path / "empty"
-    empty_folder.mkdir()
+def test_main_check_json(tmp_path, capsys):
+    """Test main with check --format json."""
+    folder = tmp_path / "components"
+    folder.mkdir()
+    (folder / "card.jinja").write_text("<div>OK</div>")
 
-    exit_code = check([empty_folder])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "No components found" in captured.out
-
-
-def test_check_invalid_utf8(folder, capsys):
-    """Test checking a component with invalid UTF-8 encoding."""
-    file_path = folder / "broken.jinja"
-    file_path.write_bytes(b"<div>\xff\xfe invalid</div>")
-
-    exit_code = check([folder])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "broken.jinja - Not valid UTF-8" in captured.out
-
-
-def test_check_invalid_metadata(folder, capsys):
-    """Test checking a component with invalid metadata syntax."""
-    (folder / "broken.jinja").write_text("{#def $invalid #}\n<div>test</div>")
-
-    exit_code = check([folder])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "broken.jinja -" in captured.out
-
-
-def test_check_unknown_import_no_suggestion(folder, capsys):
-    """Test unknown import with no similar component to suggest."""
-    (folder / "card.jinja").write_text(
-        '{#import "xyzabc123.jinja" as Thing #}\n<Thing />'
+    setup_file = tmp_path / "testsetup2.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{folder}', preload=False)\n"
     )
 
-    exit_code = check([folder])
-    assert exit_code == 1
+    with patch.object(sys, "argv", ["jx", "check", "--format", "json", "testsetup2:catalog"]):
+        sys.path.insert(0, str(tmp_path))
+        try:
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            assert exc_info.value.code == 0
+        finally:
+            sys.path.pop(0)
+            sys.modules.pop("testsetup2", None)
 
-    captured = capsys.readouterr()
-    assert "Unknown import 'xyzabc123.jinja'" in captured.out
-    assert "did you mean" not in captured.out
-
-
-def test_check_unknown_component_no_suggestion(folder, capsys):
-    """Test unknown component tag with no similar tag to suggest."""
-    (folder / "card.jinja").write_text("<div><Xyzabc123 /></div>")
-
-    exit_code = check([folder])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "Unknown component 'Xyzabc123'" in captured.out
-    assert "did you mean" not in captured.out
-
-
-def test_suggest_component():
-    """Test component path suggestion."""
-    all_components = {"button.jinja", "card.jinja", "layout.jinja"}
-
-    assert suggest_component("buton.jinja", all_components) == "button.jinja"
-    assert suggest_component("xyzabc123.jinja", all_components) is None
-
-
-def test_check_nonexistent_path(tmp_path, capsys):
-    """Test checking a path that doesn't exist (neither file nor directory)."""
-    nonexistent = tmp_path / "does_not_exist"
-
-    exit_code = check([nonexistent])
-    assert exit_code == 1
-
-    captured = capsys.readouterr()
-    assert "No components found" in captured.out
-
-
-def test_check_all_valid(folder):
-    """Test check_all returns no errors for valid components."""
-    (folder / "button.jinja").write_text(
-        "{#def label #}\n<button>{{ label }}</button>"
-    )
-    (folder / "card.jinja").write_text(
-        '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
-    )
-
-    errors, checked = check_all([folder])
-    assert checked == 2
-    assert errors == []
-
-
-def test_check_all_with_errors(folder):
-    """Test check_all returns structured errors."""
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Buttn /></div>")
-
-    errors, checked = check_all([folder])
-    assert checked == 2
-    assert len(errors) == 1
-    assert errors[0].file == "card.jinja"
-    assert errors[0].line == 1
-    assert "Buttn" in errors[0].message
-    assert errors[0].suggestion == "Button"
-
-
-def test_check_all_single_file(folder):
-    """Test check_all with a single file path."""
-    file_path = folder / "button.jinja"
-    file_path.write_text("{#def label #}\n<button>{{ label }}</button>")
-
-    errors, checked = check_all([file_path])
-    assert checked == 1
-    assert errors == []
-
-
-def test_check_all_empty(tmp_path):
-    """Test check_all with no components returns zero checked."""
-    empty_folder = tmp_path / "empty"
-    empty_folder.mkdir()
-
-    errors, checked = check_all([empty_folder])
-    assert checked == 0
-    assert errors == []
-
-
-def test_check_json_format_valid(folder, capsys):
-    """Test JSON output format with valid components."""
-    (folder / "button.jinja").write_text("<button>Click</button>")
-
-    exit_code = check([folder], format="json")
-    assert exit_code == 0
+    import json
 
     captured = capsys.readouterr()
     result = json.loads(captured.out)
@@ -241,68 +211,94 @@ def test_check_json_format_valid(folder, capsys):
     assert result["errors"] == []
 
 
-def test_check_json_format_with_errors(folder, capsys):
-    """Test JSON output format with errors."""
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Buttn /></div>")
+def test_main_collect_assets(tmp_path, capsys):
+    """Test main with collect_assets subcommand."""
+    # Create component and asset folders
+    comp_folder = tmp_path / "components"
+    comp_folder.mkdir()
+    (comp_folder / "widget.jinja").write_text("<div>widget</div>")
 
-    exit_code = check([folder], format="json")
-    assert exit_code == 1
+    assets_folder = tmp_path / "assets"
+    assets_folder.mkdir()
+    (assets_folder / "style.css").write_text("body { color: red; }")
 
-    captured = capsys.readouterr()
-    result = json.loads(captured.out)
-    assert result["checked"] == 2
-    assert len(result["errors"]) == 1
-    assert result["errors"][0]["file"] == "card.jinja"
-    assert result["errors"][0]["line"] == 1
-    assert "Buttn" in result["errors"][0]["message"]
-    assert result["errors"][0]["suggestion"] == "Button"
+    output_folder = tmp_path / "static"
 
-
-def test_check_json_format_no_components(tmp_path, capsys):
-    """Test JSON output format with no components."""
-    empty_folder = tmp_path / "empty"
-    empty_folder.mkdir()
-
-    exit_code = check([empty_folder], format="json")
-    assert exit_code == 0
-
-    captured = capsys.readouterr()
-    result = json.loads(captured.out)
-    assert result["checked"] == 0
-    assert result["errors"] == []
-
-
-def test_check_unclosed_component_tag(folder, capsys):
-    """Test that an unclosed component tag is detected."""
-    (folder / "footer.jinja").write_text("<footer>Footer</footer>")
-    (folder / "page.jinja").write_text(
-        '{#import "footer.jinja" as Footer #}\n<Footer>\n  <p>content</p>'
+    setup_file = tmp_path / "testsetup3.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{comp_folder}', prefix='ui', assets='{assets_folder}', preload=False)\n"
     )
 
-    exit_code = check([folder])
-    assert exit_code == 1
+    with patch.object(sys, "argv", ["jx", "collect_assets", "testsetup3:catalog", str(output_folder)]):
+        sys.path.insert(0, str(tmp_path))
+        try:
+            main()
+        finally:
+            sys.path.pop(0)
+            sys.modules.pop("testsetup3", None)
 
     captured = capsys.readouterr()
-    assert "Unclosed component" in captured.out
-    assert "Footer" in captured.out
+    assert "ui/style.css" in captured.out
+    assert "1 file collected" in captured.out
+    assert (output_folder / "ui" / "style.css").exists()
 
 
-def test_format_error_with_line():
-    """Test format_error with a line number."""
-    error = CheckError(file="card.jinja", line=4, message="Unknown component 'Foo'")
-    assert format_error(error) == "card.jinja:4 - Unknown component 'Foo'"
+def test_main_collect_assets_multiple(tmp_path, capsys):
+    """Test collect_assets with multiple files uses plural."""
+    comp_folder = tmp_path / "components"
+    comp_folder.mkdir()
+    (comp_folder / "a.jinja").write_text("<div>a</div>")
 
+    assets_folder = tmp_path / "assets"
+    assets_folder.mkdir()
+    (assets_folder / "a.css").write_text(".a {}")
+    (assets_folder / "b.css").write_text(".b {}")
 
-def test_format_error_without_line():
-    """Test format_error without a line number."""
-    error = CheckError(file="card.jinja", line=None, message="Not valid UTF-8")
-    assert format_error(error) == "card.jinja - Not valid UTF-8"
+    output_folder = tmp_path / "static"
 
-
-def test_format_error_with_suggestion():
-    """Test format_error includes suggestion."""
-    error = CheckError(
-        file="card.jinja", line=4, message="Unknown component 'Buttn'", suggestion="Button"
+    setup_file = tmp_path / "testsetup4.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{comp_folder}', prefix='ui', assets='{assets_folder}', preload=False)\n"
     )
-    assert format_error(error) == "card.jinja:4 - Unknown component 'Buttn' (did you mean 'Button'?)"
+
+    with patch.object(sys, "argv", ["jx", "collect_assets", "testsetup4:catalog", str(output_folder)]):
+        sys.path.insert(0, str(tmp_path))
+        try:
+            main()
+        finally:
+            sys.path.pop(0)
+            sys.modules.pop("testsetup4", None)
+
+    captured = capsys.readouterr()
+    assert "2 files collected" in captured.out
+
+
+def test_main_collect_assets_no_prefix(tmp_path, capsys):
+    """Test collect_assets with no assets folders produces 0 files."""
+    comp_folder = tmp_path / "components"
+    comp_folder.mkdir()
+    (comp_folder / "btn.jinja").write_text("<button />")
+
+    output_folder = tmp_path / "static"
+
+    setup_file = tmp_path / "testsetup5.py"
+    setup_file.write_text(
+        f"from jx import Catalog\n"
+        f"catalog = Catalog()\n"
+        f"catalog.add_folder('{comp_folder}', preload=False)\n"
+    )
+
+    with patch.object(sys, "argv", ["jx", "collect_assets", "testsetup5:catalog", str(output_folder)]):
+        sys.path.insert(0, str(tmp_path))
+        try:
+            main()
+        finally:
+            sys.path.pop(0)
+            sys.modules.pop("testsetup5", None)
+
+    captured = capsys.readouterr()
+    assert "0 files collected" in captured.out
