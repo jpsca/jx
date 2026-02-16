@@ -101,7 +101,7 @@ def test_check_not_imported(folder, capsys):
 
 
 def test_check_single_file(folder, capsys):
-    """Test checking a single file instead of a directory."""
+    """Test checking a single file instead of a folder."""
     (folder / "button.jinja").write_text("{#def label #}\n<button>{{ label }}</button>")
 
     catalog = make_catalog(folder)
@@ -113,7 +113,7 @@ def test_check_single_file(folder, capsys):
 
 
 def test_check_no_components(tmp_path, capsys):
-    """Test checking an empty directory with no components."""
+    """Test checking an empty folder with no components."""
     empty_folder = tmp_path / "empty"
     empty_folder.mkdir()
 

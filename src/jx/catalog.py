@@ -180,6 +180,8 @@ class Catalog:
             for relpath in relpaths:
                 self.get_component_data(relpath)
 
+    add_path = add_folder  # alias
+
     def add_package(
         self, package_name: str, *, prefix: str = "", preload: bool = True
     ) -> None:

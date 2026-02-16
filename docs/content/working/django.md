@@ -354,7 +354,7 @@ The `static` function is available in your environment:
 
 ### Component Assets
 
-For component CSS and JS, use paths relative to your static directory:
+For component CSS and JS, use paths relative to your static folder:
 
 ```html+jinja title="components/card.jinja"
 {#css css/components/card.css #}

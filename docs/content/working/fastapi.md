@@ -163,7 +163,7 @@ def products(templates: Templates = Depends()):
 
 ## Static Files
 
-Mount a static files directory and create a helper:
+Mount a static files folder and create a helper:
 
 ```python title="app.py"
 from fastapi import FastAPI
