@@ -41,7 +41,7 @@ The extension runs `jx check` automatically and shows errors inline in the edito
 
 Errors appear in the **Problems** panel and as red underlines in the editor, including "did you mean?" suggestions for typos.
 
-This uses the same checker as the [CLI validator](check.md) — see that page for details on what gets checked.
+This uses the same checker as the [CLI validator](/docs/tools/check/) — see that page for details on what gets checked.
 
 
 ## Snippets
