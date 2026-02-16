@@ -419,3 +419,100 @@ def test_collect_assets_multiple_prefixes(tmp_path):
 
     assert (output / "one" / "a.css").read_text() == "a"
     assert (output / "two" / "b.css").read_text() == "b"
+
+
+def test_assets_without_prefix_raises(tmp_path):
+    components = tmp_path / "components"
+    components.mkdir()
+    (components / "a.jinja").write_text("A")
+
+    assets = tmp_path / "assets"
+    assets.mkdir()
+
+    catalog = Catalog()
+    with pytest.raises(ValueError, match="Cannot register assets folder without a prefix"):
+        catalog.add_folder(components, assets=assets)
+
+
+def test_render(folder):
+    (folder / "hello.jinja").write_text("{#def name #}\n<p>Hello {{ name }}</p>")
+
+    catalog = Catalog(folder)
+    html = catalog.render("hello.jinja", name="World")
+
+    assert "<p>Hello World</p>" in html
+
+
+def test_render_string():
+    catalog = Catalog()
+    html = catalog.render_string("{#def x #}\n<b>{{ x }}</b>", x="hi")
+
+    assert "<b>hi</b>" in html
+
+
+def test_auto_reload_false_cache(folder):
+    (folder / "a.jinja").write_text("<p>cached</p>")
+
+    catalog = Catalog(folder, auto_reload=False)
+    # First call compiles; second call returns cached code
+    cdata1 = catalog.get_component_data("a.jinja")
+    cdata2 = catalog.get_component_data("a.jinja")
+
+    assert cdata1 is cdata2
+    assert cdata1.code is not None
+
+
+def test_asset_resolver_invoked(tmp_path):
+    components = tmp_path / "components"
+    components.mkdir()
+    (components / "btn.jinja").write_text(
+        '{#css "btn.css" #}\n<button>click</button>\n{{ assets.render_css() }}'
+    )
+
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "btn.css").write_text(".btn{}")
+
+    catalog = Catalog(
+        asset_resolver=lambda url, prefix: f"/pkg/{prefix}/{url}",
+    )
+    catalog.add_folder(components, prefix="ui", assets=assets)
+    html = catalog.render("@ui/btn.jinja")
+
+    assert "/pkg/ui/btn.css" in html
+
+
+def test_asset_resolver_skipped_without_assets_folder(tmp_path):
+    """Resolver is not called for prefixes without a registered assets folder."""
+    components = tmp_path / "components"
+    components.mkdir()
+    (components / "btn.jinja").write_text(
+        '{#css "btn.css" #}\n<button />\n{{ assets.render_css() }}'
+    )
+
+    catalog = Catalog(
+        asset_resolver=lambda url, prefix: f"/pkg/{prefix}/{url}",
+    )
+    # No assets= argument, so resolver should NOT transform the URL
+    catalog.add_folder(components, prefix="ui")
+    html = catalog.render("@ui/btn.jinja")
+
+    assert "btn.css" in html
+    assert "/pkg/" not in html
+
+
+def test_auto_reload_recompiles_on_change(folder):
+    comp = folder / "a.jinja"
+    comp.write_text("<p>v1</p>")
+
+    catalog = Catalog(folder, auto_reload=True)
+    html1 = catalog.render("a.jinja")
+    assert "v1" in html1
+
+    # Modify the file (ensure mtime changes)
+    import time
+    time.sleep(0.05)
+    comp.write_text("<p>v2</p>")
+
+    html2 = catalog.render("a.jinja")
+    assert "v2" in html2

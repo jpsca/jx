@@ -324,7 +324,7 @@ class Catalog:
             css=meta.css,
             js=meta.js,
             slots=slots,
-            asset_resolver=self._resolve_asset_url,
+            asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
         )
 
         globals = globals or {}
@@ -420,7 +420,7 @@ class Catalog:
                 css=cdata.css,
                 js=cdata.js,
                 slots=cdata.slots,
-                asset_resolver=self._resolve_asset_url,
+                asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
             )
             return co
 
