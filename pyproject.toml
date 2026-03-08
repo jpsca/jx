@@ -46,7 +46,7 @@ dev = [
     "ty",
 ]
 docs = [
-    "writeadoc>=0.16",
+    "writeadoc>=0.17",
 ]
 test = [
     "pytest >= 7.2",
