@@ -139,6 +139,8 @@ class JxParser:
             source = source.replace(uid, code)
         return source
 
+    _LINE_PAD = "\n\x00"
+
     def process_tags(self, source: str, *, validate_tags: bool = True) -> str:
         """
         Search for TitledCased HTML tags in the template source code and replace
@@ -156,7 +158,7 @@ class JxParser:
             if not match:
                 break
             source = self.replace_tag(source, match, validate_tags=validate_tags)
-        return source
+        return source.replace(self._LINE_PAD, "")
 
     def replace_tag(
         self,
@@ -222,6 +224,14 @@ class JxParser:
 
         attrs = self._parse_attrs(raw_attrs)
         repl = self._build_call(tag, attrs, content)
+
+        # Pad with marker newlines to preserve line numbers for subsequent
+        # tags. The markers are stripped after all tags are processed.
+        original_newlines = source[start:end].count("\n")
+        repl_newlines = repl.count("\n")
+        if repl_newlines < original_newlines:
+            repl += self._LINE_PAD * (original_newlines - repl_newlines)
+
         return f"{source[:start]}{repl}{source[end:]}"
 
     def process_slots(self, source: str) -> tuple[str, tuple[str, ...]]:

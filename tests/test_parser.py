@@ -249,6 +249,20 @@ def test_validate_tags():
         parser.parse(validate_tags=True)
 
 
+def test_error_lineno_after_multiline_tag():
+    """Error line numbers stay correct after a multi-line tag replacement."""
+    source = (
+        '<Valid\n'
+        '  foo="bar"\n'
+        '  baz="qux"\n'
+        '/>\n'
+        '<Unknown />\n'
+    )
+    parser = JxParser(name="test", source=source, components=["Valid"])
+    with pytest.raises(TemplateSyntaxError, match=r"\[test:5:0\] Unknown component `Unknown`"):
+        parser.parse(validate_tags=True)
+
+
 def test_slots():
     source = """
 <html>
