@@ -11,7 +11,7 @@ from pathlib import Path
 from .catalog import Catalog
 from .exceptions import JxException
 from .meta import extract_metadata
-from .parser import RX_TAG_NAME, JxParser
+from .parser import RX_COMMENT, RX_RAW, RX_TAG_NAME, JxParser
 
 
 @dataclass
@@ -26,13 +26,22 @@ class CheckError:
 def find_component_tags(source: str) -> list[tuple[str, int]]:
     """
     Find all component tags in the source and their line numbers.
+    Strips Jinja comments and raw blocks first to avoid false positives.
 
     Returns:
         List of (tag_name, line_number) tuples.
     """
+    # Replace comments/raw blocks with same-length whitespace to preserve line numbers
+    def _blank(m: re.Match) -> str:
+        text = m.group(0)
+        return "".join("\n" if c == "\n" else " " for c in text)
+
+    cleaned = RX_RAW.sub(_blank, source)
+    cleaned = RX_COMMENT.sub(_blank, cleaned)
+
     tags = []
-    for match in RX_TAG_NAME.finditer(source):
-        line_num = source[:match.start()].count("\n") + 1
+    for match in RX_TAG_NAME.finditer(cleaned):
+        line_num = cleaned[:match.start()].count("\n") + 1
         tags.append((match.group("tag"), line_num))
     return tags
 

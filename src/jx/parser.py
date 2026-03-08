@@ -306,6 +306,8 @@ class JxParser:
 
     # Private
 
+    _closing_tag_rx_cache: dict[str, re.Pattern] = {}
+
     def _find_closing_tag(self, source: str, tag: str, start: int) -> int:
         """
         Find the matching closing tag, correctly handling nested same-name tags.
@@ -322,7 +324,10 @@ class JxParser:
             The index of the matching `</Tag>`, or -1 if not found.
 
         """
-        open_rx = re.compile(rf"<{re.escape(tag)}(\s|\n|/|>)")
+        open_rx = self._closing_tag_rx_cache.get(tag)
+        if open_rx is None:
+            open_rx = re.compile(rf"<{re.escape(tag)}(\s|\n|/|>)")
+            self._closing_tag_rx_cache[tag] = open_rx
         close_tag = f"</{tag}>"
         close_len = len(close_tag)
         depth = 1
@@ -352,7 +357,7 @@ class JxParser:
                     return next_close
                 pos = next_close + close_len
 
-        return -1
+        return -1  # pragma: no cover
 
     def _parse_opening_tag(
         self, source: str, *, lineno: int, col: int, start: int

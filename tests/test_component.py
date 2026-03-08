@@ -998,3 +998,19 @@ def test_no_resolver_backward_compatible(tmp_path):
     cat = Catalog(components)
     co = cat.get_component("btn.jinja")
     assert co.collect_css() == ["btn.css"]
+
+
+def test_mutable_default_not_shared(folder):
+    """Mutable default values (list, dict) should not be shared across renders."""
+    (folder / "mutator.jinja").write_text("""
+{# def items=[] #}
+{% do items.append("added") %}
+{{ items | length }}
+""")
+
+    cat = Catalog(folder)
+    html1 = cat.render("mutator.jinja")
+    html2 = cat.render("mutator.jinja")
+    # Each render should start with a fresh empty list
+    assert html1.strip() == "1"
+    assert html2.strip() == "1"

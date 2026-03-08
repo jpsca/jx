@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import copy
 import typing as t
 from collections.abc import Callable
 
@@ -134,8 +135,11 @@ class Component:
                 raise InvalidPropType(self.relpath, key, expected_type, type(value))
             props[key] = value
 
+        _sentinel = object()
         for key, (default, expected_type) in self.optional.items():
-            value = kw.pop(key, default)
+            value = kw.pop(key, _sentinel)
+            if value is _sentinel:
+                value = copy.copy(default) if isinstance(default, (list, dict, set)) else default
             if expected_type is not None and not isinstance(value, expected_type):
                 raise InvalidPropType(self.relpath, key, expected_type, type(value))
             props[key] = value

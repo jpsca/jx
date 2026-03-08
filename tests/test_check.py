@@ -319,6 +319,34 @@ def test_check_unclosed_component_tag(folder, capsys):
     assert "Footer" in captured.out
 
 
+def test_check_ignores_tags_in_comments(folder, capsys):
+    """Component tags inside Jinja comments should not trigger errors."""
+    (folder / "page.jinja").write_text(
+        "{# TODO: use <Card /> here #}\n<div>plain html</div>"
+    )
+
+    catalog = make_catalog(folder)
+    exit_code = check(catalog)
+    assert exit_code == 0
+
+    captured = capsys.readouterr()
+    assert "page.jinja - OK" in captured.out
+
+
+def test_check_ignores_tags_in_raw_blocks(folder, capsys):
+    """Component tags inside raw blocks should not trigger errors."""
+    (folder / "page.jinja").write_text(
+        '{% raw %}<Card title="hello" />{% endraw %}\n<div>plain</div>'
+    )
+
+    catalog = make_catalog(folder)
+    exit_code = check(catalog)
+    assert exit_code == 0
+
+    captured = capsys.readouterr()
+    assert "page.jinja - OK" in captured.out
+
+
 def test_format_error_with_line():
     """Test format_error with a line number."""
     error = CheckError(file="card.jinja", line=4, message="Unknown component 'Foo'")
