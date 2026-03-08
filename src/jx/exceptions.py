@@ -50,7 +50,7 @@ class InvalidPropType(JxException):
 
 class DuplicateDefDeclaration(JxException):
     """
-    Raised when a component has more then one `{#def ... #}` declarations.
+    Raised when a component has more than one `{#def ... #}` declarations.
     """
 
     def __init__(self, component: str, **kw) -> None:

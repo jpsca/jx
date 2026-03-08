@@ -22,5 +22,5 @@ def get_random_id(prefix: str = "id") -> str:
         prefix: The prefix to use for the ID. Defaults to "id".
 
     """
-    return f"{prefix}-{str(uuid.uuid4().hex)}"
+    return f"{prefix}-{uuid.uuid4().hex}"
 

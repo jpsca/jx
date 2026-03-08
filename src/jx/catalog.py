@@ -259,7 +259,7 @@ class Catalog:
 
         Arguments:
             relpath:
-                The path of the component to render, including the extension,relative to its view folder.
+                The path of the component to render, including the extension, relative to its view folder.
                 e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
             globals:
                 Optional global variables to make available to the component and all its
@@ -353,7 +353,7 @@ class Catalog:
 
         Arguments:
             relpath:
-                The path of the component to render, including the extension,relative to its view folder.
+                The path of the component to render, including the extension, relative to its view folder.
                 e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
 
         """
@@ -404,7 +404,7 @@ class Catalog:
 
         Arguments:
             relpath:
-                The path of the component to render, including the extension,relative to its view folder.
+                The path of the component to render, including the extension, relative to its view folder.
                 e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
 
         """
@@ -505,7 +505,7 @@ class Catalog:
         """
         jinja_env = jinja_env or getattr(self, "jinja_env", None)
         if jinja_env:
-            # It could be `jinja_env.overlay()` instead, but that might
+            # It could be `jinja_env.overlay()` instead, but that
             # might lead to confusion if the user expects changes
             # to the original environment to be reflected here.
             env = jinja_env
@@ -528,11 +528,11 @@ class Catalog:
         tests = tests or {}
         env.tests.update(tests)
 
-        extensions = extensions or []
+        extensions = list(extensions or [])
         # The "jinja2.ext.do" extension allows the use of the "do" statement in templates,
         # that execute statements without outputting a value.
         # Is specially useful for manipulating the `attrs` object.
-        extensions.extend(["jinja2.ext.do"])
+        extensions.append("jinja2.ext.do")
         for ext in extensions:
             env.add_extension(ext)
 

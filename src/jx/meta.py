@@ -191,11 +191,7 @@ def parse_files_expr(expr: str) -> list[str]:
     files = []
     for url in RX_COMMA.split(expr):
         url = url.strip("\"'").rstrip("/")
-        if not url:
-            continue
-        if url.startswith(("/", "http://", "https://")):
-            files.append(url)
-        else:
+        if url:
             files.append(url)
     return files
 

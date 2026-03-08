@@ -21,8 +21,6 @@ RX_RAW = re.compile(re_raw, re.DOTALL)
 re_tag_name = r"[A-Z][0-9A-Za-z_.:$-]*"
 RX_TAG_NAME = re.compile(rf"<(?P<tag>{re_tag_name})(\s|\n|/|>)")
 
-re_attr_name = r""
-re_equal = r""
 re_attr = r"""
 (?P<name>[:a-zA-Z@$_][a-zA-Z@:$_0-9-\.]*)
 (?:
@@ -100,7 +98,6 @@ class JxParser:
                 If the template contains unknown components or syntax errors.
 
         """
-        raw_blocks = {}
         source = self.source
         source, raw_blocks = self.replace_raw_blocks(source)
         source = self.process_tags(source, validate_tags=validate_tags)

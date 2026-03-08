@@ -46,7 +46,7 @@ dev = [
     "ty",
 ]
 docs = [
-    "writeadoc>=0.14",
+    "writeadoc>=0.16",
 ]
 test = [
     "pytest >= 7.2",
@@ -69,6 +69,7 @@ exclude = [
 
 [tool.coverage.run]
 branch = true
+omit = ["src/jx/__main__.py"]
 
 [tool.coverage.report]
 exclude_lines = [

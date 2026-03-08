@@ -1,6 +1,6 @@
 .PHONY: install
 install:
-	uv sync --group dev --group test
+	uv sync --group dev --group test --group docs
 	uv pip install -e .
 	uv run pre-commit install
 

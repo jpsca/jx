@@ -210,7 +210,7 @@ class Component:
 
     def render_js(self, module: bool = True, defer: bool = True) -> Markup:
         """
-        Uses the `collected_js()` list to generate an HTML fragment
+        Uses the `collect_js()` list to generate an HTML fragment
         with `<script type="module" src="{url}"></script>` tags.
 
         Arguments:
@@ -252,5 +252,5 @@ class Component:
 
         """
         html_css = self.render_css()
-        html_js = self.render_js()
+        html_js = self.render_js(module=module, defer=defer)
         return Markup(("\n".join([html_css, html_js]).strip()))

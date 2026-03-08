@@ -64,7 +64,7 @@ class Attrs:
 
         class_names = (" ".join([
             str(attrs.pop(CLASS_KEY, "")),
-            str(attrs.get(CLASS_ALT_KEY, "")),
+            str(attrs.pop(CLASS_ALT_KEY, "")),
         ])).strip().split()
         classes = []
         for name in class_names:
