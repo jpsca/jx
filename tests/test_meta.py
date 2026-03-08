@@ -378,3 +378,27 @@ def test_empty_meta_declarations():
     assert meta.required == {}
     assert meta.optional == {}
     assert meta.imports == {}
+
+
+def test_hash_in_css_url_preserved():
+    """URLs with # fragments in CSS declarations should not be corrupted."""
+    source = '{#css "/style.css#v2", "/other.css" #}\n<div>test</div>'
+    base = Path("dummy")
+    meta = extract_metadata(source, base, base / "test.jinja")
+    assert meta.css == ("/style.css#v2", "/other.css")
+
+
+def test_hash_in_js_url_preserved():
+    """URLs with # fragments in JS declarations should not be corrupted."""
+    source = '{#js "/script.js#module" #}\n<div>test</div>'
+    base = Path("dummy")
+    meta = extract_metadata(source, base, base / "test.jinja")
+    assert meta.js == ("/script.js#module",)
+
+
+def test_inline_comment_with_quoted_hash():
+    """Inline comments should still work alongside quoted URLs with #."""
+    source = '{#css "/style.css#v2" # load versioned styles\n#}\n<div />'
+    base = Path("dummy")
+    meta = extract_metadata(source, base, base / "test.jinja")
+    assert meta.css == ("/style.css#v2",)

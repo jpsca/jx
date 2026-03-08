@@ -495,6 +495,8 @@ class Catalog:
                 Optional extra Jinja2 tests to add to the environment.
 
         """
+        # We do `getattr(self, "jinja_env", None)` so an user can
+        # subclass and add a `jinja_env`` as attribute to the class.
         jinja_env = jinja_env or getattr(self, "jinja_env", None)
         if jinja_env:
             # It could be `jinja_env.overlay()` instead, but that

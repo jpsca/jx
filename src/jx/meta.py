@@ -23,9 +23,17 @@ from .parser import re_tag_name
 # You can also have comments inside the declarations.
 RX_META_HEADER = re.compile(r"^(\s*{#.*?#})+", re.DOTALL)
 
-# This regexp matches comments (everything after a `#`)
-# Used to remove them from inside meta declarations
-RX_INTER_COMMENTS = re.compile(r"\s*#[^\n]*")
+# Matches quoted strings (to skip them) or inline comments (to strip).
+# This preserves `#` inside quoted values like URLs with fragments.
+RX_INTER_COMMENTS = re.compile(r""""[^"]*"|'[^']*'|\s*#[^\n]*""")
+
+
+def _strip_comments(m: re.Match) -> str:
+    s = m.group(0)
+    if s[0] in "\"'":
+        return s
+    return ""
+
 
 RX_DEF_START = re.compile(r"{#-?\s*def\s+")
 RX_IMPORT_START = re.compile(r"{#-?\s*import\s+")
@@ -95,7 +103,7 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
 
         expr = read_metadata_item(item, RX_IMPORT_START)
         if expr:
-            expr = RX_INTER_COMMENTS.sub("", expr).replace("\n", " ")
+            expr = RX_INTER_COMMENTS.sub(_strip_comments, expr).replace("\n", " ")
             import_path, import_name = parse_import_expr(expr)
             if import_path.startswith("."):
                 resolved = (fullpath.parent / import_path).resolve()
@@ -106,13 +114,13 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
 
         expr = read_metadata_item(item, RX_CSS_START)
         if expr:
-            expr = RX_INTER_COMMENTS.sub("", expr).replace("\n", " ")
+            expr = RX_INTER_COMMENTS.sub(_strip_comments, expr).replace("\n", " ")
             meta.css = (*meta.css, *parse_files_expr(expr))
             continue
 
         expr = read_metadata_item(item, RX_JS_START)
         if expr:
-            expr = RX_INTER_COMMENTS.sub("", expr).replace("\n", " ")
+            expr = RX_INTER_COMMENTS.sub(_strip_comments, expr).replace("\n", " ")
             meta.js = (*meta.js, *parse_files_expr(expr))
             continue
 

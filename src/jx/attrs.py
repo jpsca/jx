@@ -244,10 +244,12 @@ class Attrs:
             ```
 
         """
+        new = list(self.__classes)
         for names in values:
             for name in names.strip().split():
-                if name not in self.__classes:
-                    self.__classes += (name,)
+                if name not in new:
+                    new.append(name)
+        self.__classes = tuple(new)
 
     def prepend_class(self, *values: str) -> None:
         """

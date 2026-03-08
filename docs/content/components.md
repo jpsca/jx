@@ -358,13 +358,15 @@ Unfilled slots use their default content.
 You can easily validate your components using the CLI tool `jx` installs. Just run:
 
 ```bash
-❯❯ jx check PATH_TO_FOLDER 
+❯❯ jx check MODULE:CATALOG
 ```
+
+The argument is a Python import path to your `Catalog` instance, using `module:attribute` syntax. You can also use a file path: `path/to/file.py:attribute`.
 
 Example:
 
 ```bash
-❯❯ jx check docs/views/
+❯❯ jx check docs.docs:docs.catalog
 
 ✓ autodoc.md.jinja - OK
 ✓ banner_archived.jinja - OK

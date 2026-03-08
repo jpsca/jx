@@ -375,3 +375,22 @@ def test_fills_strip():
 {%- endif %}
 {%- endcall %}
 """.strip()
+
+
+def test_comment_blocks_are_protected():
+    """Component tags inside Jinja comments should not be processed."""
+    source = """{# TODO: Use <Card /> here #}\n<Foo>bar</Foo>"""
+    parser = JxParser(name="test", source=source, components=["Foo"])
+    result, _ = parser.parse(validate_tags=True)
+    assert "{# TODO: Use <Card /> here #}" in result
+    assert '_get("Foo")' in result
+
+
+def test_multiline_comment_blocks_are_protected():
+    """Multiline Jinja comments with component tags should not be processed."""
+    source = """{#\n  <Card title="hello" />\n  <Button />\n#}\n<Foo />"""
+    parser = JxParser(name="test", source=source, components=["Foo"])
+    result, _ = parser.parse(validate_tags=True)
+    assert "<Card" in result
+    assert "<Button" in result
+    assert '_get("Foo")' in result

@@ -39,6 +39,9 @@ RE_FILL_OPEN = r"{%-?\s*fill\s+(?P<name>[0-9A-Za-z_.:$-]+)" + RE_LSTRIP
 RE_FILL_CLOSE = RE_RSTRIP + r"endfill\s*-?%}"
 RX_FILL = re.compile(rf"{RE_FILL_OPEN}(?P<body>.*?)({RE_FILL_CLOSE})", re.DOTALL)
 
+re_comment = r"\{#.*?#\}"
+RX_COMMENT = re.compile(re_comment, re.DOTALL)
+
 
 class JxParser:
     def __init__(
@@ -86,10 +89,29 @@ class JxParser:
         """
         source = self.source
         source, raw_blocks = self.replace_raw_blocks(source)
+        source, comment_blocks = self._replace_blocks(source, RX_COMMENT, "COMMENT")
         source = self.process_tags(source, validate_tags=validate_tags)
         source, slots = self.process_slots(source)
+        source = self.restore_raw_blocks(source, comment_blocks)
         source = self.restore_raw_blocks(source, raw_blocks)
         return source, slots
+
+    def _replace_blocks(
+        self, source: str, rx: re.Pattern, prefix: str
+    ) -> tuple[str, dict[str, str]]:
+        """
+        Replace blocks matching `rx` with temporary placeholders.
+        """
+        blocks: dict[str, str] = {}
+        while True:
+            match = rx.search(source)
+            if not match:
+                break
+            start, end = match.span(0)
+            key = f"--{prefix}-{uuid4().hex}--"
+            blocks[key] = match.group(0)
+            source = f"{source[:start]}{key}{source[end:]}"
+        return source, blocks
 
     def replace_raw_blocks(self, source: str) -> tuple[str, dict[str, str]]:
         """
@@ -100,18 +122,7 @@ class JxParser:
                 The template source code.
 
         """
-        raw_blocks = {}
-        while True:
-            match = RX_RAW.search(source)
-            if not match:
-                break
-            start, end = match.span(0)
-            repl = match.group(0)
-            key = f"--RAW-{uuid4().hex}--"
-            raw_blocks[key] = repl
-            source = f"{source[:start]}{key}{source[end:]}"
-
-        return source, raw_blocks
+        return self._replace_blocks(source, RX_RAW, "RAW")
 
     def restore_raw_blocks(self, source: str, raw_blocks: dict[str, str]) -> str:
         """
@@ -402,6 +413,8 @@ class JxParser:
 
             i += 1
 
+        if end == -1:
+            return "", -1
         attrs = source[start:end].strip().removesuffix("/>").removesuffix(">")
         return attrs, end
 

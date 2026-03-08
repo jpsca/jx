@@ -106,9 +106,9 @@ class Component:
         params = {**attrs, **params}
         props, attrs = self.filter_attrs(params)
 
-        globals = {**self.globals, "_get": self.get_child}
-        globals.setdefault("attrs", Attrs(attrs))
-        globals.setdefault("content", content)
+        tpl_globals = {**self.globals, "_get": self.get_child}
+        tpl_globals.setdefault("attrs", Attrs(attrs))
+        tpl_globals.setdefault("content", content)
 
         slots = {}
         if caller:
@@ -118,7 +118,7 @@ class Component:
                     slots[name] = body
         props["_slots"] = slots
 
-        html = self.tmpl.render({**props, **globals}).lstrip()
+        html = self.tmpl.render({**props, **tpl_globals}).lstrip()
         return Markup(html)
 
     def filter_attrs(
@@ -183,7 +183,6 @@ class Component:
             for file in co._collect_assets(attr, _visited=_visited):
                 if file not in urls:
                     urls[file] = None
-            _visited.add(relpath)
 
         return list(urls.keys())
 
