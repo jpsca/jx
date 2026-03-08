@@ -110,12 +110,18 @@ def check_component(
     return errors
 
 
+def relpath_to_tag(relpath: str) -> str:
+    """Convert a component relpath to a PascalCase tag name.
+
+    "button.jinja" -> "Button", "close-btn.jinja" -> "CloseBtn"
+    """
+    name = Path(relpath).stem
+    return "".join(part.capitalize() for part in re.split(r"[-_]", name))
+
+
 def component_matches_tag(relpath: str, tag: str) -> bool:
     """Check if a component relpath could match a tag name."""
-    # "button.jinja" -> "Button", "close-btn.jinja" -> "CloseBtn"
-    name = Path(relpath).stem
-    normalized = "".join(part.capitalize() for part in re.split(r"[-_]", name))
-    return normalized == tag
+    return relpath_to_tag(relpath) == tag
 
 
 def suggest_component(path: str, all_components: set[str]) -> str | None:
@@ -132,12 +138,7 @@ def suggest_tag(tag: str, imported: set[str], all_components: set[str]) -> str |
         return matches[0]
 
     # Then try deriving tag names from all components
-    all_tags = set()
-    for relpath in all_components:
-        name = Path(relpath).stem
-        normalized = "".join(part.capitalize() for part in re.split(r"[-_]", name))
-        all_tags.add(normalized)
-
+    all_tags = {relpath_to_tag(relpath) for relpath in all_components}
     matches = get_close_matches(tag, all_tags, n=1, cutoff=0.6)
     return matches[0] if matches else None
 

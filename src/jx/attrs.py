@@ -189,7 +189,7 @@ class Attrs:
             elif value is True:
                 self.__properties.add(name)
             else:
-                self.__attributes[name] = value
+                self.__attributes[name] = LazyString(value)
 
     def setdefault(self, **kw) -> None:
         """
@@ -223,7 +223,7 @@ class Attrs:
                 if name not in self.__properties:
                     self.__properties.add(name)
             elif name not in self.__attributes:
-                self.set(**{name: value})
+                self.__attributes[name] = LazyString(value)
 
     def add_class(self, *values: str) -> None:
         """

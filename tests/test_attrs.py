@@ -34,7 +34,7 @@ def test_parse_initial_attrs():
 
     attrs.set(data_value=0)
     attrs.set(data_position=False)
-    assert attrs.get("data-value") == 0
+    assert attrs.get("data-value") == "0"
     assert attrs.get("data-position") is None
     assert attrs.get("data_position") is None
 

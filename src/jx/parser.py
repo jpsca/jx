@@ -5,8 +5,6 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 import re
 from uuid import uuid4
 
-from markupsafe import escape
-
 from .exceptions import TemplateSyntaxError
 from .utils import logger
 
@@ -108,7 +106,7 @@ class JxParser:
             if not match:
                 break
             start, end = match.span(0)
-            repl = escape(match.group(0))
+            repl = match.group(0)
             key = f"--RAW-{uuid4().hex}--"
             raw_blocks[key] = repl
             source = f"{source[:start]}{key}{source[end:]}"
@@ -196,7 +194,7 @@ class JxParser:
             content = ""
         else:
             close_tag = f"</{tag}>"
-            index = source.find(close_tag, end, None)
+            index = self._find_closing_tag(source, tag, end)
             if index == -1:
                 line = self.source.split("\n")[lineno - 1]
                 raise TemplateSyntaxError(
@@ -296,6 +294,54 @@ class JxParser:
         return f"{str_ifs}{{% else -%}}\n{source.strip()}\n{{%- endif %}}\n"
 
     # Private
+
+    def _find_closing_tag(self, source: str, tag: str, start: int) -> int:
+        """
+        Find the matching closing tag, correctly handling nested same-name tags.
+
+        Arguments:
+            source:
+                The template source code.
+            tag:
+                The tag name to find the closing tag for.
+            start:
+                Position to start searching from (right after the opening tag's `>`).
+
+        Returns:
+            The index of the matching `</Tag>`, or -1 if not found.
+
+        """
+        open_rx = re.compile(rf"<{re.escape(tag)}(\s|\n|/|>)")
+        close_tag = f"</{tag}>"
+        close_len = len(close_tag)
+        depth = 1
+        pos = start
+
+        while depth > 0:
+            next_open = open_rx.search(source, pos)
+            next_close = source.find(close_tag, pos)
+
+            if next_close == -1:
+                return -1
+
+            if next_open and next_open.start() < next_close:
+                # Nested opening tag found before the next close tag.
+                # Parse it to check whether it is self-closing.
+                _, tag_end = self._parse_opening_tag(
+                    source, lineno=0, col=0, start=next_open.end() - 1
+                )
+                if tag_end == -1:
+                    return -1
+                if source[tag_end - 2 : tag_end] != "/>":
+                    depth += 1
+                pos = tag_end
+            else:
+                depth -= 1
+                if depth == 0:
+                    return next_close
+                pos = next_close + close_len
+
+        return -1
 
     def _parse_opening_tag(
         self, source: str, *, lineno: int, col: int, start: int

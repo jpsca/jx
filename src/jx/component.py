@@ -160,27 +160,18 @@ class Component:
         """
         Returns a list of CSS files for the component and its children.
         """
-        resolved = [self.resolve_url(url) for url in self.css]
-        urls = dict.fromkeys(resolved)
-        _visited = _visited or set()
-        _visited.add(self.relpath)
-
-        for name, relpath in self.imports.items():
-            if relpath in _visited:
-                continue
-            co = self.get_child(name)
-            for file in co.collect_css(_visited=_visited):
-                if file not in urls:
-                    urls[file] = None
-            _visited.add(relpath)
-
-        return list(urls.keys())
+        return self._collect_assets("css", _visited)
 
     def collect_js(self, _visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of JS files for the component and its children.
         """
-        resolved = [self.resolve_url(url) for url in self.js]
+        return self._collect_assets("js", _visited)
+
+    def _collect_assets(
+        self, attr: str, _visited: set[str] | None = None
+    ) -> list[str]:
+        resolved = [self.resolve_url(url) for url in getattr(self, attr)]
         urls = dict.fromkeys(resolved)
         _visited = _visited or set()
         _visited.add(self.relpath)
@@ -189,7 +180,7 @@ class Component:
             if relpath in _visited:
                 continue
             co = self.get_child(name)
-            for file in co.collect_js(_visited=_visited):
+            for file in co._collect_assets(attr, _visited=_visited):
                 if file not in urls:
                     urls[file] = None
             _visited.add(relpath)

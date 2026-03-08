@@ -98,6 +98,13 @@ what""",
 {% raw %}{{ a + b }}{% endraw %}
 what""",
     ),
+    # Raw blocks with HTML content (should not be escaped)
+    (
+        """<Foo bar="baz">content</Foo>
+{% raw %}<div class="test">&amp;</div>{% endraw %}""",
+        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
+{% raw %}<div class="test">&amp;</div>{% endraw %}""",
+    ),
 )
 
 
@@ -172,6 +179,54 @@ def test_process_nested_same_tag():
     result, _ = parser.parse(validate_tags=False)
     print(result)
     assert result.strip() == expected.strip()
+
+
+def test_nested_same_tag_with_content_between():
+    """Content between nested same-name closing tags is preserved."""
+    source = """<Card>a<Card>b</Card>c</Card>"""
+    expected = (
+        '{% call(_slot="") _get("Card").render() -%}'
+        'a{% call(_slot="") _get("Card").render() -%}b{%- endcall %}c'
+        '{%- endcall %}'
+    )
+    parser = JxParser(name="test", source=source, components=[])
+    result, _ = parser.parse(validate_tags=False)
+    assert result == expected
+
+
+def test_nested_same_tag_self_closing_does_not_increase_depth():
+    """Self-closing same-name tags inside a block don't affect nesting."""
+    source = """<Card>a<Card />b</Card>"""
+    expected = (
+        '{% call(_slot="") _get("Card").render() -%}'
+        'a{{ _get("Card").render() }}b'
+        '{%- endcall %}'
+    )
+    parser = JxParser(name="test", source=source, components=[])
+    result, _ = parser.parse(validate_tags=False)
+    assert result == expected
+
+
+def test_nested_same_tag_siblings():
+    """Multiple same-name siblings inside a parent of the same name."""
+    source = """<Card><Card>a</Card><Card>b</Card></Card>"""
+    expected = (
+        '{% call(_slot="") _get("Card").render() -%}'
+        '{% call(_slot="") _get("Card").render() -%}a{%- endcall %}'
+        '{% call(_slot="") _get("Card").render() -%}b{%- endcall %}'
+        '{%- endcall %}'
+    )
+    parser = JxParser(name="test", source=source, components=[])
+    result, _ = parser.parse(validate_tags=False)
+    assert result == expected
+
+
+def test_nested_same_tag_unclosed():
+    """An unclosed nested same-name tag is reported."""
+    source = """<Card><Card>a</Card>"""
+    parser = JxParser(name="test", source=source, components=[])
+    with pytest.raises(TemplateSyntaxError, match="Unclosed component"):
+        parser.parse(validate_tags=False)
 
 
 def test_validate_tags():

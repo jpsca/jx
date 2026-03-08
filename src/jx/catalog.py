@@ -274,17 +274,7 @@ class Catalog:
         """
         relpath = relpath.replace("\\", "/").strip("/")
         co = self.get_component(relpath)
-
-        globals = {**(globals or {})}
-        globals["assets"] = {
-            "collect_css": co.collect_css,
-            "collect_js": co.collect_js,
-            "render_css": co.render_css,
-            "render_js": co.render_js,
-            "render": co.render_assets,
-        }
-        co.globals = globals
-
+        co.globals = self._prepare_globals(co, globals)
         return co.render(**kwargs)
 
     def render_string(
@@ -329,17 +319,7 @@ class Catalog:
             slots=slots,
             asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
         )
-
-        globals = {**(globals or {})}
-        globals["assets"] = {
-            "collect_css": co.collect_css,
-            "collect_js": co.collect_js,
-            "render_css": co.render_css,
-            "render_js": co.render_js,
-            "render": co.render_assets,
-        }
-        co.globals = globals
-
+        co.globals = self._prepare_globals(co, globals)
         return co.render(**kwargs)
 
     def get_component_data(self, relpath: str) -> CData:
@@ -464,6 +444,22 @@ class Catalog:
         }
 
     # Private
+
+    def _prepare_globals(
+        self, co: Component, globals: dict[str, t.Any] | None = None
+    ) -> dict[str, t.Any]:
+        """
+        Build the globals dict for a top-level render, including asset helpers.
+        """
+        result = {**(globals or {})}
+        result["assets"] = {
+            "collect_css": co.collect_css,
+            "collect_js": co.collect_js,
+            "render_css": co.render_css,
+            "render_js": co.render_js,
+            "render": co.render_assets,
+        }
+        return result
 
     def _resolve_asset_url(self, url: str, prefix: str) -> str:
         """
