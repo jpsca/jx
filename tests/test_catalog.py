@@ -5,7 +5,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 import jinja2
 import pytest
 
-from jx import Catalog, FileEncodingError, ImportError
+from jx import Catalog, ComponentNotFoundError, FileEncodingError
 
 
 def test_add_folder(folder):
@@ -148,10 +148,10 @@ def test_unknown_component(folder):
     catalog = Catalog()
     catalog.add_folder(folder)
 
-    with pytest.raises(ImportError, match="Component not found: a.jinja"):
+    with pytest.raises(ComponentNotFoundError, match="Component not found: a.jinja"):
         catalog.render("a.jinja")
 
-    with pytest.raises(ImportError, match="Component not found: b.jinja"):
+    with pytest.raises(ComponentNotFoundError, match="Component not found: b.jinja"):
         catalog.get_component("b.jinja")
 
 
@@ -254,7 +254,7 @@ def test_get_signature_no_metadata(folder):
 def test_get_signature_unknown_component(folder):
     catalog = Catalog(folder)
 
-    with pytest.raises(ImportError, match="Component not found: unknown.jinja"):
+    with pytest.raises(ComponentNotFoundError, match="Component not found: unknown.jinja"):
         catalog.get_signature("unknown.jinja")
 
 

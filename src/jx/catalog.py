@@ -15,7 +15,7 @@ import jinja2
 
 from . import utils
 from .component import Component
-from .exceptions import FileEncodingError, ImportError, JxException
+from .exceptions import ComponentNotFoundError, FileEncodingError, JxException
 from .meta import extract_metadata
 from .parser import JxParser
 from .utils import logger
@@ -275,16 +275,14 @@ class Catalog:
         relpath = relpath.replace("\\", "/").strip("/")
         co = self.get_component(relpath)
 
-        globals = globals or {}
-        globals.update({
-            "assets": {
-                "collect_css": co.collect_css,
-                "collect_js": co.collect_js,
-                "render_css": co.render_css,
-                "render_js": co.render_js,
-                "render": co.render_assets,
-            }
-        })
+        globals = {**(globals or {})}
+        globals["assets"] = {
+            "collect_css": co.collect_css,
+            "collect_js": co.collect_js,
+            "render_css": co.render_css,
+            "render_js": co.render_js,
+            "render": co.render_assets,
+        }
         co.globals = globals
 
         return co.render(**kwargs)
@@ -332,16 +330,14 @@ class Catalog:
             asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
         )
 
-        globals = globals or {}
-        globals.update({
-            "assets": {
-                "collect_css": co.collect_css,
-                "collect_js": co.collect_js,
-                "render_css": co.render_css,
-                "render_js": co.render_js,
-                "render": co.render_assets,
-            }
-        })
+        globals = {**(globals or {})}
+        globals["assets"] = {
+            "collect_css": co.collect_css,
+            "collect_js": co.collect_js,
+            "render_css": co.render_css,
+            "render_js": co.render_js,
+            "render": co.render_assets,
+        }
         co.globals = globals
 
         return co.render(**kwargs)
@@ -360,7 +356,7 @@ class Catalog:
         with self._lock:
             cdata = self.components.get(relpath)
             if not cdata:
-                raise ImportError(relpath)
+                raise ComponentNotFoundError(relpath)
 
             mtime = cdata.path.stat().st_mtime if self.auto_reload else 0
             if cdata.code is not None:

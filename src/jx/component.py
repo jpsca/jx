@@ -140,8 +140,7 @@ class Component:
                 raise InvalidPropType(self.relpath, key, expected_type, type(value))
             props[key] = value
 
-        extra = kw.copy()
-        return props, extra
+        return props, kw
 
     def get_child(self, name: str) -> "Component":
         relpath = self.imports[name]
@@ -162,7 +161,7 @@ class Component:
         Returns a list of CSS files for the component and its children.
         """
         resolved = [self.resolve_url(url) for url in self.css]
-        urls = dict.fromkeys(resolved, 1)
+        urls = dict.fromkeys(resolved)
         _visited = _visited or set()
         _visited.add(self.relpath)
 
@@ -172,7 +171,7 @@ class Component:
             co = self.get_child(name)
             for file in co.collect_css(_visited=_visited):
                 if file not in urls:
-                    urls[file] = 1
+                    urls[file] = None
             _visited.add(relpath)
 
         return list(urls.keys())
@@ -182,7 +181,7 @@ class Component:
         Returns a list of JS files for the component and its children.
         """
         resolved = [self.resolve_url(url) for url in self.js]
-        urls = dict.fromkeys(resolved, 1)
+        urls = dict.fromkeys(resolved)
         _visited = _visited or set()
         _visited.add(self.relpath)
 
@@ -192,7 +191,7 @@ class Component:
             co = self.get_child(name)
             for file in co.collect_js(_visited=_visited):
                 if file not in urls:
-                    urls[file] = 1
+                    urls[file] = None
             _visited.add(relpath)
 
         return list(urls.keys())

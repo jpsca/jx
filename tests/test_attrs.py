@@ -122,7 +122,17 @@ def test_setdefault():
         open=True,
         disabled=False,
     )
-    assert 'data-lorem="ipsum" title="hi"' == attrs.render()
+    assert 'data-lorem="ipsum" title="hi" open' == attrs.render()
+
+
+def test_setdefault_property_already_present():
+    attrs = Attrs(
+        {
+            "open": True,
+        }
+    )
+    attrs.setdefault(open=True, hidden=True)
+    assert "hidden open" == attrs.render()
 
 
 def test_setdefault_classes():

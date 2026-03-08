@@ -14,7 +14,7 @@ class TemplateSyntaxError(JxException):
     """
 
 
-class ImportError(JxException):
+class ComponentNotFoundError(JxException):
     """
     Raised when an import fails.
     This is usually caused by a missing or inaccessible component.

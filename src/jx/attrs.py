@@ -45,7 +45,7 @@ class Attrs:
     __attributes: dict[str, str | LazyString]
     __properties: set[str]
 
-    def __init__(self, attrs: "dict[str, t.Any| LazyString]") -> None:
+    def __init__(self, attrs: "dict[str, t.Any | LazyString]") -> None:
         """
         Contains all the HTML attributes/properties (a property is an
         attribute without a value) passed to a component but that weren't
@@ -134,7 +134,7 @@ class Attrs:
             attributes[CLASS_KEY] = classes
 
         out: dict[str, t.Any] = dict(sorted(attributes.items()))
-        for name in sorted((self.__properties)):
+        for name in sorted(self.__properties):
             out[name] = True
         return out
 
@@ -210,7 +210,7 @@ class Attrs:
 
         """
         for name, value in kw.items():
-            if value in (True, False, None):
+            if value is False or value is None:
                 continue
 
             if name in CLASS_KEYS:
@@ -219,7 +219,10 @@ class Attrs:
                 continue
 
             name = name.replace("_", "-")
-            if name not in self.__attributes:
+            if value is True:
+                if name not in self.__properties:
+                    self.__properties.add(name)
+            elif name not in self.__attributes:
                 self.set(**{name: value})
 
     def add_class(self, *values: str) -> None:
@@ -259,7 +262,7 @@ class Attrs:
 
             ```python
             attrs = Attrs({"class": "a b c"})
-            attrs.add_class("c d |")
+            attrs.prepend_class("c d |")
             attrs.as_dict
             {"class": "d | a b c"}
             ```
@@ -293,7 +296,7 @@ class Attrs:
     def get(self, name: str, default: t.Any = None) -> t.Any:
         """
         Returns the value of the attribute or property,
-        or the default value if it doesn't exists.
+        or the default value if it doesn't exist.
 
         Arguments:
 
@@ -308,13 +311,13 @@ class Attrs:
             ```python
             attrs = Attrs({"lorem": "ipsum", "hidden": True})
 
-            attrs.get("lorem", defaut="bar")
+            attrs.get("lorem", default="bar")
             'ipsum'
 
             attrs.get("foo")
             None
 
-            attrs.get("foo", defaut="bar")
+            attrs.get("foo", default="bar")
             'bar'
 
             attrs.get("hidden")
@@ -336,7 +339,7 @@ class Attrs:
         Renders the attributes and properties as a string.
 
         Any arguments you use with this function are merged with the existing
-        attibutes/properties by the same rules as the `Attrs.set()` function:
+        attributes/properties by the same rules as the `Attrs.set()` function:
 
         - Pass a name and a value to set an attribute (e.g. `type="text"`)
         - Use `True` as a value to set a property (e.g. `disabled`)
@@ -373,7 +376,7 @@ class Attrs:
             attributes[CLASS_KEY] = classes
 
         attributes = dict(sorted(attributes.items()))
-        properties = sorted((self.__properties))
+        properties = sorted(self.__properties)
 
         html_attrs = [
             f"{name}={quote(str(value))}"

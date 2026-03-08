@@ -3,10 +3,9 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
 import re
-import typing as t
 from uuid import uuid4
 
-from markupsafe import Markup
+from markupsafe import escape
 
 from .exceptions import TemplateSyntaxError
 from .utils import logger
@@ -41,17 +40,6 @@ RX_SLOT = re.compile(rf"{RE_SLOT_OPEN}(?P<default>.*?)({RE_SLOT_CLOSE})", re.DOT
 RE_FILL_OPEN = r"{%-?\s*fill\s+(?P<name>[0-9A-Za-z_.:$-]+)" + RE_LSTRIP
 RE_FILL_CLOSE = RE_RSTRIP + r"endfill\s*-?%}"
 RX_FILL = re.compile(rf"{RE_FILL_OPEN}(?P<body>.*?)({RE_FILL_CLOSE})", re.DOTALL)
-
-
-def escape(s: t.Any, /) -> Markup:
-    return Markup(
-        str(s)
-        .replace("&", "&amp;")
-        .replace(">", "&gt;")
-        .replace("<", "&lt;")
-        .replace("'", "&#39;")
-        .replace('"', "&#34;")
-    )
 
 
 class JxParser:
@@ -324,7 +312,7 @@ class JxParser:
         while i < eof:
             ch = source[i]
             ch2 = source[i : i + 2]
-            # print(ch, ch2, in_single_quotes, in_double_quotes, in_braces)
+
 
             # Detects {{ … }} only when NOT inside quotes
             if not in_single_quotes and not in_double_quotes:

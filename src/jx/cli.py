@@ -23,7 +23,9 @@ def _load_module_from_file(file_path: str):
 
     module_name = path.stem
     spec = importlib.util.spec_from_file_location(module_name, path)
-    assert spec is not None and spec.loader is not None
+    if spec is None or spec.loader is None:
+        print(f"Cannot load module from '{file_path}'")
+        sys.exit(1)
 
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module

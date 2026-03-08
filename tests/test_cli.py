@@ -277,6 +277,19 @@ def test_main_collect_assets_multiple(tmp_path, capsys):
     assert "2 files collected" in captured.out
 
 
+def test_load_module_from_file_bad_spec(tmp_path, capsys):
+    """Test _load_module_from_file with an unloadable file."""
+    bad_file = tmp_path / "not_python.txt"
+    bad_file.write_text("not a python file")
+    from jx.cli import _load_module_from_file
+
+    with pytest.raises(SystemExit) as exc_info:
+        _load_module_from_file(str(bad_file))
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "Cannot load module" in captured.out
+
+
 def test_main_collect_assets_no_prefix(tmp_path, capsys):
     """Test collect_assets with no assets folders produces 0 files."""
     comp_folder = tmp_path / "components"
