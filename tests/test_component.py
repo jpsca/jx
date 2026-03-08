@@ -317,6 +317,56 @@ def test_render_assets(folder):
     """.strip()
 
 
+def test_render_assets_module_defer_combinations(folder):
+    (folder / "child.jinja").write_text("""
+{# css "child.css" #}
+{# js "child.js" #}
+<span>{{ content }}</span>
+""")
+
+    (folder / "parent.jinja").write_text("""
+{# import "child.jinja" as Child #}
+{# css "parent.css" #}
+{# js "parent.js" #}
+<Child>Hello</Child>
+""")
+
+    cat = Catalog(folder)
+    co = cat.get_component("parent.jinja")
+
+    # Default: module=True, defer=True → type="module" scripts (defer is irrelevant)
+    html1 = co.render_assets()
+    html2 = co.render_assets(module=True, defer=True)
+    html3 = co.render_assets(module=True, defer=False)
+    assert html1 == (
+        '<link rel="stylesheet" href="parent.css">\n'
+        '<link rel="stylesheet" href="child.css">\n'
+        '<script type="module" src="parent.js"></script>\n'
+        '<script type="module" src="child.js"></script>'
+    )
+    assert html1 == html2 == html3
+
+    # module=False, defer=True (the default for defer) → deferred scripts
+    html1 = co.render_assets(module=False)
+    html2 = co.render_assets(module=False, defer=True)
+    assert html1 == (
+        '<link rel="stylesheet" href="parent.css">\n'
+        '<link rel="stylesheet" href="child.css">\n'
+        '<script src="parent.js" defer></script>\n'
+        '<script src="child.js" defer></script>'
+    )
+    assert html1 == html2
+
+    # module=False, defer=False → plain scripts
+    html = co.render_assets(module=False, defer=False)
+    assert html == (
+        '<link rel="stylesheet" href="parent.css">\n'
+        '<link rel="stylesheet" href="child.css">\n'
+        '<script src="parent.js"></script>\n'
+        '<script src="child.js"></script>'
+    )
+
+
 def test_global_assets_render(folder):
     (folder / "layout.jinja").write_text("""
 {# css "layout.css" #}

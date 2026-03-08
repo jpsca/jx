@@ -18,12 +18,12 @@ from .exceptions import (
 from .parser import re_tag_name
 
 
-# This regexp matches the meta declarations (`{#def .. #}``, `{#css .. #}``,
+# This regexp matches the meta declarations (`{#def .. #}`, `{#css .. #}`,
 # and `{#js .. #}`) and regular Jinja comments AT THE BEGINNING of the components source.
 # You can also have comments inside the declarations.
 RX_META_HEADER = re.compile(r"^(\s*{#.*?#})+", re.DOTALL)
 
-# This regexep matches comments (everything after a `#`)
+# This regexp matches comments (everything after a `#`)
 # Used to remove them from inside meta declarations
 RX_INTER_COMMENTS = re.compile(r"\s*#[^\n]*")
 

@@ -38,6 +38,12 @@ def test_find_component_tags():
     assert ("CloseBtn", 5) in tags
 
 
+def test_find_component_tags_at_line_boundary():
+    source = '<Card\n  title="foo">\n  content\n</Card>'
+    tags = find_component_tags(source)
+    assert ("Card", 1) in tags
+
+
 def test_suggest_tag():
     imported = {"Button", "Card", "Layout"}
     all_components = {"button.jinja", "card.jinja", "layout.jinja"}

@@ -287,11 +287,11 @@ class JxParser:
         if not fills:
             return source
 
-        ifs = []
-        for fill_name, fill_body in fills.items():
-            ifs.append(f"{{% elif _slot == '{fill_name}' %}}{fill_body}")
-        # Replace the first occurrence of "elif" with "if"
-        str_ifs = f"\n{{% {''.join(ifs)[5:]}"
+        parts = []
+        for i, (fill_name, fill_body) in enumerate(fills.items()):
+            keyword = "if" if i == 0 else "elif"
+            parts.append(f"{{% {keyword} _slot == '{fill_name}' %}}{fill_body}")
+        str_ifs = "\n" + "".join(parts)
 
         return f"{str_ifs}{{% else -%}}\n{source.strip()}\n{{%- endif %}}\n"
 
@@ -312,7 +312,6 @@ class JxParser:
         while i < eof:
             ch = source[i]
             ch2 = source[i : i + 2]
-
 
             # Detects {{ … }} only when NOT inside quotes
             if not in_single_quotes and not in_double_quotes:
@@ -340,12 +339,12 @@ class JxParser:
                     i += 2
                     continue
 
-            if ch == "'" and not in_double_quotes:
+            if ch == "'" and not in_double_quotes and not in_braces:
                 in_single_quotes = not in_single_quotes
                 i += 1
                 continue
 
-            if ch == '"' and not in_single_quotes:
+            if ch == '"' and not in_single_quotes and not in_braces:
                 in_double_quotes = not in_double_quotes
                 i += 1
                 continue

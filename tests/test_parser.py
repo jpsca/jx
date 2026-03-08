@@ -80,6 +80,15 @@ VALID_DATA = (
         """<CloseBtn data-closer-action="click->closer#close" />""",
         """{{ _get("CloseBtn").render(**{"data_closer_action":"click->closer#close"}) }}""",
     ),
+    # Quotes inside expressions (should not break parsing)
+    (
+        """<Card title={{ items['key'] }} class="foo" />""",
+        """{{ _get("Card").render(**{"title":items['key'], "class":"foo"}) }}""",
+    ),
+    (
+        """<Card title={{ data["name"] }} />""",
+        """{{ _get("Card").render(**{"title":data["name"]}) }}""",
+    ),
     # Raw blocks
     (
         """<Foo bar="baz">content</Foo>

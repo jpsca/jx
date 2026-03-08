@@ -31,10 +31,9 @@ def find_component_tags(source: str) -> list[tuple[str, int]]:
         List of (tag_name, line_number) tuples.
     """
     tags = []
-    lines = source.split("\n")
-    for line_num, line in enumerate(lines, start=1):
-        for match in RX_TAG_NAME.finditer(line):
-            tags.append((match.group("tag"), line_num))
+    for match in RX_TAG_NAME.finditer(source):
+        line_num = source[:match.start()].count("\n") + 1
+        tags.append((match.group("tag"), line_num))
     return tags
 
 
@@ -180,8 +179,9 @@ def check(catalog: Catalog, *, format: str = "text") -> int:
     Returns:
         Exit code (0 for success, 1 for errors).
     """
+    errors, checked = check_all(catalog)
+
     if format == "json":
-        errors, checked = check_all(catalog)
         print(json.dumps({
             "checked": checked,
             "errors": [asdict(e) for e in errors],
@@ -189,26 +189,23 @@ def check(catalog: Catalog, *, format: str = "text") -> int:
         return 1 if errors else 0
 
     # Text format
-    all_components = set(catalog.components.keys())
-
-    if not all_components:
+    if not checked:
         print("No components found")
         return 1
 
-    total_errors = 0
-    checked = 0
+    errors_by_file: dict[str, list[CheckError]] = {}
+    for error in errors:
+        errors_by_file.setdefault(error.file, []).append(error)
 
-    for relpath in sorted(all_components):
-        errors = check_component(catalog, relpath, all_components)
-        checked += 1
-
-        if errors:
-            for error in errors:
+    for relpath in sorted(catalog.components.keys()):
+        file_errors = errors_by_file.get(relpath)
+        if file_errors:
+            for error in file_errors:
                 print(f"\u2717 {format_error(error)}")
-            total_errors += len(errors)
         else:
             print(f"\u2713 {relpath} - OK")
 
+    total_errors = len(errors)
     print()
     print(f"{checked} component{'s' if checked != 1 else ''} checked, {total_errors} error{'s' if total_errors != 1 else ''}")
 

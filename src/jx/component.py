@@ -234,7 +234,7 @@ class Component:
 
         return Markup("\n".join(html))
 
-    def render_assets(self, module: bool = True, defer: bool = False) -> Markup:
+    def render_assets(self, module: bool = True, defer: bool = True) -> Markup:
         """
         Calls `render_css()` and `render_js()` to generate
         an HTML fragment with `<link rel="stylesheet" href="{url}">`
