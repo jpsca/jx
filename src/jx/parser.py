@@ -401,12 +401,12 @@ class JxParser:
                     i += 2
                     continue
 
-            if ch == "'" and not in_double_quotes and not in_braces:
+            if ch == "'" and not in_double_quotes:
                 in_single_quotes = not in_single_quotes
                 i += 1
                 continue
 
-            if ch == '"' and not in_single_quotes and not in_braces:
+            if ch == '"' and not in_single_quotes:
                 in_double_quotes = not in_double_quotes
                 i += 1
                 continue
@@ -432,19 +432,22 @@ class JxParser:
         if not raw_attrs:
             return []
 
+        # Replace {{ … }} blocks with placeholders so the regex doesn't
+        # trip on }} inside string literals within expressions.
+        raw_attrs, expr_blocks = self._replace_expr_blocks(raw_attrs)
+
         attrs = []
         for name, value in RX_ATTR.findall(raw_attrs):
             name = name.strip().replace("-", "_")
             value = value.strip()
 
+            # Restore any placeholders in the value
+            for key, original in expr_blocks.items():
+                value = value.replace(key, original)
+
             if not value:
                 attrs.append(f'"{name}":True')
             else:
-                # vue-like syntax could be possible
-                # if (name[0] == ":" and value[0] in ("\"'") and value[-1] in ("\"'")):
-                #     value = value[1:-1].strip()
-                #     name = name.lstrip(":")
-
                 # double curly braces syntax
                 if value[:2] == "{{" and value[-2:] == "}}":
                     value = value[2:-2].strip()
@@ -452,6 +455,48 @@ class JxParser:
                 attrs.append(f'"{name}":{value}')
 
         return attrs
+
+    @staticmethod
+    def _replace_expr_blocks(text: str) -> tuple[str, dict[str, str]]:
+        """
+        Replace ``{{ … }}`` blocks with safe placeholders, correctly
+        handling ``}}`` inside string literals within the expression.
+
+        Placeholders keep the ``{{ … }}`` wrapper so that ``RX_ATTR``
+        still recognises them as expression values.
+        """
+        blocks: dict[str, str] = {}
+        parts: list[str] = []
+        i = 0
+        n = len(text)
+        counter = 0
+
+        while i < n:
+            if text[i : i + 2] == "{{":
+                # Scan for the matching }} while tracking quotes
+                j = i + 2
+                in_sq = in_dq = False
+                while j < n:
+                    c = text[j]
+                    if c == '"' and not in_sq:
+                        in_dq = not in_dq
+                    elif c == "'" and not in_dq:
+                        in_sq = not in_sq
+                    elif text[j : j + 2] == "}}" and not in_sq and not in_dq:
+                        break
+                    j += 1
+                end = j + 2
+                # Keep {{ … }} wrapper so the attr regex still matches
+                key = f"{{{{__EXPR_{counter}__}}}}"
+                counter += 1
+                blocks[key] = text[i:end]
+                parts.append(key)
+                i = end
+            else:
+                parts.append(text[i])
+                i += 1
+
+        return "".join(parts), blocks
 
     def _build_call(self, tag: str, attrs: list[str], content: str = "") -> str:
         """

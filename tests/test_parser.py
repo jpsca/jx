@@ -89,6 +89,19 @@ VALID_DATA = (
         """<Card title={{ data["name"] }} />""",
         """{{ _get("Card").render(**{"title":data["name"]}) }}""",
     ),
+    # Closing braces inside string literals within expressions
+    (
+        """<Card title={{ foo("}}") }} />""",
+        """{{ _get("Card").render(**{"title":foo("}}")}) }}""",
+    ),
+    (
+        """<Card title={{ foo('}}') }} />""",
+        """{{ _get("Card").render(**{"title":foo('}}')}) }}""",
+    ),
+    (
+        """<Card title={{ "it's }}" }} />""",
+        """{{ _get("Card").render(**{"title":"it's }}"}) }}""",
+    ),
     # Raw blocks
     (
         """<Foo bar="baz">content</Foo>
