@@ -272,7 +272,7 @@ Combine icons with buttons:
 ```
 
 ```html+jinja title="usage"
-{#import "btn--icon.jinja" as IconButton #}
+{#import "icon-button.jinja" as IconButton #}
 {#import "icons/icon-x.jinja" as IconX #}
 
 <IconButton label="Close" @click="close()">

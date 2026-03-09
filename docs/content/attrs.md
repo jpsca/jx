@@ -191,7 +191,7 @@ Gets the value of an attribute:
 
 ### `attrs.add_class(*classes)`
 
-Adds one or more classes:
+Adds one or more classes to the end of the class list:
 
 ```html+jinja
 {% do attrs.add_class("btn", "btn-primary") %}
@@ -200,6 +200,20 @@ Adds one or more classes:
   {{ content }}
 </button>
 ```
+
+### `attrs.prepend_class(*classes)`
+
+Adds one or more classes to the beginning of the class list:
+
+```html+jinja
+{% do attrs.prepend_class("btn") %}
+
+<button {{ attrs.render() }}>
+  {{ content }}
+</button>
+```
+
+This is useful when class order matters (e.g., with utility-first CSS frameworks where the first class should be the base style).
 
 ### `attrs.remove_class(*classes)`
 

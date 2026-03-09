@@ -402,3 +402,10 @@ def test_inline_comment_with_quoted_hash():
     base = Path("dummy")
     meta = extract_metadata(source, base, base / "test.jinja")
     assert meta.css == ("/style.css#v2",)
+
+
+def test_relative_import_in_string_template():
+    """Relative imports should raise InvalidImport when fullpath is empty (string templates)."""
+    source = '{#import "./button.jinja" as Button #}\n<Button />'
+    with pytest.raises(InvalidImport, match="Relative import"):
+        extract_metadata(source, base_path=Path(), fullpath=Path())

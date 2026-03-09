@@ -40,7 +40,7 @@ Create a new folder for your components. Inside this folder create a new file ca
 <div class="bg-white shadow rounded border p-4">
   <h2 class="m-0 text-gray-800">{{ title }}</h2>
   <p>{{ content }}</p>
-  <a href="{{ url_for(url) }}" class="text-teal-600">Read more</a>
+  <a href="{{ url }}" class="text-teal-600">Read more</a>
 </div>
 ```
 

@@ -33,7 +33,7 @@ Layouts are components that wrap entire pages, providing consistent structure li
   </main>
 
   <footer>
-    <p>&copy; 2025 My Site</p>
+    <p>&copy; 2026 My Site</p>
   </footer>
 
 </body>
@@ -76,7 +76,7 @@ Use named slots for customizable sections:
 
   <footer>
     {% slot footer %}
-      <p>&copy; 2025</p>
+      <p>&copy; 2026</p>
     {% endslot %}
   </footer>
 
@@ -239,7 +239,7 @@ Pass the current page to highlight active nav items:
 
   {% if show_footer %}
     <footer>
-      {% slot footer %}<p>&copy; 2024</p>{% endslot %}
+      {% slot footer %}<p>&copy; 2026</p>{% endslot %}
     </footer>
   {% endif %}
 

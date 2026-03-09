@@ -3,7 +3,7 @@ title: VSCode extension
 description: VisualStudio Code extension for working with Jx components
 ---
 
-If you are using VisualStudio Code, install the [Jinja-Jx extension](https://github.com/jpsca/jx-vscode){_target="blank"}.
+If you are using VisualStudio Code, install the [Jinja-Jx extension](https://github.com/jpsca/jx-vscode){target="_blank"}.
 
 
 ## Syntax Highlighting
@@ -86,7 +86,7 @@ ext install jpscaletti.jinja-jx
 
 Alternatively:
 
-1. Download the the `jinja-jx-VERSION.vsix` file from the [GitHub repo](https://github.com/jpsca/jx-vscode){_target="blank"}
+1. Download the `jinja-jx-VERSION.vsix` file from the [GitHub repo](https://github.com/jpsca/jx-vscode){target="_blank"}
 2. Launch VSCode Quick Command (<kbd>Shift</kbd>+<kbd>Ctrl</kbd>+<kbd>P</kbd>)
 3. Run "Extensions: Install from VSIX..."
 

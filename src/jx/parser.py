@@ -9,9 +9,6 @@ from .exceptions import TemplateSyntaxError
 from .utils import logger
 
 
-BLOCK_CALL = '{% call(_slot="") _get("[TAG]").render([ATTRS]) -%}[CONTENT]{%- endcall %}'
-INLINE_CALL = '{{ _get("[TAG]").render([ATTRS]) }}'
-
 re_raw = r"\{%-?\s*raw\s*-?%\}.+?\{%-?\s*endraw\s*-?%\}"
 RX_RAW = re.compile(re_raw, re.DOTALL)
 
@@ -69,6 +66,7 @@ class JxParser:
         self.name = name
         self.source = source
         self.components = components
+        self._closing_tag_rx_cache: dict[str, re.Pattern] = {}
 
     def parse(self, *, validate_tags: bool = True) -> tuple[str, tuple[str, ...]]:
         """
@@ -103,15 +101,13 @@ class JxParser:
         Replace blocks matching `rx` with temporary placeholders.
         """
         blocks: dict[str, str] = {}
-        while True:
-            match = rx.search(source)
-            if not match:
-                break
-            start, end = match.span(0)
+
+        def _sub(match: re.Match) -> str:
             key = f"--{prefix}-{uuid4().hex}--"
             blocks[key] = match.group(0)
-            source = f"{source[:start]}{key}{source[end:]}"
-        return source, blocks
+            return key
+
+        return rx.sub(_sub, source), blocks
 
     def replace_raw_blocks(self, source: str) -> tuple[str, dict[str, str]]:
         """
@@ -316,8 +312,6 @@ class JxParser:
 
     # Private
 
-    _closing_tag_rx_cache: dict[str, re.Pattern] = {}
-
     def _find_closing_tag(self, source: str, tag: str, start: int) -> int:
         """
         Find the matching closing tag, correctly handling nested same-name tags.
@@ -520,9 +514,8 @@ class JxParser:
 
         if content:
             return (
-                BLOCK_CALL.replace("[TAG]", tag)
-                .replace("[ATTRS]", str_attrs)
-                .replace("[CONTENT]", content)
+                f'{{% call(_slot="") _get("{tag}").render({str_attrs}) -%}}'
+                f"{content}"
+                f"{{%- endcall %}}"
             )
-        else:
-            return INLINE_CALL.replace("[TAG]", tag).replace("[ATTRS]", str_attrs)
+        return f'{{{{ _get("{tag}").render({str_attrs}) }}}}'

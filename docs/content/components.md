@@ -355,40 +355,10 @@ Unfilled slots use their default content.
 
 ## Validation
 
-You can easily validate your components using the CLI tool `jx` installs. Just run:
+Jx includes a CLI tool to validate all your components at once:
 
 ```bash
-❯❯ jx check MODULE:CATALOG
+❯❯ jx check myapp.setup:catalog
 ```
 
-The argument is a Python import path to your `Catalog` instance, using `module:attribute` syntax. You can also use a file path: `path/to/file.py:attribute`.
-
-Example:
-
-```bash
-❯❯ jx check docs.docs:docs.catalog
-
-✓ autodoc.md.jinja - OK
-✓ banner_archived.jinja - OK
-✓ color_scheme.jinja - OK
-✓ footer.jinja - OK
-✓ header.jinja - OK
-✓ humans.txt.jinja - OK
-✓ index.jinja - OK
-✓ language_selector.jinja - OK
-✓ layout.jinja - OK
-✓ llm.jinja - OK
-✓ metadata.jinja - OK
-✓ page.jinja - OK
-✓ page_nav.jinja - OK
-✓ page_pager.jinja - OK
-✓ page_toc.jinja - OK
-✓ robots.txt.jinja - OK
-✓ search.jinja - OK
-✓ sidebar.jinja - OK
-✓ sitemap.xml.jinja - OK
-✓ toc.jinja - OK
-✓ version_selector.jinja - OK
-
-21 components checked, 0 errors
-```
+This catches import errors, unimported tags, typos, and more. See the [Validator](/docs/tools/check/) page for details.

@@ -44,7 +44,7 @@ $ jx check myapp.setup:catalog
 ✗ modal.jinja - Unknown import 'dialog.jinja' (did you mean 'dialogs/dialog.jinja'?)
 
 4 components checked, 2 errors
-````
+```
 
 ### JSON
 
@@ -58,12 +58,14 @@ $ jx check --format json myapp.setup:catalog
   "errors": [
     {
       "file": "page.jinja",
+      "abs_path": "/path/to/components/page.jinja",
       "line": 12,
       "message": "Component 'Buton' used but not imported",
       "suggestion": "Button"
     },
     {
       "file": "modal.jinja",
+      "abs_path": "/path/to/components/modal.jinja",
       "line": null,
       "message": "Unknown import 'dialog.jinja'",
       "suggestion": "dialogs/dialog.jinja"

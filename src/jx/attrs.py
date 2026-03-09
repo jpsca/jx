@@ -62,10 +62,7 @@ class Attrs:
         attributes: "dict[str, str | LazyString]" = {}
         properties: set[str] = set()
 
-        class_names = (" ".join([
-            str(attrs.pop(CLASS_KEY, "")),
-            str(attrs.pop(CLASS_ALT_KEY, "")),
-        ])).strip().split()
+        class_names = f"{attrs.pop(CLASS_KEY, '')} {attrs.pop(CLASS_ALT_KEY, '')}".split()
         classes = []
         for name in class_names:
             if name and name not in classes:
@@ -210,6 +207,7 @@ class Attrs:
 
         """
         for name, value in kw.items():
+            name = name.replace("_", "-")
             if value is False or value is None:
                 continue
 
@@ -218,7 +216,6 @@ class Attrs:
                     self.add_class(value)
                 continue
 
-            name = name.replace("_", "-")
             if value is True:
                 if name not in self.__properties:
                     self.__properties.add(name)
@@ -396,7 +393,6 @@ class Attrs:
         """
         if name in CLASS_KEYS:
             self.__classes = ()
-        if name in self.__attributes:
-            del self.__attributes[name]
-        if name in self.__properties:
-            self.__properties.remove(name)
+        else:
+            self.__attributes.pop(name, None)
+            self.__properties.discard(name)

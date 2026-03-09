@@ -176,7 +176,7 @@ class Component:
         self, attr: str, _visited: set[str] | None = None
     ) -> list[str]:
         resolved = [self.resolve_url(url) for url in getattr(self, attr)]
-        urls = dict.fromkeys(resolved)
+        urls = dict.fromkeys(resolved)  # ordered dedup
         _visited = _visited or set()
         _visited.add(self.relpath)
 

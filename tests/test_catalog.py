@@ -165,6 +165,15 @@ def test_reuse_jinja_env():
     assert catalog.jinja_env.globals["custom_global"] == "Global Value"
 
 
+def test_jinja_env_preserves_user_settings():
+    """Passing a jinja_env should not override its autoescape/undefined settings."""
+    jinja_env = jinja2.Environment(autoescape=False, undefined=jinja2.Undefined)
+    catalog = Catalog(jinja_env=jinja_env)
+
+    assert catalog.jinja_env.autoescape is False
+    assert catalog.jinja_env.undefined is jinja2.Undefined
+
+
 def test_list_components(folder):
     (folder / "button.jinja").write_text("<button>Click</button>")
     (folder / "card.jinja").write_text("<div>Card</div>")

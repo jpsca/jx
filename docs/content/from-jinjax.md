@@ -488,7 +488,7 @@ html = catalog.render(
 
 #### 5. Remove the middleware
 
-JinjaX requires WhiteNoise middleware to serve component CSS/JS. Jx doesn't — assets are just URLs served by your existing static file setup.
+JinjaX requires its own middleware to serve component CSS/JS. Jx doesn't — assets are just URLs served by your existing static file setup.
 
 ```python
 # Before (JinjaX) — DELETE THIS

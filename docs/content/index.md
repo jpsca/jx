@@ -43,10 +43,10 @@ title: Home
 ::: tab | view.jinja
 
 ```html+jinja
-{# import "layout.jinja" as Layout #}
-{# import "product.jinja" as Product #}
-{# import "pagination.jinja" as Pagination #}
-{# def products #}
+{#import "layout.jinja" as Layout #}
+{#import "product.jinja" as Product #}
+{#import "pagination.jinja" as Pagination #}
+{#def products #}
 
 <Layout title="My title">
   {% for product in products %}
@@ -61,8 +61,8 @@ title: Home
 ::: tab | product.jinja
 
 ```html+jinja
-{# import "card.jinja" as Card #}
-{# def product #}
+{#import "card.jinja" as Card #}
+{#def product #}
 
 <Card class="product"
   title={{ product.title }}
@@ -78,7 +78,7 @@ title: Home
 ::: tab | card.jinja
 
 ```html+jinja
-{# def title, img_url #}
+{#def title, img_url #}
 
 <div {{ attrs.render(class="card") }}>
   <div class="card_header">

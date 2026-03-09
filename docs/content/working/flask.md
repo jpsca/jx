@@ -57,7 +57,7 @@ Now your components have access to all Flask template utilities:
 </nav>
 ```
 
-This is also true for any Flask extension that add globals to the templates.
+This is also true for any Flask extension that adds globals to the templates.
 
 ## Adding Flask Globals Manually
 
@@ -259,7 +259,7 @@ Use Flask's context processors to make variables available to all components:
 def inject_globals():
     return {
         "site_name": "My App",
-        "current_year": 2025,
+        "current_year": 2026,
         "is_authenticated": lambda: session.get("user_id") is not None,
     }
 ```
@@ -320,7 +320,7 @@ Or use `url_for` in a custom render loop:
 Here's a complete Flask application using Jx:
 
 ```python title="app.py"
-from flask import Flask, redirect, url_for, flash, session, g
+from flask import Flask, redirect, url_for, flash, session, g, request
 from flask_wtf.csrf import CSRFProtect
 from jx import Catalog
 

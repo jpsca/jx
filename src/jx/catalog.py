@@ -185,9 +185,7 @@ class Catalog:
 
     add_path = add_folder  # alias
 
-    def add_package(
-        self, package_name: str, *, prefix: str = "", preload: bool = True
-    ) -> None:
+    def add_package(self, package_name: str, *, prefix: str, preload: bool = True) -> None:
         """
         Register components (and optionally assets) from an installed Python package.
 
@@ -199,7 +197,7 @@ class Catalog:
             package_name:
                 The importable package name (e.g. `"my_ui_kit"`).
             prefix:
-                Optional prefix for the components (e.g. `"ui"`).
+                Prefix for the components (e.g. `"ui"`).
             preload:
                 Whether to preload component data.
 
@@ -505,6 +503,8 @@ class Catalog:
             env = jinja_env
         else:
             env = jinja2.Environment()
+            env.autoescape = True
+            env.undefined = jinja2.StrictUndefined
 
         globals = globals or {}
         globals.update(
@@ -529,8 +529,5 @@ class Catalog:
         extensions.append("jinja2.ext.do")
         for ext in extensions:
             env.add_extension(ext)
-
-        env.autoescape = True
-        env.undefined = jinja2.StrictUndefined
 
         return env

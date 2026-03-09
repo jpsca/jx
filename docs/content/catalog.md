@@ -25,6 +25,7 @@ catalog = Catalog(
     filters=None,               # Custom template filters
     tests=None,                 # Custom template tests
     auto_reload=True,           # Auto-detect file changes
+    asset_resolver=None,        # Asset URL resolver callback
     **globals                   # Global template variables
 )
 ```
@@ -59,7 +60,7 @@ Variables available to all components:
 catalog = Catalog(
     "components/",
     site_name="My App",
-    current_year=2024,
+    current_year=2026,
     debug=True,
 )
 ```
@@ -145,11 +146,22 @@ catalog = Catalog("components/", jinja_env=env)
 
 This is useful when integrating with frameworks that provide their own Jinja environment.
 
+### `asset_resolver`
+
+Optional callback for transforming component asset URLs. Receives `(url, prefix)` and returns the resolved URL string. Only invoked for components whose prefix has a registered `assets` folder (see `add_folder`).
+
+```python
+def my_resolver(url, prefix):
+    return f"/static/{prefix}/{url}"
+
+catalog = Catalog("components/", asset_resolver=my_resolver)
+```
+
 ---
 
 ## Adding Folders
 
-### `add_folder(path, prefix="", preload=True)`
+### `add_folder(path, prefix="", preload=True, assets=None)`
 
 Add a folder of components to the catalog:
 
@@ -158,6 +170,8 @@ catalog = Catalog()
 catalog.add_folder("components/")
 catalog.add_folder("layouts/")
 ```
+
+The optional `assets` parameter specifies a folder containing CSS/JS files for components in this folder. When set, the `asset_resolver` callback is used to transform asset URLs at render time (see [Installable Packages](/docs/installable/) for details).
 
 Components are imported by their path relative to the folder:
 
@@ -269,14 +283,14 @@ Note: String components can use absolute imports but not relative imports (no fi
 ### Flask
 
 ```python
-from flask import Flask, render_template_string
+from flask import Flask, url_for
 from jx import Catalog
 
 app = Flask(__name__)
 catalog = Catalog(
     "components/",
     auto_reload=app.debug,
-    url_for=flask.url_for,  # Make url_for available in components
+    url_for=url_for,  # Make url_for available in components
 )
 
 @app.route("/")
