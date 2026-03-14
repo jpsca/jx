@@ -180,7 +180,7 @@ def test_as_dict_no_classes():
 
 def test_render_attrs_lik_set():
     attrs = Attrs({"class": "lorem"})
-    expected = 'class="lorem ipsum" data-position="top" title="hi" open'
+    expected = 'class="ipsum lorem" data-position="top" title="hi" open'
     result = attrs.render(
         title="hi",
         data_position="top",
@@ -193,7 +193,7 @@ def test_render_attrs_lik_set():
 
 def test_do_not_escape_tailwind_syntax():
     attrs = Attrs({"class": "lorem [&_a]:flex"})
-    expected = 'class="lorem [&_a]:flex ipsum" title="Hi&Stuff"'
+    expected = 'class="ipsum lorem [&_a]:flex" title="Hi&Stuff"'
     result = attrs.render(
         **{
             "title": "Hi&Stuff",

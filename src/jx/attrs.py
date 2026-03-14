@@ -361,12 +361,19 @@ class Attrs:
             'class="ipsum" width="42" data-good'
 
             attrs.render(class="abc", data_good=False, tabindex=0)
-            'class="abc ipsum" width="42" tabindex="0"'
+            'class="abc ipsum" width="42" tabindex="0"'  # render classes come first
             ```
 
         """
         if kw:
-            self.set(**kw)
+            render_classes = None
+            for key in CLASS_KEYS:
+                if key in kw:
+                    render_classes = kw.pop(key)
+            if kw:
+                self.set(**kw)
+            if render_classes:
+                self.prepend_class(render_classes)
 
         attributes = self.__attributes.copy()
 
