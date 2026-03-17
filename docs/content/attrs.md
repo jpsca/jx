@@ -227,6 +227,16 @@ Removes one or more classes:
 </div>
 ```
 
+### `attrs.classes`
+
+Returns all the HTML classes as a space-separated string:
+
+```html+jinja
+{% if "active" in attrs.classes %}
+  <span>This item is active</span>
+{% endif %}
+```
+
 ### `attrs.as_dict`
 
 Returns all attributes as a dictionary:

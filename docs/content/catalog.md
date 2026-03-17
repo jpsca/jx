@@ -278,6 +278,57 @@ Note: String components can use absolute imports but not relative imports (no fi
 
 ---
 
+## Introspection
+
+### `list_components()`
+
+Returns a list of all registered component paths:
+
+```python
+paths = catalog.list_components()
+# ["button.jinja", "card.jinja", "forms/input.jinja"]
+```
+
+### `get_signature(relpath)`
+
+Returns a component's signature, including its arguments and metadata:
+
+```python
+sig = catalog.get_signature("button.jinja")
+```
+
+Returns a dictionary with:
+
+- `required` - dict of required argument names mapped to their type (or `None`)
+- `optional` - dict of optional arguments mapped to `(default_value, type or None)`
+- `slots` - tuple of slot names
+- `css` - tuple of CSS file URLs
+- `js` - tuple of JS file URLs
+
+```python
+sig = catalog.get_signature("modal.jinja")
+# {
+#     "required": {"title": str},
+#     "optional": {"size": ("md", str)},
+#     "slots": ("header", "footer"),
+#     "css": ("modal.css",),
+#     "js": ("modal.js",),
+# }
+```
+
+### `collect_assets(output)`
+
+Copies all registered package assets to an output folder. For each prefix that has a registered assets folder (see `add_folder`), files are copied to `<output>/<prefix>/`:
+
+```python
+copied = catalog.collect_assets("static/vendor")
+# [("ui", Path("button.css")), ("ui", Path("button.js")), ...]
+```
+
+Returns a list of `(prefix, relative_path)` tuples for every file copied.
+
+---
+
 ## Framework Integration
 
 ### Flask
@@ -357,4 +408,36 @@ catalog = Catalog("components/", auto_reload=app.debug)
 
 # FastAPI
 catalog = Catalog("components/", auto_reload=settings.debug)
+```
+
+---
+
+## Built-in Template Globals
+
+In addition to any globals you pass to the constructor, Jx automatically provides these functions to all components:
+
+### `_get_random_id(prefix="id")`
+
+Generates a unique string suitable for HTML element IDs. Useful for form elements, popovers, and other components that require unique IDs to function correctly:
+
+```html+jinja title="components/popover.jinja"
+{#def label, content #}
+
+{% set popover_id = _get_random_id("popover") %}
+
+<button popovertarget="{{ popover_id }}">{{ label }}</button>
+<div id="{{ popover_id }}" popover>{{ content }}</div>
+```
+
+Each call returns a different ID like `popover-a1b2c3d4e5f6...`, so you can use it as a default without requiring the caller to pass an explicit ID:
+
+```html+jinja title="components/input.jinja"
+{#def name, label="", id="" #}
+
+{% set input_id = id or _get_random_id(name) %}
+
+{% if label %}
+  <label for="{{ input_id }}">{{ label }}</label>
+{% endif %}
+<input id="{{ input_id }}" name="{{ name }}" {{ attrs.render() }} />
 ```
