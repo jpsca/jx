@@ -400,31 +400,6 @@ def delete_item(item_id: int):
 </div>
 ```
 
-## Lifespan Events
-
-Use FastAPI's lifespan to preload components in production:
-
-```python title="app.py"
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from jx import Catalog
-import os
-
-is_production = os.getenv("ENV") == "production"
-catalog = Catalog(auto_reload=not is_production)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: add folders with preloading in production
-    catalog.add_folder("components/", preload=is_production)
-    yield
-    # Shutdown: cleanup if needed
-
-
-app = FastAPI(lifespan=lifespan)
-```
-
 ## Error Handling
 
 Create custom error pages:
@@ -498,14 +473,6 @@ class Templates:
             **context,
         )
         return HTMLResponse(html, status_code=status_code)
-
-
-# Lifespan
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    catalog.add_folder("components/", preload=is_production)
-    yield
-
 
 # App
 app = FastAPI(lifespan=lifespan)

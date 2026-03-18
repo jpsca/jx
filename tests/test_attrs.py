@@ -309,3 +309,17 @@ def test_additional_attributes_lazily_evaluated_has_string_methods():
 
     assert attrs["some_object"].upper() == "TEST"
     assert attrs["some_object"].title() == "Test"
+
+
+def test_render_empty_attrs():
+    """Render with no attributes, classes, or properties returns empty string."""
+    attrs = Attrs({})
+    assert attrs.render() == ""
+
+
+def test_render_with_kw_no_classes():
+    """Render with kw args that don't include class keys."""
+    attrs = Attrs({})
+    result = attrs.render(title="hi", open=True)
+    assert 'title="hi"' in result
+    assert "open" in result

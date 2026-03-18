@@ -15,7 +15,7 @@ import jinja2
 
 from . import utils
 from .component import Component
-from .exceptions import ComponentNotFoundError, FileEncodingError, JxException
+from .exceptions import ComponentNotFoundError, FileEncodingError
 from .meta import extract_metadata
 from .parser import JxParser
 from .utils import logger
@@ -27,6 +27,7 @@ class CData:
     path: Path
     mtime: float
     code: CodeType | None = None
+    tmpl: "jinja2.Template | None" = None
     required: dict[str, type | None] = field(default_factory=dict)  # { attr: type or None }
     optional: dict[str, tuple[t.Any, type | None]] = field(default_factory=dict)  # { attr: (default, type or None) }
     imports: dict[str, str] = field(default_factory=dict)  # { name: relpath }
@@ -86,6 +87,7 @@ class Catalog:
         """
         self._lock = threading.RLock()  # Protects self.components access
         self.components = {}
+        self._asset_cache: dict[str, list[str]] = {}
         self.assets_folders: dict[str, Path] = {}
         self.asset_resolver = asset_resolver
         self.jinja_env = self._make_jinja_env(
@@ -104,7 +106,6 @@ class Catalog:
         path: str | Path,
         *,
         prefix: str = "",
-        preload: bool = True,
         assets: str | Path | None = None,
     ) -> None:
         """
@@ -128,7 +129,7 @@ class Catalog:
 
         WARNING: You cannot move or delete components files from the folder after
         calling this method, but you can call it again to add new components added
-        to the folder. This is unrelated to the value of `preload`.
+        to the folder.
 
         Arguments:
             path:
@@ -136,12 +137,6 @@ class Catalog:
             prefix:
                 Optional path prefix that all the components in the folder
                 will have. The default is empty.
-            preload:
-                Whether to preload the data of components in the folder.
-                If set to `True` (the default), the component data will be loaded into
-                memory when the folder is added, instead of just before rendering it.
-                This makes the first render faster at the expense of a few
-                microseconds upfront.
             assets:
                 Optional path to a folder containing CSS/JS assets for
                 this folder's components. When set, the `asset_resolver`
@@ -171,21 +166,9 @@ class Catalog:
                 )
                 self.components[relpath] = cdata
 
-            if preload:
-                # Take a snapshot of keys to avoid "dict changed size during iteration"
-                relpaths = list(self.components.keys())
-
-        # Preload outside the lock to avoid holding it during compilation
-        if preload:
-            for relpath in relpaths:
-                try:
-                    self.get_component_data(relpath)
-                except (JxException, jinja2.TemplateSyntaxError):
-                    pass
-
     add_path = add_folder  # alias
 
-    def add_package(self, package_name: str, *, prefix: str, preload: bool = True) -> None:
+    def add_package(self, package_name: str, *, prefix: str) -> None:
         """
         Register components (and optionally assets) from an installed Python package.
 
@@ -198,8 +181,6 @@ class Catalog:
                 The importable package name (e.g. `"my_ui_kit"`).
             prefix:
                 Prefix for the components (e.g. `"ui"`).
-            preload:
-                Whether to preload component data.
 
         """
         mod = importlib.import_module(package_name)
@@ -209,7 +190,7 @@ class Catalog:
                 f"Package '{package_name}' does not have a JX_COMPONENTS attribute"
             )
         assets = getattr(mod, "JX_ASSETS", None)
-        self.add_folder(components, prefix=prefix, assets=assets, preload=preload)
+        self.add_folder(components, prefix=prefix, assets=assets)
 
     def get_assets_folder(self, prefix: str) -> Path | None:
         """
@@ -316,6 +297,7 @@ class Catalog:
             js=meta.js,
             slots=slots,
             asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
+            asset_cache=self._asset_cache,
         )
         co.globals = self._prepare_globals(co, globals)
         return co.render(**kwargs)
@@ -361,15 +343,21 @@ class Catalog:
                 source=parsed_source, name=relpath, filename=cdata.path.as_posix()
             )
 
+            tmpl = jinja2.Template.from_code(
+                self.jinja_env, code, self.jinja_env.globals
+            )
+
             # Update all fields atomically (from other threads' perspective)
             cdata.mtime = mtime
             cdata.code = code
+            cdata.tmpl = tmpl
             cdata.required = meta.required
             cdata.optional = meta.optional
             cdata.imports = meta.imports
             cdata.css = meta.css
             cdata.js = meta.js
             cdata.slots = slots
+            self._asset_cache.clear()
             return cdata
 
     def get_component(self, relpath: str) -> Component:
@@ -382,26 +370,21 @@ class Catalog:
                 e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
 
         """
-        with self._lock:
-            cdata = self.get_component_data(relpath)
-            assert cdata.code is not None  # for type checker
-            tmpl = jinja2.Template.from_code(
-                self.jinja_env, cdata.code, self.jinja_env.globals
-            )
-
-            co = Component(
-                relpath=relpath,
-                tmpl=tmpl,
-                get_component=self.get_component,
-                required=cdata.required,
-                optional=cdata.optional,
-                imports=cdata.imports,
-                css=cdata.css,
-                js=cdata.js,
-                slots=cdata.slots,
-                asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
-            )
-            return co
+        cdata = self.get_component_data(relpath)
+        assert cdata.tmpl is not None
+        return Component(
+            relpath=relpath,
+            tmpl=cdata.tmpl,
+            get_component=self.get_component,
+            required=cdata.required,
+            optional=cdata.optional,
+            imports=cdata.imports,
+            css=cdata.css,
+            js=cdata.js,
+            slots=cdata.slots,
+            asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
+            asset_cache=self._asset_cache,
+        )
 
     def list_components(self) -> list[str]:
         """

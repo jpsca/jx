@@ -20,12 +20,12 @@ $ jx check docs/docs.py:catalog
 
 ## What It Checks
 
-The `check` command goes beyond the validation the catalog does when preloading components:
+The `check` command goes beyond the validation the catalog does when loading components:
 
 1. **Cross-component validation** — verifies that import paths (e.g. `{#import "buton.jinja" ...}`) actually resolve to components in the catalog. The catalog only verifies imports exist at render time.
 2. **Unimported tag detection** — finds PascalCase tags like `<Button />` that aren't imported but exist in the catalog ("used but not imported").
 3. **Suggestions** — "did you mean 'button.jinja'?" / "did you mean 'Button'?" for typos.
-4. **Collects all errors** — preload stops at the first broken file. Check reports every issue across every component.
+4. **Collects all errors** — check reports every issue across every component.
 5. **Structured JSON output** — for IDE integration (the VS Code extension uses this).
 
 

@@ -29,6 +29,7 @@ class Component:
         "slots",
         "globals",
         "asset_resolver",
+        "_asset_cache",
     )
 
     def __init__(
@@ -44,6 +45,7 @@ class Component:
         js: tuple[str, ...] = (),
         slots: tuple[str, ...] = (),
         asset_resolver: Callable[[str, str], str] | None = None,
+        asset_cache: dict[str, list[str]] | None = None,
     ) -> None:
         """
         Internal object that represents a Jx component.
@@ -70,6 +72,8 @@ class Component:
             asset_resolver:
                 A callable that transforms asset URLs. Receives (url, prefix) and
                 returns the resolved URL.
+            asset_cache:
+                A shared mutable dict for caching resolved asset lists across components.
 
         """
         self.relpath = relpath
@@ -83,6 +87,7 @@ class Component:
         self.js = js
         self.slots = slots
         self.asset_resolver = asset_resolver
+        self._asset_cache = asset_cache
 
         self.globals: dict[str, t.Any] = {}
 
@@ -164,12 +169,28 @@ class Component:
         """
         Returns a list of CSS files for the component and its children.
         """
+        if _visited is None and self._asset_cache is not None:
+            cache_key = f"{self.relpath}:css"
+            cached = self._asset_cache.get(cache_key)
+            if cached is not None:
+                return cached
+            result = self._collect_assets("css", None)
+            self._asset_cache[cache_key] = result
+            return result
         return self._collect_assets("css", _visited)
 
     def collect_js(self, _visited: set[str] | None = None) -> list[str]:
         """
         Returns a list of JS files for the component and its children.
         """
+        if _visited is None and self._asset_cache is not None:
+            cache_key = f"{self.relpath}:js"
+            cached = self._asset_cache.get(cache_key)
+            if cached is not None:
+                return cached
+            result = self._collect_assets("js", None)
+            self._asset_cache[cache_key] = result
+            return result
         return self._collect_assets("js", _visited)
 
     def _collect_assets(

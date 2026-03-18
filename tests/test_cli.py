@@ -130,8 +130,7 @@ def test_main_check_file_path(tmp_path, capsys):
     setup_file = tmp_path / "mysetup.py"
     setup_file.write_text(
         f"from jx import Catalog\n"
-        f"catalog = Catalog()\n"
-        f"catalog.add_folder('{folder}', preload=False)\n"
+        f"catalog = Catalog('{folder}')\n"
     )
 
     with patch.object(sys, "argv", ["jx", "check", f"{setup_file}:catalog"]):
@@ -162,8 +161,7 @@ def test_main_check(tmp_path, capsys):
     setup_file = tmp_path / "testsetup.py"
     setup_file.write_text(
         f"from jx import Catalog\n"
-        f"catalog = Catalog()\n"
-        f"catalog.add_folder('{folder}', preload=False)\n"
+        f"catalog = Catalog('{folder}')\n"
     )
 
     with patch.object(sys, "argv", ["jx", "check", "testsetup:catalog"]):
@@ -189,8 +187,7 @@ def test_main_check_json(tmp_path, capsys):
     setup_file = tmp_path / "testsetup2.py"
     setup_file.write_text(
         f"from jx import Catalog\n"
-        f"catalog = Catalog()\n"
-        f"catalog.add_folder('{folder}', preload=False)\n"
+        f"catalog = Catalog('{folder}')\n"
     )
 
     with patch.object(sys, "argv", ["jx", "check", "--format", "json", "testsetup2:catalog"]):
@@ -228,7 +225,7 @@ def test_main_collect_assets(tmp_path, capsys):
     setup_file.write_text(
         f"from jx import Catalog\n"
         f"catalog = Catalog()\n"
-        f"catalog.add_folder('{comp_folder}', prefix='ui', assets='{assets_folder}', preload=False)\n"
+        f"catalog.add_folder('{comp_folder}', prefix='ui', assets='{assets_folder}')\n"
     )
 
     with patch.object(sys, "argv", ["jx", "collect_assets", "testsetup3:catalog", str(output_folder)]):
@@ -262,7 +259,7 @@ def test_main_collect_assets_multiple(tmp_path, capsys):
     setup_file.write_text(
         f"from jx import Catalog\n"
         f"catalog = Catalog()\n"
-        f"catalog.add_folder('{comp_folder}', prefix='ui', assets='{assets_folder}', preload=False)\n"
+        f"catalog.add_folder('{comp_folder}', prefix='ui', assets='{assets_folder}')\n"
     )
 
     with patch.object(sys, "argv", ["jx", "collect_assets", "testsetup4:catalog", str(output_folder)]):
@@ -302,7 +299,7 @@ def test_main_collect_assets_no_prefix(tmp_path, capsys):
     setup_file.write_text(
         f"from jx import Catalog\n"
         f"catalog = Catalog()\n"
-        f"catalog.add_folder('{comp_folder}', preload=False)\n"
+        f"catalog.add_folder('{comp_folder}')\n"
     )
 
     with patch.object(sys, "argv", ["jx", "collect_assets", "testsetup5:catalog", str(output_folder)]):

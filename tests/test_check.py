@@ -16,13 +16,6 @@ from jx.tools import (
 )
 
 
-def make_catalog(folder):
-    """Create a Catalog without preloading, so invalid components don't raise on creation."""
-    catalog = Catalog()
-    catalog.add_folder(folder, preload=False)
-    return catalog
-
-
 def test_find_component_tags():
     source = """
 <div>
@@ -61,7 +54,7 @@ def test_check_valid_components(folder):
         '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 0
 
@@ -70,7 +63,7 @@ def test_check_unknown_component(folder, capsys):
     (folder / "button.jinja").write_text("<button>Click</button>")
     (folder / "card.jinja").write_text("<div><Buttn /></div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -85,7 +78,7 @@ def test_check_unknown_import(folder, capsys):
         '{#import "buton.jinja" as Button #}\n<Button />'
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -98,7 +91,7 @@ def test_check_not_imported(folder, capsys):
     (folder / "button.jinja").write_text("<button>Click</button>")
     (folder / "card.jinja").write_text("<div><Button /></div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -110,7 +103,7 @@ def test_check_single_file(folder, capsys):
     """Test checking a single file instead of a folder."""
     (folder / "button.jinja").write_text("{#def label #}\n<button>{{ label }}</button>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 0
 
@@ -123,7 +116,7 @@ def test_check_no_components(tmp_path, capsys):
     empty_folder = tmp_path / "empty"
     empty_folder.mkdir()
 
-    catalog = make_catalog(empty_folder)
+    catalog = Catalog(empty_folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -135,7 +128,7 @@ def test_check_invalid_utf8(folder, capsys):
     """Test checking a component with invalid UTF-8 encoding."""
     (folder / "broken.jinja").write_bytes(b"<div>\xff\xfe invalid</div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -147,7 +140,7 @@ def test_check_invalid_metadata(folder, capsys):
     """Test checking a component with invalid metadata syntax."""
     (folder / "broken.jinja").write_text("{#def $invalid #}\n<div>test</div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -161,7 +154,7 @@ def test_check_unknown_import_no_suggestion(folder, capsys):
         '{#import "xyzabc123.jinja" as Thing #}\n<Thing />'
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -174,7 +167,7 @@ def test_check_unknown_component_no_suggestion(folder, capsys):
     """Test unknown component tag with no similar tag to suggest."""
     (folder / "card.jinja").write_text("<div><Xyzabc123 /></div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -196,7 +189,7 @@ def test_check_nonexistent_path(tmp_path, capsys):
     empty_folder = tmp_path / "does_not_exist"
     empty_folder.mkdir()
 
-    catalog = make_catalog(empty_folder)
+    catalog = Catalog(empty_folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -213,7 +206,7 @@ def test_check_all_valid(folder):
         '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     errors, checked = check_all(catalog)
     assert checked == 2
     assert errors == []
@@ -224,7 +217,7 @@ def test_check_all_with_errors(folder):
     (folder / "button.jinja").write_text("<button>Click</button>")
     (folder / "card.jinja").write_text("<div><Buttn /></div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     errors, checked = check_all(catalog)
     assert checked == 2
     assert len(errors) == 1
@@ -238,7 +231,7 @@ def test_check_all_single_file(folder):
     """Test check_all with a catalog containing one component."""
     (folder / "button.jinja").write_text("{#def label #}\n<button>{{ label }}</button>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     errors, checked = check_all(catalog)
     assert checked == 1
     assert errors == []
@@ -249,7 +242,7 @@ def test_check_all_empty(tmp_path):
     empty_folder = tmp_path / "empty"
     empty_folder.mkdir()
 
-    catalog = make_catalog(empty_folder)
+    catalog = Catalog(empty_folder)
     errors, checked = check_all(catalog)
     assert checked == 0
     assert errors == []
@@ -259,7 +252,7 @@ def test_check_json_format_valid(folder, capsys):
     """Test JSON output format with valid components."""
     (folder / "button.jinja").write_text("<button>Click</button>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog, format="json")
     assert exit_code == 0
 
@@ -274,7 +267,7 @@ def test_check_json_format_with_errors(folder, capsys):
     (folder / "button.jinja").write_text("<button>Click</button>")
     (folder / "card.jinja").write_text("<div><Buttn /></div>")
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog, format="json")
     assert exit_code == 1
 
@@ -293,7 +286,7 @@ def test_check_json_format_no_components(tmp_path, capsys):
     empty_folder = tmp_path / "empty"
     empty_folder.mkdir()
 
-    catalog = make_catalog(empty_folder)
+    catalog = Catalog(empty_folder)
     exit_code = check(catalog, format="json")
     assert exit_code == 0
 
@@ -310,7 +303,7 @@ def test_check_unclosed_component_tag(folder, capsys):
         '{#import "footer.jinja" as Footer #}\n<Footer>\n  <p>content</p>'
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
@@ -325,7 +318,7 @@ def test_check_ignores_tags_in_comments(folder, capsys):
         "{# TODO: use <Card /> here #}\n<div>plain html</div>"
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 0
 
@@ -339,7 +332,7 @@ def test_check_ignores_tags_in_raw_blocks(folder, capsys):
         '{% raw %}<Card title="hello" />{% endraw %}\n<div>plain</div>'
     )
 
-    catalog = make_catalog(folder)
+    catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 0
 

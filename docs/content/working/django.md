@@ -626,8 +626,5 @@ catalog = Catalog(
     jinja_env=_jinja2_env,
     auto_reload=settings.DEBUG,  # False in production
 )
-catalog.add_folder(
-    settings.BASE_DIR / "components",
-    preload=not settings.DEBUG,  # Preload in production
-)
+catalog.add_folder(settings.BASE_DIR / "components")
 ```

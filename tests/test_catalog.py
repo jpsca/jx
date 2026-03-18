@@ -12,28 +12,8 @@ def test_add_folder(folder):
     (folder / "a.jinja").write_text("AAAAA")
     (folder / "b.jinja").write_text("BBBBB")
 
-    catalog = Catalog(folder)
-
-    assert "a.jinja" in catalog.components
-    assert "b.jinja" in catalog.components
-
-    assert catalog.components["a.jinja"].base_path == folder
-    assert catalog.components["a.jinja"].path == folder / "a.jinja"
-    assert catalog.components["a.jinja"].mtime > 0
-    assert catalog.components["a.jinja"].code is not None
-
-    assert catalog.components["b.jinja"].base_path == folder
-    assert catalog.components["b.jinja"].path == folder / "b.jinja"
-    assert catalog.components["b.jinja"].mtime > 0
-    assert catalog.components["b.jinja"].code is not None
-
-
-def test_add_folder_no_preload(folder):
-    (folder / "a.jinja").write_text("AAAAA")
-    (folder / "b.jinja").write_text("BBBBB")
-
     catalog = Catalog()
-    catalog.add_folder(folder, preload=False)
+    catalog.add_folder(folder)
 
     assert "a.jinja" in catalog.components
     assert "b.jinja" in catalog.components
@@ -79,12 +59,10 @@ def test_add_folder_with_prefix(tmp_path):
     assert catalog.components["a.jinja"].base_path == folder1
     assert catalog.components["a.jinja"].path == folder1 / "a.jinja"
     assert catalog.components["a.jinja"].mtime > 0
-    assert catalog.components["a.jinja"].code is not None
 
     assert catalog.components["@bla/b.jinja"].base_path == folder2
     assert catalog.components["@bla/b.jinja"].path == folder2 / "b.jinja"
     assert catalog.components["@bla/b.jinja"].mtime > 0
-    assert catalog.components["@bla/b.jinja"].code is not None
 
 
 def test_dot_in_prefix(tmp_path):
@@ -100,7 +78,6 @@ def test_dot_in_prefix(tmp_path):
     assert catalog.components["@ui.forms/a.jinja"].base_path == folder
     assert catalog.components["@ui.forms/a.jinja"].path == folder / "a.jinja"
     assert catalog.components["@ui.forms/a.jinja"].mtime > 0
-    assert catalog.components["@ui.forms/a.jinja"].code is not None
 
 
 def test_add_same_folder_many_times(folder):
@@ -144,9 +121,7 @@ def test_add_same_folder_with_prefix(folder):
 
 
 def test_unknown_component(folder):
-
-    catalog = Catalog()
-    catalog.add_folder(folder)
+    catalog = Catalog(folder)
 
     with pytest.raises(ComponentNotFoundError, match="Component not found: a.jinja"):
         catalog.render("a.jinja")
@@ -271,8 +246,7 @@ def test_file_encoding_error(folder):
     # Write invalid UTF-8 bytes (Latin-1 encoded text)
     (folder / "bad.jinja").write_bytes(b"<div>\xe9\xe8\xe0</div>")
 
-    catalog = Catalog()
-    catalog.add_folder(folder, preload=False)
+    catalog = Catalog(folder)
 
     with pytest.raises(FileEncodingError, match="Cannot read .*/bad.jinja: not valid UTF-8"):
         catalog.render("bad.jinja")

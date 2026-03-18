@@ -59,15 +59,27 @@ class Attrs:
         `attrs.render()` is invoked.
 
         """
+        # Fast path: empty attrs (common for most child components)
+        if not attrs:
+            self.__classes = ()
+            self.__attributes = {}
+            self.__properties = set()
+            return
+
         attributes: "dict[str, str | LazyString]" = {}
         properties: set[str] = set()
 
-        class_names = f"{attrs.pop(CLASS_KEY, '')} {attrs.pop(CLASS_ALT_KEY, '')}".split()
-        classes = []
-        for name in class_names:
-            if name and name not in classes:
-                classes.append(name)
-        self.__classes = tuple(classes)
+        cls1 = attrs.pop(CLASS_KEY, "")
+        cls2 = attrs.pop(CLASS_ALT_KEY, "")
+        if cls1 or cls2:
+            class_names = f"{cls1} {cls2}".split()
+            classes = []
+            for name in class_names:
+                if name and name not in classes:
+                    classes.append(name)
+            self.__classes = tuple(classes)
+        else:
+            self.__classes = ()
 
         for name, value in attrs.items():
             if name.startswith("_"):
@@ -375,20 +387,29 @@ class Attrs:
             if render_classes:
                 self.prepend_class(render_classes)
 
-        attributes = self.__attributes.copy()
+        attributes = self.__attributes
+        classes = self.__classes
+        properties = self.__properties
 
-        classes = self.classes
+        # Fast path: nothing to render
+        if not attributes and not classes and not properties:
+            return Markup("")
+
+        # Build sorted attributes, inserting class in order
         if classes:
-            attributes[CLASS_KEY] = classes
+            items = {**attributes, CLASS_KEY: " ".join(classes)}
+        else:
+            items = attributes
 
-        attributes = dict(sorted(attributes.items()))
-        properties = sorted(self.__properties)
+        if len(items) > 1:
+            items = dict(sorted(items.items()))
 
         html_attrs = [
             f"{name}={quote(str(value))}"
-            for name, value in attributes.items()
+            for name, value in items.items()
         ]
-        html_attrs.extend(properties)
+        if properties:
+            html_attrs.extend(sorted(properties))
 
         return Markup(" ".join(html_attrs))
 

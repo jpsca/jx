@@ -480,7 +480,7 @@ class JxParser:
                 # Scan for the matching }} while tracking quotes
                 j = i + 2
                 in_sq = in_dq = False
-                while j < n:
+                while j < n:  # pragma: no branch
                     c = text[j]
                     if c == '"' and not in_sq:
                         in_dq = not in_dq

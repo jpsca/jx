@@ -421,3 +421,25 @@ def test_multiline_comment_blocks_are_protected():
     assert "<Card" in result
     assert "<Button" in result
     assert '_get("Foo")' in result
+
+
+def test_malformed_nested_opening_tag():
+    """A nested opening tag that can't be parsed causes an unclosed error.
+
+    The outer <Foo> is well-formed, but inside it there's another <Foo
+    whose opening tag never closes (unmatched braces prevent finding '>').
+    _find_closing_tag calls _parse_opening_tag on the inner <Foo, gets -1,
+    and returns -1 itself, which triggers the "Unclosed component" error.
+    """
+    source = "<Foo>inner <Foo {{ broken</Foo></Foo>"
+    parser = JxParser(name="test", source=source, components=["Foo"])
+    with pytest.raises(TemplateSyntaxError, match="Unclosed component"):
+        parser.parse()
+
+
+def test_expr_with_nested_quotes_in_attrs():
+    """Expression blocks with quotes inside are handled by _replace_expr_blocks."""
+    source = """<Foo bar={{ "hello" + 'world' }}>content</Foo>"""
+    parser = JxParser(name="test", source=source, components=["Foo"])
+    result, _ = parser.parse()
+    assert "_get" in result

@@ -161,7 +161,7 @@ catalog = Catalog("components/", asset_resolver=my_resolver)
 
 ## Adding Folders
 
-### `add_folder(path, prefix="", preload=True, assets=None)`
+### `add_folder(path, prefix="", assets=None)`
 
 Add a folder of components to the catalog:
 
@@ -196,16 +196,6 @@ Import prefixed components with `@prefix/`:
 {#import "button.jinja" as Button #}
 {#import "@ui/modal.jinja" as Modal #}
 {#import "@icons/check.jinja" as CheckIcon #}
-```
-
-### Preloading
-
-By default, `preload=True` parses all components when the folder is added. This makes the first render faster.
-
-Set `preload=False` to defer parsing until each component is first used:
-
-```python
-catalog.add_folder("components/", preload=False)
 ```
 
 ### Multiple Folders, Same Prefix

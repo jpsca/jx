@@ -1014,3 +1014,26 @@ def test_mutable_default_not_shared(folder):
     # Each render should start with a fresh empty list
     assert html1.strip() == "1"
     assert html2.strip() == "1"
+
+
+def test_collect_assets_with_visited(folder):
+    """collect_css/collect_js with an explicit _visited set bypass the cache."""
+    (folder / "child.jinja").write_text(
+        '{# css "child.css" #}\n{# js "child.js" #}\n<span>hi</span>'
+    )
+    (folder / "parent.jinja").write_text(
+        '{# import "child.jinja" as Child #}\n'
+        '{# css "parent.css" #}\n{# js "parent.js" #}\n<Child />'
+    )
+
+    cat = Catalog(folder)
+    co = cat.get_component("parent.jinja")
+
+    # Pass explicit _visited to exercise the non-cached branch
+    css = co.collect_css(_visited=set())
+    assert "parent.css" in css
+    assert "child.css" in css
+
+    js = co.collect_js(_visited=set())
+    assert "parent.js" in js
+    assert "child.js" in js

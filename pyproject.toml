@@ -4,7 +4,7 @@ requires = ["setuptools"]
 
 [project]
 name = "jx"
-version = "0.9.0"
+version = "0.10.0"
 description = "Replace your HTML templates with Python server-Side components"
 authors = [
     {name = "Juan Pablo Scaletti", email = "juanpablo@jpscaletti.com"},
@@ -40,13 +40,12 @@ Documentation = "https://jx.scaletti.dev/"
 
 [dependency-groups]
 dev = [
-    "ipdb",
     "pre-commit",
     "tox-uv",
     "ty",
 ]
 docs = [
-    "writeadoc>=0.17",
+    "writeadoc>=0.18",
 ]
 test = [
     "pytest >= 7.2",
@@ -54,14 +53,12 @@ test = [
     "ruff > 0.3",
 ]
 
-
 [tool.setuptools.packages.find]
 where = ["src"]
 
 
 [tool.ty.src]
 exclude = [
-    "benchmark",
     "docs",
     "tests",
 ]
@@ -97,6 +94,7 @@ env_list =
     3.12
     3.13
     3.14
+    py314t
 
 [testenv]
 runner = uv-venv-lock-runner

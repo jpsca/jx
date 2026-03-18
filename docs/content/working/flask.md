@@ -419,7 +419,7 @@ if __name__ == "__main__":
 
 ## Production Settings
 
-For production, disable auto-reload and consider preloading components:
+For production, disable auto-reload:
 
 ```python title="app.py"
 import os
@@ -428,8 +428,8 @@ app = Flask(__name__)
 is_production = os.environ.get("FLASK_ENV") == "production"
 
 catalog = Catalog(
+    "components/", 
     jinja_env=app.jinja_env,
     auto_reload=not is_production,
 )
-catalog.add_folder("components/", preload=is_production)
 ```

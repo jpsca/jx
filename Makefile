@@ -13,6 +13,10 @@ lint:
 	uv run ruff check src/jx tests
 	uv run ty check
 
+.PHONY: lint-fix
+lint-fix:
+	uv run ruff check src/jx tests --fix
+
 .PHONY: coverage
 coverage:
 	uv run pytest --cov-config=pyproject.toml --cov-report html --cov jx src/jx tests
