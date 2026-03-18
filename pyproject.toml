@@ -61,6 +61,7 @@ where = ["src"]
 exclude = [
     "docs",
     "tests",
+    "bench_compare.py",
 ]
 
 
@@ -116,7 +117,6 @@ exclude = [
   "build",
   "covreport",
   "dist",
-  "benchmark",
 ]
 include = ["*.py"]
 
