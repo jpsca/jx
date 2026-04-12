@@ -39,7 +39,7 @@ def test_find_component_tags_at_line_boundary():
 
 def test_suggest_tag():
     imported = {"Button", "Card", "Layout"}
-    all_components = {"button.jinja", "card.jinja", "layout.jinja"}
+    all_components = {"button.jx", "card.jx", "layout.jx"}
 
     assert suggest_tag("Buttn", imported, all_components) == "Button"
     assert suggest_tag("Crad", imported, all_components) == "Card"
@@ -47,11 +47,11 @@ def test_suggest_tag():
 
 
 def test_check_valid_components(folder):
-    (folder / "button.jinja").write_text(
+    (folder / "button.jx").write_text(
         "{#def label #}\n<button>{{ label }}</button>"
     )
-    (folder / "card.jinja").write_text(
-        '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
+    (folder / "card.jx").write_text(
+        '{#import "button.jx" as Button #}\n<div><Button label="OK" /></div>'
     )
 
     catalog = Catalog(folder)
@@ -60,8 +60,8 @@ def test_check_valid_components(folder):
 
 
 def test_check_unknown_component(folder, capsys):
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Buttn /></div>")
+    (folder / "button.jx").write_text("<button>Click</button>")
+    (folder / "card.jx").write_text("<div><Buttn /></div>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog)
@@ -73,9 +73,9 @@ def test_check_unknown_component(folder, capsys):
 
 
 def test_check_unknown_import(folder, capsys):
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text(
-        '{#import "buton.jinja" as Button #}\n<Button />'
+    (folder / "button.jx").write_text("<button>Click</button>")
+    (folder / "card.jx").write_text(
+        '{#import "buton.jx" as Button #}\n<Button />'
     )
 
     catalog = Catalog(folder)
@@ -83,13 +83,13 @@ def test_check_unknown_import(folder, capsys):
     assert exit_code == 1
 
     captured = capsys.readouterr()
-    assert "Unknown import 'buton.jinja'" in captured.out
-    assert "did you mean 'button.jinja'?" in captured.out
+    assert "Unknown import 'buton.jx'" in captured.out
+    assert "did you mean 'button.jx'?" in captured.out
 
 
 def test_check_not_imported(folder, capsys):
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Button /></div>")
+    (folder / "button.jx").write_text("<button>Click</button>")
+    (folder / "card.jx").write_text("<div><Button /></div>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog)
@@ -101,14 +101,14 @@ def test_check_not_imported(folder, capsys):
 
 def test_check_single_file(folder, capsys):
     """Test checking a single file instead of a folder."""
-    (folder / "button.jinja").write_text("{#def label #}\n<button>{{ label }}</button>")
+    (folder / "button.jx").write_text("{#def label #}\n<button>{{ label }}</button>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 0
 
     captured = capsys.readouterr()
-    assert "button.jinja - OK" in captured.out
+    assert "button.jx - OK" in captured.out
 
 
 def test_check_no_components(tmp_path, capsys):
@@ -126,32 +126,32 @@ def test_check_no_components(tmp_path, capsys):
 
 def test_check_invalid_utf8(folder, capsys):
     """Test checking a component with invalid UTF-8 encoding."""
-    (folder / "broken.jinja").write_bytes(b"<div>\xff\xfe invalid</div>")
+    (folder / "broken.jx").write_bytes(b"<div>\xff\xfe invalid</div>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
     captured = capsys.readouterr()
-    assert "broken.jinja - Not valid UTF-8" in captured.out
+    assert "broken.jx - Not valid UTF-8" in captured.out
 
 
 def test_check_invalid_metadata(folder, capsys):
     """Test checking a component with invalid metadata syntax."""
-    (folder / "broken.jinja").write_text("{#def $invalid #}\n<div>test</div>")
+    (folder / "broken.jx").write_text("{#def $invalid #}\n<div>test</div>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog)
     assert exit_code == 1
 
     captured = capsys.readouterr()
-    assert "broken.jinja -" in captured.out
+    assert "broken.jx -" in captured.out
 
 
 def test_check_unknown_import_no_suggestion(folder, capsys):
     """Test unknown import with no similar component to suggest."""
-    (folder / "card.jinja").write_text(
-        '{#import "xyzabc123.jinja" as Thing #}\n<Thing />'
+    (folder / "card.jx").write_text(
+        '{#import "xyzabc123.jx" as Thing #}\n<Thing />'
     )
 
     catalog = Catalog(folder)
@@ -159,13 +159,13 @@ def test_check_unknown_import_no_suggestion(folder, capsys):
     assert exit_code == 1
 
     captured = capsys.readouterr()
-    assert "Unknown import 'xyzabc123.jinja'" in captured.out
+    assert "Unknown import 'xyzabc123.jx'" in captured.out
     assert "did you mean" not in captured.out
 
 
 def test_check_unknown_component_no_suggestion(folder, capsys):
     """Test unknown component tag with no similar tag to suggest."""
-    (folder / "card.jinja").write_text("<div><Xyzabc123 /></div>")
+    (folder / "card.jx").write_text("<div><Xyzabc123 /></div>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog)
@@ -178,10 +178,10 @@ def test_check_unknown_component_no_suggestion(folder, capsys):
 
 def test_suggest_component():
     """Test component path suggestion."""
-    all_components = {"button.jinja", "card.jinja", "layout.jinja"}
+    all_components = {"button.jx", "card.jx", "layout.jx"}
 
-    assert suggest_component("buton.jinja", all_components) == "button.jinja"
-    assert suggest_component("xyzabc123.jinja", all_components) is None
+    assert suggest_component("buton.jx", all_components) == "button.jx"
+    assert suggest_component("xyzabc123.jx", all_components) is None
 
 
 def test_check_nonexistent_path(tmp_path, capsys):
@@ -199,11 +199,11 @@ def test_check_nonexistent_path(tmp_path, capsys):
 
 def test_check_all_valid(folder):
     """Test check_all returns no errors for valid components."""
-    (folder / "button.jinja").write_text(
+    (folder / "button.jx").write_text(
         "{#def label #}\n<button>{{ label }}</button>"
     )
-    (folder / "card.jinja").write_text(
-        '{#import "button.jinja" as Button #}\n<div><Button label="OK" /></div>'
+    (folder / "card.jx").write_text(
+        '{#import "button.jx" as Button #}\n<div><Button label="OK" /></div>'
     )
 
     catalog = Catalog(folder)
@@ -214,14 +214,14 @@ def test_check_all_valid(folder):
 
 def test_check_all_with_errors(folder):
     """Test check_all returns structured errors."""
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Buttn /></div>")
+    (folder / "button.jx").write_text("<button>Click</button>")
+    (folder / "card.jx").write_text("<div><Buttn /></div>")
 
     catalog = Catalog(folder)
     errors, checked = check_all(catalog)
     assert checked == 2
     assert len(errors) == 1
-    assert errors[0].file == "card.jinja"
+    assert errors[0].file == "card.jx"
     assert errors[0].line == 1
     assert "Buttn" in errors[0].message
     assert errors[0].suggestion == "Button"
@@ -229,7 +229,7 @@ def test_check_all_with_errors(folder):
 
 def test_check_all_single_file(folder):
     """Test check_all with a catalog containing one component."""
-    (folder / "button.jinja").write_text("{#def label #}\n<button>{{ label }}</button>")
+    (folder / "button.jx").write_text("{#def label #}\n<button>{{ label }}</button>")
 
     catalog = Catalog(folder)
     errors, checked = check_all(catalog)
@@ -250,7 +250,7 @@ def test_check_all_empty(tmp_path):
 
 def test_check_json_format_valid(folder, capsys):
     """Test JSON output format with valid components."""
-    (folder / "button.jinja").write_text("<button>Click</button>")
+    (folder / "button.jx").write_text("<button>Click</button>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog, format="json")
@@ -264,8 +264,8 @@ def test_check_json_format_valid(folder, capsys):
 
 def test_check_json_format_with_errors(folder, capsys):
     """Test JSON output format with errors."""
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div><Buttn /></div>")
+    (folder / "button.jx").write_text("<button>Click</button>")
+    (folder / "card.jx").write_text("<div><Buttn /></div>")
 
     catalog = Catalog(folder)
     exit_code = check(catalog, format="json")
@@ -275,7 +275,7 @@ def test_check_json_format_with_errors(folder, capsys):
     result = json.loads(captured.out)
     assert result["checked"] == 2
     assert len(result["errors"]) == 1
-    assert result["errors"][0]["file"] == "card.jinja"
+    assert result["errors"][0]["file"] == "card.jx"
     assert result["errors"][0]["line"] == 1
     assert "Buttn" in result["errors"][0]["message"]
     assert result["errors"][0]["suggestion"] == "Button"
@@ -298,9 +298,9 @@ def test_check_json_format_no_components(tmp_path, capsys):
 
 def test_check_unclosed_component_tag(folder, capsys):
     """Test that an unclosed component tag is detected."""
-    (folder / "footer.jinja").write_text("<footer>Footer</footer>")
-    (folder / "page.jinja").write_text(
-        '{#import "footer.jinja" as Footer #}\n<Footer>\n  <p>content</p>'
+    (folder / "footer.jx").write_text("<footer>Footer</footer>")
+    (folder / "page.jx").write_text(
+        '{#import "footer.jx" as Footer #}\n<Footer>\n  <p>content</p>'
     )
 
     catalog = Catalog(folder)
@@ -314,7 +314,7 @@ def test_check_unclosed_component_tag(folder, capsys):
 
 def test_check_ignores_tags_in_comments(folder, capsys):
     """Component tags inside Jinja comments should not trigger errors."""
-    (folder / "page.jinja").write_text(
+    (folder / "page.jx").write_text(
         "{# TODO: use <Card /> here #}\n<div>plain html</div>"
     )
 
@@ -323,12 +323,12 @@ def test_check_ignores_tags_in_comments(folder, capsys):
     assert exit_code == 0
 
     captured = capsys.readouterr()
-    assert "page.jinja - OK" in captured.out
+    assert "page.jx - OK" in captured.out
 
 
 def test_check_ignores_tags_in_raw_blocks(folder, capsys):
     """Component tags inside raw blocks should not trigger errors."""
-    (folder / "page.jinja").write_text(
+    (folder / "page.jx").write_text(
         '{% raw %}<Card title="hello" />{% endraw %}\n<div>plain</div>'
     )
 
@@ -337,24 +337,24 @@ def test_check_ignores_tags_in_raw_blocks(folder, capsys):
     assert exit_code == 0
 
     captured = capsys.readouterr()
-    assert "page.jinja - OK" in captured.out
+    assert "page.jx - OK" in captured.out
 
 
 def test_format_error_with_line():
     """Test format_error with a line number."""
-    error = CheckError(file="card.jinja", line=4, message="Unknown component 'Foo'")
-    assert format_error(error) == "card.jinja:4 - Unknown component 'Foo'"
+    error = CheckError(file="card.jx", line=4, message="Unknown component 'Foo'")
+    assert format_error(error) == "card.jx:4 - Unknown component 'Foo'"
 
 
 def test_format_error_without_line():
     """Test format_error without a line number."""
-    error = CheckError(file="card.jinja", line=None, message="Not valid UTF-8")
-    assert format_error(error) == "card.jinja - Not valid UTF-8"
+    error = CheckError(file="card.jx", line=None, message="Not valid UTF-8")
+    assert format_error(error) == "card.jx - Not valid UTF-8"
 
 
 def test_format_error_with_suggestion():
     """Test format_error includes suggestion."""
     error = CheckError(
-        file="card.jinja", line=4, message="Unknown component 'Buttn'", suggestion="Button"
+        file="card.jx", line=4, message="Unknown component 'Buttn'", suggestion="Button"
     )
-    assert format_error(error) == "card.jinja:4 - Unknown component 'Buttn' (did you mean 'Button'?)"
+    assert format_error(error) == "card.jx:4 - Unknown component 'Buttn' (did you mean 'Button'?)"

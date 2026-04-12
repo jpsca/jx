@@ -31,9 +31,9 @@ The biggest change in Jx is requiring **explicit imports**. While JinjaX's auto-
 
 **Jx:**
 ```html+jinja
-{#import "layout.jinja" as Layout #}
-{#import "common/ui/card.jinja" as Card #}
-{#import "common/ui/product-card.jinja" as ProductCard #}
+{#import "layout.jx" as Layout #}
+{#import "common/ui/card.jx" as Card #}
+{#import "common/ui/product-card.jx" as ProductCard #}
 {#def products #}
 
 <Layout title="Products">
@@ -48,7 +48,7 @@ The biggest change in Jx is requiring **explicit imports**. While JinjaX's auto-
 **Why this is better:**
 
 - **Clear Dependencies**: You can see at a glance which components a file uses; no hunting through the template to find component references
-- **No Namespace Pollution**: You control the names. A deeply nested `common/forms/inputs/text-input.jinja` can be imported as simply `TextInput`
+- **No Namespace Pollution**: You control the names. A deeply nested `common/forms/inputs/text-input.jx` can be imported as simply `TextInput`
 - **Better Error Messages**: Missing imports fail immediately at load time, not at render time
 - **Standard Practice**: Follows the same pattern as Python modules, JavaScript imports, and virtually every modern language
 - **Better IDE Support**: Your editor can autocomplete imports, jump to definitions, and aid in refactoring
@@ -60,10 +60,10 @@ The biggest change in Jx is requiring **explicit imports**. While JinjaX's auto-
 Jx also supports **relative imports**, which JinjaX doesn't have at all. This is a game-changer for component organization:
 
 ```html+jinja
-{# components/user/profile-card.jinja #}
-{#import "./avatar.jinja" as Avatar #}
-{#import "./bio.jinja" as Bio #}
-{#import "../common/card.jinja" as Card #}
+{# components/user/profile-card.jx #}
+{#import "./avatar.jx" as Avatar #}
+{#import "./bio.jx" as Bio #}
+{#import "../common/card.jx" as Card #}
 
 <Card class="profile-card">
   <Avatar user={{ user }} />
@@ -75,7 +75,7 @@ Jx also supports **relative imports**, which JinjaX doesn't have at all. This is
 
 - **Portability**: Move an entire folder of related components and all internal imports still work; no need to update paths
 - **Encapsulation**: Components can reference siblings without knowing the global folder structure
-- **Clearer Relationships**: `./sibling.jinja` immediately shows local coupling; `../parent/` shows you're reaching up
+- **Clearer Relationships**: `./sibling.jx` immediately shows local coupling; `../parent/` shows you're reaching up
 - **Component Libraries**: Build reusable component packages that work regardless of where they're installed
 - **Less Brittle**: Refactoring the overall folder structure doesn't break imports within component groups
 
@@ -84,11 +84,11 @@ Jx also supports **relative imports**, which JinjaX doesn't have at all. This is
 ```
 components/
   modal/
-    modal.jinja          {#import "./header.jinja" as Header #}
-    header.jinja         {#import "./close-button.jinja" as CloseButton #}
-    body.jinja
-    footer.jinja
-    close-button.jinja
+    modal.jx          {#import "./header.jx" as Header #}
+    header.jx         {#import "./close-button.jx" as CloseButton #}
+    body.jx
+    footer.jx
+    close-button.jx
 ```
 
 Move the entire `modal/` folder anywhere, and all the internal imports still work. With JinjaX's global namespace, you'd have to update every reference.
@@ -163,7 +163,7 @@ app.wsgi_app = catalog.get_middleware(
   {% endfill %}
 </Modal>
 
-{# In modal.jinja #}
+{# In modal.jx #}
 <div class="modal">
   <div class="modal-header">
     {% slot header %}Default Header{% endslot %}
@@ -192,8 +192,8 @@ catalog.add_folder("components")  # Components use dot notation
 catalog.add_folder("vendor/ui", prefix="ui")  # Prefix with colon
 ```
 ```html+jinja
-<common.Card />      {# From components/common/Card.jinja #}
-<ui:Button />        {# From vendor/ui/Button.jinja #}
+<common.Card />      {# From components/common/Card.jx #}
+<ui:Button />        {# From vendor/ui/Button.jx #}
 ```
 
 **Jx:**
@@ -202,8 +202,8 @@ catalog.add_folder("components")
 catalog.add_folder("vendor/ui", prefix="ui")
 ```
 ```html+jinja
-{#import "common/card.jinja" as Card #}
-{#import "@ui/button.jinja" as Button #}
+{#import "common/card.jx" as Card #}
+{#import "@ui/button.jx" as Button #}
 
 <Card />
 <Button />
@@ -267,11 +267,11 @@ If you're building anything beyond a toy project, these benefits compound quickl
 
 **Jx approach:**
 ```html+jinja
-{#import "layouts/app.jinja" as App #}
-{#import "components/user/profile-card.jinja" as ProfileCard #}
-{#import "components/user/avatar.jinja" as Avatar #}
-{#import "components/feed/post-list.jinja" as PostList #}
-{#import "components/feed/post-card.jinja" as PostCard #}
+{#import "layouts/app.jx" as App #}
+{#import "components/user/profile-card.jx" as ProfileCard #}
+{#import "components/user/avatar.jx" as Avatar #}
+{#import "components/feed/post-list.jx" as PostList #}
+{#import "components/feed/post-card.jx" as PostCard #}
 {#def user, posts #}
 
 <App title="User Profile">
@@ -296,11 +296,11 @@ If you're building anything beyond a toy project, these benefits compound quickl
 If your user components are organized in `components/user/`, you can make them more portable:
 
 ```html+jinja
-{#import "layouts/app.jinja" as App #}
-{#import "./profile-card.jinja" as ProfileCard #}
-{#import "./avatar.jinja" as Avatar #}
-{#import "components/feed/post-list.jinja" as PostList #}
-{#import "components/feed/post-card.jinja" as PostCard #}
+{#import "layouts/app.jx" as App #}
+{#import "./profile-card.jx" as ProfileCard #}
+{#import "./avatar.jx" as Avatar #}
+{#import "components/feed/post-list.jx" as PostList #}
+{#import "components/feed/post-card.jx" as PostCard #}
 {#def user, posts #}
 
 <App title="User Profile">
@@ -338,8 +338,8 @@ If you prefer doing the component migration by hand, follow these steps.
 Go through each component and add explicit imports at the top:
 
 ```diff
-+ {#import "components/card.jinja" as Card #}
-+ {#import "components/button.jinja" as Button #}
++ {#import "components/card.jx" as Card #}
++ {#import "components/button.jx" as Button #}
 
   <Card>
     <Button>Click me</Button>
@@ -350,13 +350,13 @@ Go through each component and add explicit imports at the top:
 
 ```html+jinja
 {# For siblings in the same folder #}
-{#import "./sibling.jinja" as Sibling #}
+{#import "./sibling.jx" as Sibling #}
 
 {# For components in a parent folder #}
-{#import "../common/helper.jinja" as Helper #}
+{#import "../common/helper.jx" as Helper #}
 
 {# For components in a subfolder #}
-{#import "./parts/detail.jinja" as Detail #}
+{#import "./parts/detail.jx" as Detail #}
 ```
 
 This makes your components more portable and easier to reorganize.
@@ -403,7 +403,7 @@ Replace `_slot` conditionals with `{% fill %}` blocks:
 ```
 
 ```diff
-  {# modal.jinja #}
+  {# modal.jx #}
   <div class="modal-header">
 -   {{ content("header") }}
 +   {% slot header %}Default Header{% endslot %}
@@ -469,18 +469,18 @@ html = catalog.render("ComponentName", arg1="value", arg2=42)
 # Component name used dot notation: "common.Form"
 
 # After (Jx)
-html = catalog.render("component-name.jinja", arg1="value", arg2=42)
-# Uses file path with extension: "common/form.jinja"
+html = catalog.render("component-name.jx", arg1="value", arg2=42)
+# Uses file path with extension: "common/form.jx"
 ```
 
 Key differences:
 - JinjaX uses PascalCase dot-notation component names: `"Card"`, `"common.Form"`
-- Jx uses file paths with extension: `"card.jinja"`, `"common/form.jinja"`
+- Jx uses file paths with extension: `"card.jx"`, `"common/form.jx"`
 - Jx also accepts a `globals` dict parameter for per-render globals:
 
 ```python
 html = catalog.render(
-    "page.jinja",
+    "page.jx",
     globals={"request": request, "csrf_token": token},
     title="Dashboard",
 )
@@ -508,7 +508,7 @@ html = catalog.render("Card", _content="<p>Hi</p>", _source="...", _globals={...
 # Use catalog.render_string() for inline source:
 html = catalog.render_string("{#def name #}<p>{{ name }}</p>", name="Hi")
 # Pass globals via the globals parameter:
-html = catalog.render("card.jinja", globals={"request": req}, title="Hi")
+html = catalog.render("card.jx", globals={"request": req}, title="Hi")
 ```
 
 #### Framework-Specific Examples
@@ -536,7 +536,7 @@ catalog = jx.Catalog("components", jinja_env=app.jinja_env)
 
 @app.route("/")
 def index():
-    return catalog.render("page.jinja", title="Home")
+    return catalog.render("page.jx", title="Home")
 ```
 
 ##### Django (with django-jinja or manual Jinja2 setup)
@@ -579,6 +579,6 @@ catalog = jx.Catalog("templates/components", jinja_env=templates.env)
 - [ ] `jinjax.Catalog(...)` → `jx.Catalog(...)` with updated args
 - [ ] `globals={...}` dict → `**kwargs`
 - [ ] Remove `root_url`, `file_ext`, `use_cache`, `fingerprint` params
-- [ ] `catalog.render("ComponentName", ...)` → `catalog.render("component-name.jinja", ...)`
+- [ ] `catalog.render("ComponentName", ...)` → `catalog.render("component-name.jx", ...)`
 - [ ] Remove `catalog.get_middleware(...)` call
 - [ ] Configure your static file server to serve the migrated assets

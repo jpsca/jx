@@ -26,6 +26,7 @@ catalog = Catalog(
     tests=None,                 # Custom template tests
     auto_reload=True,           # Auto-detect file changes
     asset_resolver=None,        # Asset URL resolver callback
+    file_ext=".jx",             # Component file extension
     **globals                   # Global template variables
 )
 ```
@@ -40,6 +41,16 @@ catalog = Catalog("components/")
 
 catalog = Catalog()
 catalog.add_folder("components/")
+```
+
+### `file_ext`
+
+The extension Jx uses to discover component files. Defaults to `.jx`.
+
+Set it to keep a different convention (for example `.jinja` for older projects):
+
+```python
+catalog = Catalog("components/", file_ext=".jinja")
 ```
 
 ### `auto_reload`
@@ -65,7 +76,7 @@ catalog = Catalog(
 )
 ```
 
-```html+jinja title="components/footer.jinja"
+```html+jinja title="components/footer.jx"
 <footer>
   © {{ current_year }} {{ site_name }}
 </footer>
@@ -176,8 +187,8 @@ The optional `assets` parameter specifies a folder containing CSS/JS files for c
 Components are imported by their path relative to the folder:
 
 ```html+jinja
-{#import "button.jinja" as Button #}
-{#import "forms/input.jinja" as Input #}
+{#import "button.jx" as Button #}
+{#import "forms/input.jx" as Input #}
 ```
 
 ### Using Prefixes
@@ -193,9 +204,9 @@ catalog.add_folder("vendor/icons/", prefix="icons")
 Import prefixed components with `@prefix/`:
 
 ```html+jinja
-{#import "button.jinja" as Button #}
-{#import "@ui/modal.jinja" as Modal #}
-{#import "@icons/check.jinja" as CheckIcon #}
+{#import "button.jx" as Button #}
+{#import "@ui/modal.jx" as Modal #}
+{#import "@icons/check.jx" as CheckIcon #}
 ```
 
 ### Multiple Folders, Same Prefix
@@ -203,10 +214,10 @@ Import prefixed components with `@prefix/`:
 If you add multiple folders with the same prefix (or no prefix), they're treated as one namespace. If both contain a component with the same path, the **first one added wins**:
 
 ```python
-catalog.add_folder("my-components/")      # Has button.jinja
-catalog.add_folder("fallback-components/") # Also has button.jinja
+catalog.add_folder("my-components/")      # Has button.jx
+catalog.add_folder("fallback-components/") # Also has button.jx
 
-# "button.jinja" resolves to my-components/button.jinja
+# "button.jx" resolves to my-components/button.jx
 ```
 
 ---
@@ -218,19 +229,19 @@ catalog.add_folder("fallback-components/") # Also has button.jinja
 Render a component by its path:
 
 ```python
-html = catalog.render("page.jinja", title="Hello", user=current_user)
+html = catalog.render("page.jx", title="Hello", user=current_user)
 ```
 
 **Arguments:**
 
-- `relpath` - Path to the component (e.g., `"pages/home.jinja"`)
+- `relpath` - Path to the component (e.g., `"pages/home.jx"`)
 - `globals` - Dict of variables available to this component and all its imports
 - `**kwargs` - Arguments passed directly to the component
 
 ```python
 # Pass data as keyword arguments
 html = catalog.render(
-    "user-profile.jinja",
+    "user-profile.jx",
     user=user,
     posts=posts,
     show_email=True,
@@ -238,7 +249,7 @@ html = catalog.render(
 
 # Or use globals for values needed by child components too
 html = catalog.render(
-    "page.jinja",
+    "page.jx",
     globals={"request": request, "csrf_token": token},
     title="Dashboard",
 )
@@ -276,7 +287,7 @@ Returns a list of all registered component paths:
 
 ```python
 paths = catalog.list_components()
-# ["button.jinja", "card.jinja", "forms/input.jinja"]
+# ["button.jx", "card.jx", "forms/input.jx"]
 ```
 
 ### `get_signature(relpath)`
@@ -284,7 +295,7 @@ paths = catalog.list_components()
 Returns a component's signature, including its arguments and metadata:
 
 ```python
-sig = catalog.get_signature("button.jinja")
+sig = catalog.get_signature("button.jx")
 ```
 
 Returns a dictionary with:
@@ -296,7 +307,7 @@ Returns a dictionary with:
 - `js` - tuple of JS file URLs
 
 ```python
-sig = catalog.get_signature("modal.jinja")
+sig = catalog.get_signature("modal.jx")
 # {
 #     "required": {"title": str},
 #     "optional": {"size": ("md", str)},
@@ -336,7 +347,7 @@ catalog = Catalog(
 
 @app.route("/")
 def home():
-    return catalog.render("pages/home.jinja", products=get_products())
+    return catalog.render("pages/home.jx", products=get_products())
 ```
 
 ### FastAPI
@@ -352,7 +363,7 @@ catalog = Catalog("components/", auto_reload=True)
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return catalog.render(
-        "pages/home.jinja",
+        "pages/home.jx",
         globals={"request": request},
         products=get_products(),
     )
@@ -410,7 +421,7 @@ In addition to any globals you pass to the constructor, Jx automatically provide
 
 Generates a unique string suitable for HTML element IDs. Useful for form elements, popovers, and other components that require unique IDs to function correctly:
 
-```html+jinja title="components/popover.jinja"
+```html+jinja title="components/popover.jx"
 {#def label, content #}
 
 {% set popover_id = _get_random_id("popover") %}
@@ -421,7 +432,7 @@ Generates a unique string suitable for HTML element IDs. Useful for form element
 
 Each call returns a different ID like `popover-a1b2c3d4e5f6...`, so you can use it as a default without requiring the caller to pass an explicit ID:
 
-```html+jinja title="components/input.jinja"
+```html+jinja title="components/input.jx"
 {#def name, label="", id="" #}
 
 {% set input_id = id or _get_random_id(name) %}

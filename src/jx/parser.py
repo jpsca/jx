@@ -405,6 +405,10 @@ class JxParser:
                     i += 2
                     continue
 
+            if ch == "\\" and (in_single_quotes or in_double_quotes):
+                i += 2  # skip escaped character
+                continue
+
             if ch == "'" and not in_double_quotes:
                 in_single_quotes = not in_single_quotes
                 i += 1
@@ -460,8 +464,7 @@ class JxParser:
 
         return attrs
 
-    @staticmethod
-    def _replace_expr_blocks(text: str) -> tuple[str, dict[str, str]]:
+    def _replace_expr_blocks(self, text: str) -> tuple[str, dict[str, str]]:
         """
         Replace ``{{ … }}`` blocks with safe placeholders, correctly
         handling ``}}`` inside string literals within the expression.
@@ -480,7 +483,7 @@ class JxParser:
                 # Scan for the matching }} while tracking quotes
                 j = i + 2
                 in_sq = in_dq = False
-                while j < n:  # pragma: no branch
+                while j < n:
                     c = text[j]
                     if c == '"' and not in_sq:
                         in_dq = not in_dq
@@ -489,6 +492,10 @@ class JxParser:
                     elif text[j : j + 2] == "}}" and not in_sq and not in_dq:
                         break
                     j += 1
+                else:
+                    raise TemplateSyntaxError(
+                        f"[{self.name}] Unclosed expression '{{{{'"
+                    )
                 end = j + 2
                 # Keep {{ … }} wrapper so the attr regex still matches
                 key = f"{{{{__EXPR_{counter}__}}}}"

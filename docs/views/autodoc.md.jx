@@ -1,4 +1,4 @@
-{# import "autodoc.md.jinja" as Autodoc #}
+{# import "autodoc.md.jx" as Autodoc #}
 {# def ds, level=2 #}
 
 {%- if ds.symbol or ds.name %}

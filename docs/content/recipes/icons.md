@@ -7,7 +7,7 @@ Components are perfect for SVG icons - encapsulate the SVG code once, reuse it e
 
 ## Basic Icon Component
 
-```html+jinja title="components/icons/icon-check.jinja"
+```html+jinja title="components/icons/icon-check.jx"
 {#def size=24 #}
 
 <svg
@@ -27,7 +27,7 @@ Components are perfect for SVG icons - encapsulate the SVG code once, reuse it e
 ```
 
 ```html+jinja title="usage"
-{#import "icons/icon-check.jinja" as IconCheck #}
+{#import "icons/icon-check.jx" as IconCheck #}
 
 <IconCheck />
 <IconCheck size="32" />
@@ -85,7 +85,7 @@ Components are perfect for SVG icons - encapsulate the SVG code once, reuse it e
 
 Create a base component that other icons extend:
 
-```html+jinja title="components/icons/icon.jinja"
+```html+jinja title="components/icons/icon.jx"
 {#def size=24 #}
 
 <svg
@@ -104,8 +104,8 @@ Create a base component that other icons extend:
 </svg>
 ```
 
-```html+jinja title="components/icons/icon-x.jinja"
-{#import "./icon.jinja" as Icon #}
+```html+jinja title="components/icons/icon-x.jx"
+{#import "./icon.jx" as Icon #}
 {#def size=24 #}
 
 {% do attrs.set(size=size) %}
@@ -116,8 +116,8 @@ Create a base component that other icons extend:
 </Icon>
 ```
 
-```html+jinja title="components/icons/icon-menu.jinja"
-{#import "./icon.jinja" as Icon #}
+```html+jinja title="components/icons/icon-menu.jx"
+{#import "./icon.jx" as Icon #}
 {#def size=24 #}
 
 {% do attrs.set(size=size) %}
@@ -169,7 +169,7 @@ Create a base component that other icons extend:
 
 Load icons by name:
 
-```html+jinja title="components/icon.jinja"
+```html+jinja title="components/icon.jx"
 {#def name, size=24 #}
 
 {% set icons = {
@@ -197,7 +197,7 @@ Load icons by name:
 ```
 
 ```html+jinja title="usage"
-{#import "icon.jinja" as Icon #}
+{#import "icon.jx" as Icon #}
 
 <Icon name="x" size="16" />
 <Icon name="menu" class="text-gray-600" />
@@ -259,7 +259,7 @@ Load icons by name:
 
 Combine icons with buttons:
 
-```html+jinja title="components/icon-button.jinja"
+```html+jinja title="components/icon-button.jx"
 {#def label="" #}
 {#css icon-button.css #}
 
@@ -272,8 +272,8 @@ Combine icons with buttons:
 ```
 
 ```html+jinja title="usage"
-{#import "icon-button.jinja" as IconButton #}
-{#import "icons/icon-x.jinja" as IconX #}
+{#import "icon-button.jx" as IconButton #}
+{#import "icons/icon-x.jx" as IconX #}
 
 <IconButton label="Close" @click="close()">
   <IconX size={{ 20 }} />
@@ -304,7 +304,7 @@ Combine icons with buttons:
 
 ## Button with Icon and Text
 
-```html+jinja title="components/button.jinja"
+```html+jinja title="components/button.jx"
 {#def text="" #}
 {#css button.css #}
 
@@ -321,8 +321,8 @@ Combine icons with buttons:
 ```
 
 ```html+jinja title="usage"
-{#import "button.jinja" as Button #}
-{#import "icons/icon-check.jinja" as IconCheck #}
+{#import "button.jx" as Button #}
+{#import "icons/icon-check.jx" as IconCheck #}
 
 <Button text="Save">
   {% fill icon %}
@@ -356,7 +356,7 @@ Combine icons with buttons:
 
 ## Filled vs Stroke Icons
 
-```html+jinja title="components/icons/icon-heart.jinja"
+```html+jinja title="components/icons/icon-heart.jx"
 {#def size=24, filled=false #}
 
 <svg
@@ -422,7 +422,7 @@ Combine icons with buttons:
 
 ## Spinner Icon
 
-```html+jinja title="components/icons/icon-spinner.jinja"
+```html+jinja title="components/icons/icon-spinner.jx"
 {#def size=24 #}
 {#css spinner.css #}
 
@@ -472,7 +472,7 @@ Combine icons with buttons:
 
 ## Icon with Badge
 
-```html+jinja title="components/icon-badge.jinja"
+```html+jinja title="components/icon-badge.jx"
 {#def count=0 #}
 {#css icon-badge.css #}
 
@@ -504,8 +504,8 @@ Combine icons with buttons:
 ```
 
 ```html+jinja title="usage"
-{#import "icon-badge.jinja" as IconBadge #}
-{#import "icons/icon-bell.jinja" as IconBell #}
+{#import "icon-badge.jx" as IconBadge #}
+{#import "icons/icon-bell.jx" as IconBell #}
 
 <IconBadge count={{ notifications_count }}>
   <IconBell />

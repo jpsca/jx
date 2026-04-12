@@ -7,7 +7,7 @@ Layouts are components that wrap entire pages, providing consistent structure li
 
 ## Basic Layout
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 {#css layout.css #}
 
@@ -40,8 +40,8 @@ Layouts are components that wrap entire pages, providing consistent structure li
 </html>
 ```
 
-```html+jinja title="components/pages/home.jinja"
-{#import "../layout.jinja" as Layout #}
+```html+jinja title="components/pages/home.jx"
+{#import "../layout.jx" as Layout #}
 
 <Layout title="Home">
   <h1>Welcome!</h1>
@@ -53,7 +53,7 @@ Layouts are components that wrap entire pages, providing consistent structure li
 
 Use named slots for customizable sections:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 
 <!DOCTYPE html>
@@ -87,7 +87,7 @@ Use named slots for customizable sections:
 ```
 
 ```html+jinja title="usage"
-{#import "layout.jinja" as Layout #}
+{#import "layout.jx" as Layout #}
 
 <Layout title="Dashboard">
   {% fill head %}
@@ -114,7 +114,7 @@ Use named slots for customizable sections:
 
 Create specialized layouts that extend a base:
 
-```html+jinja title="components/layouts/base.jinja"
+```html+jinja title="components/layouts/base.jx"
 {#def title #}
 {#css base.css #}
 
@@ -131,9 +131,9 @@ Create specialized layouts that extend a base:
 </html>
 ```
 
-```html+jinja title="components/layouts/app.jinja"
-{#import "./base.jinja" as Base #}
-{#import "../sidebar.jinja" as Sidebar #}
+```html+jinja title="components/layouts/app.jx"
+{#import "./base.jx" as Base #}
+{#import "../sidebar.jx" as Sidebar #}
 {#def title #}
 {#css app.css #}
 
@@ -147,8 +147,8 @@ Create specialized layouts that extend a base:
 </Base>
 ```
 
-```html+jinja title="components/layouts/auth.jinja"
-{#import "./base.jinja" as Base #}
+```html+jinja title="components/layouts/auth.jx"
+{#import "./base.jx" as Base #}
 {#def title #}
 {#css auth.css #}
 
@@ -162,7 +162,7 @@ Create specialized layouts that extend a base:
 ```
 
 ```html+jinja title="usage"
-{#import "layouts/app.jinja" as App #}
+{#import "layouts/app.jx" as App #}
 
 <App title="Dashboard">
   <h1>Dashboard</h1>
@@ -170,7 +170,7 @@ Create specialized layouts that extend a base:
 ```
 
 ```html+jinja title="usage"
-{#import "layouts/auth.jinja" as Auth #}
+{#import "layouts/auth.jx" as Auth #}
 
 <Auth title="Login">
   <h1>Sign In</h1>
@@ -182,7 +182,7 @@ Create specialized layouts that extend a base:
 
 Pass the current page to highlight active nav items:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title, current_page="" #}
 
 <!DOCTYPE html>
@@ -205,8 +205,8 @@ Pass the current page to highlight active nav items:
 </html>
 ```
 
-```html+jinja title="pages/about.jinja"
-{#import "layout.jinja" as Layout #}
+```html+jinja title="pages/about.jx"
+{#import "layout.jx" as Layout #}
 
 <Layout title="About Us" current_page="about">
   <h1>About Us</h1>
@@ -215,7 +215,7 @@ Pass the current page to highlight active nav items:
 
 ## Conditional Layout Sections
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title, show_sidebar=true, show_footer=true #}
 
 <!DOCTYPE html>

@@ -21,24 +21,24 @@ import jinjax
 # ---------------------------------------------------------------------------
 
 JX_TEMPLATES: dict[str, str] = {
-    "icon.jinja": """\
+    "icon.jx": """\
 {# def name: str, size: str = "md" #}
 <svg class="icon icon-{{ size }}"><use href="#{{ name }}"></use></svg>""",
 
-    "button.jinja": """\
+    "button.jx": """\
 {# def bid: str, text: str = "Click", variant: str = "primary", disabled: bool = False #}
-{# import "icon.jinja" as Icon #}
+{# import "icon.jx" as Icon #}
 <button id="{{ bid }}" class="btn btn-{{ variant }}">
   <Icon name="check" size="sm" />
   {{ text }}
 </button>""",
 
-    "input.jinja": """\
+    "input.jx": """\
 {# def name: str, label: str = "", input_type: str = "text", value: str = "" #}
 <label class="input-label" for="{{ name }}">{{ label }}</label>
 <input id="{{ name }}" name="{{ name }}" type="{{ input_type }}" value="{{ value }}">""",
 
-    "card.jinja": """\
+    "card.jx": """\
 {# def title: str, subtitle: str = "" #}
 <div class="card">
   <div class="card-header">
@@ -48,7 +48,7 @@ JX_TEMPLATES: dict[str, str] = {
   <div class="card-body">{{ content }}</div>
 </div>""",
 
-    "nav.jinja": """\
+    "nav.jx": """\
 {# def items: list, active: str = "" #}
 <nav class="nav">
   <ul>
@@ -60,36 +60,36 @@ JX_TEMPLATES: dict[str, str] = {
   </ul>
 </nav>""",
 
-    "form.jinja": """\
+    "form.jx": """\
 {# def action: str, method: str = "post" #}
-{# import "input.jinja" as Input #}
-{# import "button.jinja" as Button #}
+{# import "input.jx" as Input #}
+{# import "button.jx" as Button #}
 <form action="{{ action }}" method="{{ method }}">
   <Input name="email" label="Email" input_type="email" />
   <Input name="password" label="Password" input_type="password" />
   <Button bid="submit-btn" text="Submit" variant="primary" />
 </form>""",
 
-    "alert.jinja": """\
+    "alert.jx": """\
 {# def message: str, level: str = "info" #}
-{# import "icon.jinja" as Icon #}
+{# import "icon.jx" as Icon #}
 <div class="alert alert-{{ level }}" role="alert">
   <Icon name="{{ level }}" />
   <span>{{ message }}</span>
 </div>""",
 
-    "sidebar.jinja": """\
+    "sidebar.jx": """\
 {# def title: str = "Menu" #}
-{# import "nav.jinja" as Nav #}
+{# import "nav.jx" as Nav #}
 <aside class="sidebar">
   <h2>{{ title }}</h2>
   <Nav items={{ ["home", "about", "settings", "profile", "help"] }} active="home" />
 </aside>""",
 
-    "layout.jinja": """\
+    "layout.jx": """\
 {# def title: str = "Page" #}
-{# import "sidebar.jinja" as Sidebar #}
-{# import "alert.jinja" as Alert #}
+{# import "sidebar.jx" as Sidebar #}
+{# import "alert.jx" as Alert #}
 <div class="layout">
   <header><h1>{{ title }}</h1></header>
   <Sidebar />
@@ -99,12 +99,12 @@ JX_TEMPLATES: dict[str, str] = {
   </main>
 </div>""",
 
-    "page.jinja": """\
+    "page.jx": """\
 {# def title: str, items: list, user: str = "Guest" #}
-{# import "layout.jinja" as Layout #}
-{# import "card.jinja" as Card #}
-{# import "form.jinja" as Form #}
-{# import "button.jinja" as Button #}
+{# import "layout.jx" as Layout #}
+{# import "card.jx" as Card #}
+{# import "form.jx" as Form #}
+{# import "button.jx" as Button #}
 <Layout title={{ title }}>
   <h2>Hello {{ user }}</h2>
   {% for item in items %}
@@ -121,23 +121,23 @@ JX_TEMPLATES: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 JINJAX_TEMPLATES: dict[str, str] = {
-    "Icon.jinja": """\
+    "Icon.jx": """\
 {#def name, size="md" #}
 <svg class="icon icon-{{ size }}"><use href="#{{ name }}"></use></svg>""",
 
-    "Button.jinja": """\
+    "Button.jx": """\
 {#def bid, text="Click", variant="primary", disabled=False #}
 <button id="{{ bid }}" class="btn btn-{{ variant }}">
   <Icon name="check" size="sm" />
   {{ text }}
 </button>""",
 
-    "Input.jinja": """\
+    "Input.jx": """\
 {#def name, label="", input_type="text", value="" #}
 <label class="input-label" for="{{ name }}">{{ label }}</label>
 <input id="{{ name }}" name="{{ name }}" type="{{ input_type }}" value="{{ value }}">""",
 
-    "Card.jinja": """\
+    "Card.jx": """\
 {#def title, subtitle="" #}
 <div class="card">
   <div class="card-header">
@@ -147,7 +147,7 @@ JINJAX_TEMPLATES: dict[str, str] = {
   <div class="card-body">{{ content }}</div>
 </div>""",
 
-    "Nav.jinja": """\
+    "Nav.jx": """\
 {#def items, active="" #}
 <nav class="nav">
   <ul>
@@ -159,7 +159,7 @@ JINJAX_TEMPLATES: dict[str, str] = {
   </ul>
 </nav>""",
 
-    "Form.jinja": """\
+    "Form.jx": """\
 {#def action, method="post" #}
 <form action="{{ action }}" method="{{ method }}">
   <Input name="email" label="Email" input_type="email" />
@@ -167,21 +167,21 @@ JINJAX_TEMPLATES: dict[str, str] = {
   <Button bid="submit-btn" text="Submit" variant="primary" />
 </form>""",
 
-    "Alert.jinja": """\
+    "Alert.jx": """\
 {#def message, level="info" #}
 <div class="alert alert-{{ level }}" role="alert">
   <Icon name="{{ level }}" />
   <span>{{ message }}</span>
 </div>""",
 
-    "Sidebar.jinja": """\
+    "Sidebar.jx": """\
 {#def title="Menu" #}
 <aside class="sidebar">
   <h2>{{ title }}</h2>
   <Nav items={{ ["home", "about", "settings", "profile", "help"] }} active="home" />
 </aside>""",
 
-    "Layout.jinja": """\
+    "Layout.jx": """\
 {#def title="Page" #}
 <div class="layout">
   <header><h1>{{ title }}</h1></header>
@@ -192,7 +192,7 @@ JINJAX_TEMPLATES: dict[str, str] = {
   </main>
 </div>""",
 
-    "Page.jinja": """\
+    "Page.jx": """\
 {#def title, items, user="Guest" #}
 <Layout title={{ title }}>
   <h2>Hello {{ user }}</h2>
@@ -272,7 +272,7 @@ def main():
         jinjax_cat.add_folder(jinjax_folder)
 
         # Verify both produce similar output
-        jx_html = jx_cat.render("page.jinja", **RENDER_KWARGS)
+        jx_html = jx_cat.render("page.jx", **RENDER_KWARGS)
         jinjax_html = jinjax_cat.render("Page", **RENDER_KWARGS)
 
         # Quick sanity check
@@ -289,7 +289,7 @@ def main():
         print("\n--- Simple component (Button) ---")
         jx_simple = bench(
             "Jx    render button",
-            lambda: jx_cat.render("button.jinja", bid="b1", text="Go"),
+            lambda: jx_cat.render("button.jx", bid="b1", text="Go"),
             iterations=iterations,
         )
         jinjax_simple = bench(
@@ -304,7 +304,7 @@ def main():
         print("\n--- Full page (10 components, 20 loop items) ---")
         jx_page = bench(
             "Jx    render page",
-            lambda: jx_cat.render("page.jinja", **RENDER_KWARGS),
+            lambda: jx_cat.render("page.jx", **RENDER_KWARGS),
             iterations=iterations,
         )
         jinjax_page = bench(

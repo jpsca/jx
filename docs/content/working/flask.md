@@ -21,7 +21,7 @@ catalog = Catalog(
 
 @app.route("/")
 def home():
-    return catalog.render("pages/home.jinja")
+    return catalog.render("pages/home.jx")
 ```
 
 ## Using Flask's Jinja Environment
@@ -44,7 +44,7 @@ catalog = Catalog(
 
 Now your components have access to all Flask template utilities:
 
-```html+jinja title="components/nav.jinja"
+```html+jinja title="components/nav.jx"
 <nav>
   <a href="{{ url_for('home') }}">Home</a>
   <a href="{{ url_for('about') }}">About</a>
@@ -84,7 +84,7 @@ from flask import request, session, g
 @app.route("/dashboard")
 def dashboard():
     return catalog.render(
-        "pages/dashboard.jinja",
+        "pages/dashboard.jx",
         globals={
             "request": request,
             "session": session,
@@ -98,7 +98,7 @@ def dashboard():
 
 Create a component to display Flask flash messages:
 
-```html+jinja title="components/flash-messages.jinja"
+```html+jinja title="components/flash-messages.jx"
 {#css flash-messages.css #}
 
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -115,8 +115,8 @@ Create a component to display Flask flash messages:
 {% endwith %}
 ```
 
-```html+jinja title="components/layout.jinja"
-{#import "./flash-messages.jinja" as FlashMessages #}
+```html+jinja title="components/layout.jx"
+{#import "./flash-messages.jx" as FlashMessages #}
 {#def title #}
 
 <!DOCTYPE html>
@@ -151,14 +151,14 @@ def save():
 
 If you're using Flask-WTF for CSRF protection, create a component for the token:
 
-```html+jinja title="components/csrf-input.jinja"
+```html+jinja title="components/csrf-input.jx"
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 ```
 
 Use it in forms:
 
-```html+jinja title="components/login-form.jinja"
-{#import "./csrf-input.jinja" as CsrfInput #}
+```html+jinja title="components/login-form.jx"
+{#import "./csrf-input.jx" as CsrfInput #}
 {#def action #}
 
 <form method="post" action="{{ action }}" {{ attrs.render() }}>
@@ -168,8 +168,8 @@ Use it in forms:
 ```
 
 ```html+jinja title="usage"
-{#import "login-form.jinja" as Form #}
-{#import "input.jinja" as Input #}
+{#import "login-form.jx" as Form #}
+{#import "input.jx" as Input #}
 
 <Form action="{{ url_for('login') }}">
   <Input name="email" type="email" label="Email" required />
@@ -203,12 +203,12 @@ blog = Blueprint("blog", __name__, url_prefix="/blog")
 @blog.route("/")
 def index():
     posts = get_posts()
-    return current_app.catalog.render("blog/index.jinja", posts=posts)
+    return current_app.catalog.render("blog/index.jx", posts=posts)
 
 @blog.route("/<slug>")
 def post(slug):
     post = get_post_by_slug(slug)
-    return current_app.catalog.render("blog/post.jinja", post=post)
+    return current_app.catalog.render("blog/post.jx", post=post)
 ```
 
 ### Blueprint-Specific Components
@@ -232,8 +232,8 @@ catalog.add_folder("blueprints/admin/components/", prefix="admin")
 app.catalog = catalog
 ```
 
-```html+jinja title="blueprints/blog/components/post-card.jinja"
-{#import "card.jinja" as Card #}
+```html+jinja title="blueprints/blog/components/post-card.jx"
+{#import "card.jx" as Card #}
 {#def post #}
 
 <Card class="post-card">
@@ -243,7 +243,7 @@ app.catalog = catalog
 ```
 
 ```html+jinja title="usage in blog templates"
-{#import "@blog/post-card.jinja" as PostCard #}
+{#import "@blog/post-card.jx" as PostCard #}
 
 {% for post in posts %}
   <PostCard post={{ post }} />
@@ -266,7 +266,7 @@ def inject_globals():
 
 These are automatically available when using Flask's Jinja environment:
 
-```html+jinja title="components/footer.jinja"
+```html+jinja title="components/footer.jx"
 <footer>
   <p>&copy; {{ current_year }} {{ site_name }}</p>
 </footer>
@@ -276,7 +276,7 @@ These are automatically available when using Flask's Jinja environment:
 
 Use Flask's `url_for` to reference static files:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 
 <!DOCTYPE html>
@@ -295,7 +295,7 @@ Use Flask's `url_for` to reference static files:
 
 For component assets, you can use absolute paths that map to your static folder:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#css /static/css/card.css #}
 {#def title #}
 
@@ -307,7 +307,7 @@ For component assets, you can use absolute paths that map to your static folder:
 
 Or use `url_for` in a custom render loop:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 <head>
   {% for css_file in assets.collect_css() %}
     <link rel="stylesheet" href="{{ url_for('static', filename=css_file) }}">
@@ -342,7 +342,7 @@ def load_user():
 
 @app.route("/")
 def home():
-    return catalog.render("pages/home.jinja")
+    return catalog.render("pages/home.jx")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -353,26 +353,26 @@ def login():
             flash("Welcome back!", "success")
             return redirect(url_for("dashboard"))
         flash("Invalid credentials", "error")
-    return catalog.render("pages/login.jinja")
+    return catalog.render("pages/login.jx")
 
 @app.route("/dashboard")
 def dashboard():
     if not g.user:
         return redirect(url_for("login"))
-    return catalog.render("pages/dashboard.jinja", user=g.user)
+    return catalog.render("pages/dashboard.jx", user=g.user)
 
 @app.errorhandler(404)
 def not_found(e):
-    return catalog.render("errors/404.jinja"), 404
+    return catalog.render("errors/404.jx"), 404
 
 if __name__ == "__main__":
     app.run(debug=True)
 ```
 
-```html+jinja title="components/layout.jinja"
-{#import "./nav.jinja" as Nav #}
-{#import "./flash-messages.jinja" as FlashMessages #}
-{#import "./footer.jinja" as Footer #}
+```html+jinja title="components/layout.jx"
+{#import "./nav.jx" as Nav #}
+{#import "./flash-messages.jx" as FlashMessages #}
+{#import "./footer.jx" as Footer #}
 {#css layout.css #}
 {#def title #}
 
@@ -396,9 +396,9 @@ if __name__ == "__main__":
 </html>
 ```
 
-```html+jinja title="components/pages/dashboard.jinja"
-{#import "../layout.jinja" as Layout #}
-{#import "../card.jinja" as Card #}
+```html+jinja title="components/pages/dashboard.jx"
+{#import "../layout.jx" as Layout #}
+{#import "../card.jx" as Card #}
 {#def user #}
 
 <Layout title="Dashboard">

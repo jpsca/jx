@@ -94,13 +94,13 @@ from myproject.components import catalog
 
 
 def home(request):
-    return HttpResponse(catalog.render("pages/home.jinja"))
+    return HttpResponse(catalog.render("pages/home.jx"))
 
 
 def product_list(request):
     products = Product.objects.all()
     return HttpResponse(
-        catalog.render("pages/products.jinja", products=products)
+        catalog.render("pages/products.jx", products=products)
     )
 ```
 
@@ -173,7 +173,7 @@ def render_component(request, component, **kwargs):
 
 def dashboard(request):
     return HttpResponse(
-        render_component(request, "pages/dashboard.jinja", stats=get_stats())
+        render_component(request, "pages/dashboard.jx", stats=get_stats())
     )
 ```
 
@@ -217,21 +217,21 @@ from myproject.shortcuts import render
 
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    return render(request, "pages/product.jinja", {"product": product})
+    return render(request, "pages/product.jx", {"product": product})
 ```
 
 ## CSRF Protection
 
 Create a CSRF input component:
 
-```html+jinja title="components/csrf-input.jinja"
+```html+jinja title="components/csrf-input.jx"
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 ```
 
 Use it in form components:
 
-```html+jinja title="components/form.jinja"
-{#import "./csrf-input.jinja" as CsrfInput #}
+```html+jinja title="components/form.jx"
+{#import "./csrf-input.jx" as CsrfInput #}
 {#def action, method="post" #}
 
 <form action="{{ action }}" method="{{ method }}" {{ attrs.render() }}>
@@ -246,7 +246,7 @@ Use it in form components:
 
 Create a component to display Django messages:
 
-```html+jinja title="components/messages.jinja"
+```html+jinja title="components/messages.jx"
 {#css messages.css #}
 
 {% if messages %}
@@ -261,8 +261,8 @@ Create a component to display Django messages:
 {% endif %}
 ```
 
-```html+jinja title="components/layout.jinja"
-{#import "./messages.jinja" as Messages #}
+```html+jinja title="components/layout.jx"
+{#import "./messages.jx" as Messages #}
 {#def title #}
 
 <!DOCTYPE html>
@@ -294,7 +294,7 @@ def save_item(request):
 
 Access user and permissions in components:
 
-```html+jinja title="components/nav.jinja"
+```html+jinja title="components/nav.jx"
 <nav>
   <a href="{{ url('home') }}">Home</a>
 
@@ -318,7 +318,7 @@ Access user and permissions in components:
 
 ### Permission Checks
 
-```html+jinja title="components/admin-panel.jinja"
+```html+jinja title="components/admin-panel.jx"
 {#def user #}
 
 {% if user.is_authenticated and user.has_perm('myapp.change_product') %}
@@ -335,7 +335,7 @@ Access user and permissions in components:
 
 The `static` function is available in your environment:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 
 <!DOCTYPE html>
@@ -356,7 +356,7 @@ The `static` function is available in your environment:
 
 For component CSS and JS, use paths relative to your static folder:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#css css/components/card.css #}
 {#def title #}
 
@@ -368,7 +368,7 @@ For component CSS and JS, use paths relative to your static folder:
 
 Then render them using the `static` helper:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 <head>
   {% for css_file in assets.collect_css() %}
     <link rel="stylesheet" href="{{ static(css_file) }}">
@@ -418,11 +418,11 @@ from myproject.mixins import JxMixin, JxTemplateView
 
 
 class HomeView(JxTemplateView):
-    component_name = "pages/home.jinja"
+    component_name = "pages/home.jx"
 
 
 class ProductListView(JxMixin, View):
-    component_name = "pages/products.jinja"
+    component_name = "pages/products.jx"
 
     def get(self, request):
         products = Product.objects.all()
@@ -464,9 +464,9 @@ catalog.add_folder(settings.BASE_DIR / "shop" / "components", prefix="shop")
 ```
 
 ```html+jinja title="usage"
-{#import "layout.jinja" as Layout #}
-{#import "@blog/post-card.jinja" as PostCard #}
-{#import "@shop/product-card.jinja" as ProductCard #}
+{#import "layout.jx" as Layout #}
+{#import "@blog/post-card.jx" as PostCard #}
+{#import "@shop/product-card.jx" as ProductCard #}
 
 <Layout title="Home">
   <section>
@@ -496,14 +496,14 @@ from django.http import HttpResponse
 
 def handler404(request, exception):
     html = catalog.render(
-        "errors/404.jinja",
+        "errors/404.jx",
         globals={"request": request},
     )
     return HttpResponse(html, status=404)
 
 
 def handler500(request):
-    html = catalog.render("errors/500.jinja")
+    html = catalog.render("errors/500.jx")
     return HttpResponse(html, status=500)
 ```
 
@@ -512,8 +512,8 @@ handler404 = "myproject.views.handler404"
 handler500 = "myproject.views.handler500"
 ```
 
-```html+jinja title="components/errors/404.jinja"
-{#import "../layout.jinja" as Layout #}
+```html+jinja title="components/errors/404.jx"
+{#import "../layout.jx" as Layout #}
 
 <Layout title="Page Not Found">
   <div class="error-page">
@@ -590,12 +590,12 @@ from .models import Product
 
 def product_list(request):
     products = Product.objects.all()
-    return render(request, "pages/products.jinja", {"products": products})
+    return render(request, "pages/products.jx", {"products": products})
 
 
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    return render(request, "pages/product.jinja", {"product": product})
+    return render(request, "pages/product.jx", {"product": product})
 
 
 def product_create(request):
@@ -603,7 +603,7 @@ def product_create(request):
         # ... create logic ...
         messages.success(request, "Product created!")
         return redirect("product_list")
-    return render(request, "pages/product-form.jinja")
+    return render(request, "pages/product-form.jx")
 ```
 
 ## Production Settings

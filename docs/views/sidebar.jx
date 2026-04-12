@@ -1,7 +1,7 @@
-{# import "./toc.jinja" as Toc #}
-{# import "./color_scheme.jinja" as ColorScheme #}
-{# import "./version_selector.jinja" as VersionSelector #}
-{# import "./language_selector.jinja" as LanguageSelector #}
+{# import "./toc.jx" as Toc #}
+{# import "./color_scheme.jx" as ColorScheme #}
+{# import "./version_selector.jx" as VersionSelector #}
+{# import "./language_selector.jx" as LanguageSelector #}
 
 <aside class="sidebar" id="sidebar-popover" popover="auto">
 	<div data-preserve-scroll>

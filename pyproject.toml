@@ -4,7 +4,7 @@ requires = ["setuptools"]
 
 [project]
 name = "jx"
-version = "0.10.0"
+version = "0.11.0"
 description = "Replace your HTML templates with Python server-Side components"
 authors = [
     {name = "Juan Pablo Scaletti", email = "juanpablo@jpscaletti.com"},
@@ -41,6 +41,7 @@ Documentation = "https://jx.scaletti.dev/"
 [dependency-groups]
 dev = [
     "pre-commit",
+    "pytest>=9.0.2",
     "tox-uv",
     "ty",
 ]

@@ -13,7 +13,7 @@ This page is a work in progress and may contain errors.
 
 Include Alpine in your layout:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 
 <!DOCTYPE html>
@@ -58,7 +58,7 @@ Renders as:
 
 ## Dropdown Component
 
-```html+jinja title="components/dropdown.jinja"
+```html+jinja title="components/dropdown.jx"
 {#def label #}
 {#css dropdown.css #}
 
@@ -84,7 +84,7 @@ Renders as:
 ```
 
 ```html+jinja title="usage"
-{#import "dropdown.jinja" as Dropdown #}
+{#import "dropdown.jx" as Dropdown #}
 
 <Dropdown label="Options">
   <a href="/profile">Profile</a>
@@ -96,7 +96,7 @@ Renders as:
 
 ## Modal with Alpine
 
-```html+jinja title="components/alpine-modal.jinja"
+```html+jinja title="components/alpine-modal.jx"
 {#def name, title="" #}
 {#css modal.css #}
 
@@ -146,7 +146,7 @@ Renders as:
 ```
 
 ```html+jinja title="usage"
-{#import "alpine-modal.jinja" as Modal #}
+{#import "alpine-modal.jx" as Modal #}
 
 <Modal name="confirm" title="Confirm Action">
   {% fill trigger %}
@@ -169,7 +169,7 @@ Renders as:
 
 ## Tabs with Alpine
 
-```html+jinja title="components/alpine-tabs.jinja"
+```html+jinja title="components/alpine-tabs.jx"
 {#def default="" #}
 {#css tabs.css #}
 
@@ -178,7 +178,7 @@ Renders as:
 </div>
 ```
 
-```html+jinja title="components/alpine-tab.jinja"
+```html+jinja title="components/alpine-tab.jx"
 {#def name #}
 
 <button
@@ -190,7 +190,7 @@ Renders as:
 </button>
 ```
 
-```html+jinja title="components/alpine-tab-panel.jinja"
+```html+jinja title="components/alpine-tab-panel.jx"
 {#def name #}
 
 <div
@@ -203,9 +203,9 @@ Renders as:
 ```
 
 ```html+jinja title="usage"
-{#import "alpine-tabs.jinja" as Tabs #}
-{#import "alpine-tab.jinja" as Tab #}
-{#import "alpine-tab-panel.jinja" as TabPanel #}
+{#import "alpine-tabs.jx" as Tabs #}
+{#import "alpine-tab.jx" as Tab #}
+{#import "alpine-tab-panel.jx" as TabPanel #}
 
 <Tabs default="overview">
   <div class="tab-list">
@@ -233,7 +233,7 @@ Renders as:
 
 ## Accordion with Alpine
 
-```html+jinja title="components/alpine-accordion.jinja"
+```html+jinja title="components/alpine-accordion.jx"
 {#def multiple=false #}
 {#css accordion.css #}
 
@@ -245,7 +245,7 @@ Renders as:
 </div>
 ```
 
-```html+jinja title="components/alpine-accordion-item.jinja"
+```html+jinja title="components/alpine-accordion-item.jx"
 {#def id, title #}
 
 <div class="accordion-item">
@@ -271,8 +271,8 @@ Renders as:
 ```
 
 ```html+jinja title="usage"
-{#import "alpine-accordion.jinja" as Accordion #}
-{#import "alpine-accordion-item.jinja" as AccordionItem #}
+{#import "alpine-accordion.jx" as Accordion #}
+{#import "alpine-accordion-item.jx" as AccordionItem #}
 
 <Accordion>
   <AccordionItem id="q1" title="What is Alpine.js?">
@@ -287,7 +287,7 @@ Renders as:
 
 ## Toggle Component
 
-```html+jinja title="components/toggle.jinja"
+```html+jinja title="components/toggle.jx"
 {#def name, label, checked=false #}
 {#css toggle.css #}
 
@@ -310,7 +310,7 @@ Renders as:
 
 ## Counter Component
 
-```html+jinja title="components/counter.jinja"
+```html+jinja title="components/counter.jx"
 {#def name, value=0, min=0, max=100 #}
 
 <div class="counter" x-data="{ count: {{ value }} }">
@@ -341,7 +341,7 @@ Renders as:
 
 ## Notification Toast
 
-```html+jinja title="components/toast.jinja"
+```html+jinja title="components/toast.jx"
 {#def message, type="info", duration=3000 #}
 {#css toast.css #}
 
@@ -359,7 +359,7 @@ Renders as:
 
 ## Form with Validation
 
-```html+jinja title="components/validated-form.jinja"
+```html+jinja title="components/validated-form.jx"
 {#def action, method="post" #}
 
 <form
@@ -382,7 +382,7 @@ Renders as:
 
 ## Password Visibility Toggle
 
-```html+jinja title="components/password-input.jinja"
+```html+jinja title="components/password-input.jx"
 {#def name, label="" #}
 
 <div class="form-group" x-data="{ show: false }">

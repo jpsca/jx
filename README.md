@@ -18,10 +18,10 @@ Jx is a Python library for creating reusable template components with Jinja2. It
 
 ### Component Definition
 
-Components are defined as regular Jinja2 templates (.jinja files) with special metadata comments:
+Components are defined as regular Jinja2 templates (.jx files) with special metadata comments:
 
 - `{# def parameter1 parameter2=default_value #}` - Defines required and optional parameters
-- `{# import "path/to/component.jinja" as ComponentName #}` - Imports other components
+- `{# import "path/to/component.jx" as ComponentName #}` - Imports other components
 - `{# css "/path/to/style.css" #}` - Includes CSS files
 - `{# js "/path/to/script.js" #}` - Includes JavaScript files
 
@@ -29,7 +29,7 @@ Example component:
 
 ```jinja
 {# def message #}
-{# import "button.jinja" as Button #}
+{# import "button.jx" as Button #}
 
 <div class="greeting">{{ message }}</div>
 <Button text="OK" />
@@ -44,7 +44,7 @@ from jx import Catalog
 catalog = Catalog("templates/components")
 
 # Render a component with parameters
-html = catalog.render("card.jinja", title="Hello", content="This is a card")
+html = catalog.render("card.jx", title="Hello", content="This is a card")
 ```
 
 ## VisualStudio Code extension

@@ -1,8 +1,8 @@
-{# import "./metadata.jinja" as Metadata #}
-{# import "./header.jinja" as Header #}
-{# import "./sidebar.jinja" as Sidebar #}
-{# import "./page_nav.jinja" as PageNav #}
-{# import "./banner_archived.jinja" as BannerArchived #}
+{# import "./metadata.jx" as Metadata #}
+{# import "./header.jx" as Header #}
+{# import "./sidebar.jx" as Sidebar #}
+{# import "./page_nav.jx" as PageNav #}
+{# import "./banner_archived.jx" as BannerArchived #}
 {# def sidebar=False #}
 <!DOCTYPE html>
 <html lang="{{ site.lang }}" class="cs-dark">

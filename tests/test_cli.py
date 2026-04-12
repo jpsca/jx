@@ -125,7 +125,7 @@ def test_main_check_file_path(tmp_path, capsys):
     """Test main check subcommand with a file path argument."""
     folder = tmp_path / "components"
     folder.mkdir()
-    (folder / "alert.jinja").write_text("<div>Alert</div>")
+    (folder / "alert.jx").write_text("<div>Alert</div>")
 
     setup_file = tmp_path / "mysetup.py"
     setup_file.write_text(
@@ -139,7 +139,7 @@ def test_main_check_file_path(tmp_path, capsys):
         assert exc_info.value.code == 0
 
     captured = capsys.readouterr()
-    assert "alert.jinja - OK" in captured.out
+    assert "alert.jx - OK" in captured.out
 
 
 def test_main_no_command(capsys):
@@ -155,7 +155,7 @@ def test_main_check(tmp_path, capsys):
     # Create a valid component
     folder = tmp_path / "components"
     folder.mkdir()
-    (folder / "button.jinja").write_text("<button>Click</button>")
+    (folder / "button.jx").write_text("<button>Click</button>")
 
     # Create a module that exposes a catalog
     setup_file = tmp_path / "testsetup.py"
@@ -175,14 +175,14 @@ def test_main_check(tmp_path, capsys):
             sys.modules.pop("testsetup", None)
 
     captured = capsys.readouterr()
-    assert "button.jinja - OK" in captured.out
+    assert "button.jx - OK" in captured.out
 
 
 def test_main_check_json(tmp_path, capsys):
     """Test main with check --format json."""
     folder = tmp_path / "components"
     folder.mkdir()
-    (folder / "card.jinja").write_text("<div>OK</div>")
+    (folder / "card.jx").write_text("<div>OK</div>")
 
     setup_file = tmp_path / "testsetup2.py"
     setup_file.write_text(
@@ -213,7 +213,7 @@ def test_main_collect_assets(tmp_path, capsys):
     # Create component and asset folders
     comp_folder = tmp_path / "components"
     comp_folder.mkdir()
-    (comp_folder / "widget.jinja").write_text("<div>widget</div>")
+    (comp_folder / "widget.jx").write_text("<div>widget</div>")
 
     assets_folder = tmp_path / "assets"
     assets_folder.mkdir()
@@ -246,7 +246,7 @@ def test_main_collect_assets_multiple(tmp_path, capsys):
     """Test collect_assets with multiple files uses plural."""
     comp_folder = tmp_path / "components"
     comp_folder.mkdir()
-    (comp_folder / "a.jinja").write_text("<div>a</div>")
+    (comp_folder / "a.jx").write_text("<div>a</div>")
 
     assets_folder = tmp_path / "assets"
     assets_folder.mkdir()
@@ -291,7 +291,7 @@ def test_main_collect_assets_no_prefix(tmp_path, capsys):
     """Test collect_assets with no assets folders produces 0 files."""
     comp_folder = tmp_path / "components"
     comp_folder.mkdir()
-    (comp_folder / "btn.jinja").write_text("<button />")
+    (comp_folder / "btn.jx").write_text("<button />")
 
     output_folder = tmp_path / "static"
 

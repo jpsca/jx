@@ -46,8 +46,8 @@ def test_thread_safety_of_render_assets(folder):
 {{ content }}""".strip()
 
     comp_tmpl = """
-{# import "parent{i}.jinja" as Parent{i} #}
-{# import "child{i}.jinja" as Child{i} #}
+{# import "parent{i}.jx" as Parent{i} #}
+{# import "child{i}.jx" as Child{i} #}
 {# css "/static/a{i}.css", "/static/b{i}.css" #}
 {# js "/static/a{i}.js", "/static/b{i}.js" #}
 <Parent{i}><Child{i} /></Parent{i}>""".strip()
@@ -63,13 +63,13 @@ def test_thread_safety_of_render_assets(folder):
 
     for i in range(NUM_THREADS):
         si = str(i)
-        child_name = f"child{i}.jinja"
+        child_name = f"child{i}.jx"
         child_src = child_tmpl.replace("{i}", si)
 
-        parent_name = f"parent{i}.jinja"
+        parent_name = f"parent{i}.jx"
         parent_src = parent_tmpl.replace("{i}", si)
 
-        comp_name = f"page{i}.jinja"
+        comp_name = f"page{i}.jx"
         comp_src = comp_tmpl.replace("{i}", si)
 
         (folder / child_name).write_text(child_src)
@@ -79,7 +79,7 @@ def test_thread_safety_of_render_assets(folder):
     cat = Catalog(folder)
 
     def render(i):
-        return cat.render(f"page{i}.jinja")
+        return cat.render(f"page{i}.jx")
 
     threads = []
 
@@ -101,14 +101,14 @@ def test_thread_safety_of_render_assets(folder):
 
 def test_thread_safety_of_template_globals(folder):
     NUM_THREADS = 5
-    (folder / "page.jinja").write_text(
+    (folder / "page.jx").write_text(
         "{{ globalvar if globalvar is defined else 'not set' }}"
     )
 
     cat = Catalog(folder)
 
     def render(i):
-        return cat.render("page.jinja", globals={"globalvar": i})
+        return cat.render("page.jx", globals={"globalvar": i})
 
     threads = []
 

@@ -317,6 +317,33 @@ def test_render_empty_attrs():
     assert attrs.render() == ""
 
 
+def test_render_does_not_mutate_self():
+    """Calling render() with kw args must not change the Attrs instance."""
+    attrs = Attrs({"class": "original", "id": "x"})
+    result1 = attrs.render(classes="extra", title="hi")
+    assert 'class="extra original"' in result1
+    assert 'title="hi"' in result1
+
+    # Second call should produce the same result — no accumulated state
+    result2 = attrs.render(classes="extra", title="hi")
+    assert result1 == result2
+
+    # The original attrs should be unchanged
+    assert attrs.classes == "original"
+    assert attrs.get("title") is None
+
+
+def test_render_kw_removes_attrs_without_mutating():
+    """Passing False in render kw removes from the copy, not from self."""
+    attrs = Attrs({"title": "hi", "open": True})
+    result = attrs.render(title=False, open=False)
+    assert result == ""
+
+    # Original attrs unchanged
+    assert attrs.get("title") is not None
+    assert attrs.get("open") is True
+
+
 def test_render_with_kw_no_classes():
     """Render with kw args that don't include class keys."""
     attrs = Attrs({})

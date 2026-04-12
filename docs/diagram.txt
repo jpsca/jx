@@ -1,6 +1,6 @@
 
   ┌─────────────────────────────────────────────────────────────────────────┐
-  │                     catalog.render("page.jinja", **kwargs)              │
+  │                     catalog.render("page.jx", **kwargs)              │
   └─────────────────────────────────────────────────────────────────────────┘
                                         │
                                         ▼
@@ -20,7 +20,7 @@
   │     ┌─────────────────────────────────────────────────────────────┐    │
   │     │ {#def title, count=0 #}     → required=("title",)           │    │
   │     │                               optional={"count": 0}          │    │
-  │     │ {#import "card.jinja" as Card #} → imports={"Card": "..."}  │    │
+  │     │ {#import "card.jx" as Card #} → imports={"Card": "..."}  │    │
   │     │ {#css style.css #}          → css=("style.css",)            │    │
   │     │ {#js app.js #}              → js=("app.js",)                │    │
   │     └─────────────────────────────────────────────────────────────┘    │
@@ -56,7 +56,7 @@
   │  5. COMPONENT INSTANTIATION (component.py)                              │
   │     ┌─────────────────────────────────────────────────────────────┐    │
   │     │ Component(                                                   │    │
-  │     │   relpath="page.jinja",                                     │    │
+  │     │   relpath="page.jx",                                     │    │
   │     │   tmpl=<Jinja2 Template>,                                   │    │
   │     │   get_component=<callback to load children>,                │    │
   │     │   required, optional, imports, css, js, slots               │    │
@@ -153,12 +153,12 @@
           ▼
   ┌─────────────────────────────────────┐
   │ 1. Look up "Card" in imports dict   │
-  │    imports["Card"] = "card.jinja"   │
+  │    imports["Card"] = "card.jx"   │
   └─────────────────────────────────────┘
           │
           ▼
   ┌─────────────────────────────────────┐
-  │ 2. get_component("card.jinja")      │
+  │ 2. get_component("card.jx")      │
   │    (same pipeline: cache → parse)   │
   └─────────────────────────────────────┘
           │
@@ -175,10 +175,10 @@
           ▼
   ┌─────────────────────────────────────┐
   │ Traverse component tree recursively │
-  │   page.jinja                        │
-  │     └─ layout.jinja                 │
-  │          ├─ header.jinja            │
-  │          └─ card.jinja              │
+  │   page.jx                        │
+  │     └─ layout.jx                 │
+  │          ├─ header.jx            │
+  │          └─ card.jx              │
   └─────────────────────────────────────┘
           │
           ▼

@@ -23,8 +23,8 @@ catalog.add_package("my_ui_kit", prefix="ui")
 Unlike `add_folder`, the prefix here is **required**.
 
 ```html+jinja
-{#import "@ui/button.jinja" as Button #}
-{#import "@ui/card.jinja" as Card #}
+{#import "@ui/button.jx" as Button #}
+{#import "@ui/card.jx" as Card #}
 
 <Button label="Click me" />
 <Card title="Hello">Some content</Card>
@@ -34,7 +34,7 @@ Unlike `add_folder`, the prefix here is **required**.
 
 Components inside a package typically declare asset URLs relative to the package:
 
-```html+jinja title="my_ui_kit/components/button.jinja"
+```html+jinja title="my_ui_kit/components/button.jx"
 {#css button.css #}
 {#js button.js #}
 {#def label #}
@@ -158,7 +158,7 @@ catalog = Catalog(
 
 A Jx-compatible package exposes two module-level attributes:
 
-- **`JX_COMPONENTS`** (required): Path to the folder containing `.jinja` component files.
+- **`JX_COMPONENTS`** (required): Path to the folder containing `.jx` component files.
 - **`JX_ASSETS`** (optional): Path to the folder containing CSS/JS assets.
 
 ### Package Structure
@@ -167,9 +167,9 @@ A Jx-compatible package exposes two module-level attributes:
 my_ui_kit/
   __init__.py
   components/
-    button.jinja
-    card.jinja
-    modal.jinja
+    button.jx
+    card.jx
+    modal.jx
   assets/
     button.css
     button.js
@@ -195,14 +195,14 @@ name = "my-ui-kit"
 version = "1.0.0"
 
 [tool.setuptools.package-data]
-my_ui_kit = ["components/*.jinja", "assets/**/*"]
+my_ui_kit = ["components/*.jx", "assets/**/*"]
 ```
 
 ### Assets paths
 
 Unlike local components, use a path relative to the declared assets folder:
 
-```html+jinja title="my_ui_kit/components/card.jinja"
+```html+jinja title="my_ui_kit/components/card.jx"
 {#css "card.css" #}
 ...
 ```
@@ -211,8 +211,8 @@ Unlike local components, use a path relative to the declared assets folder:
 
 Components within a package can import each other using relative paths:
 
-```html+jinja title="my_ui_kit/components/card.jinja"
-{#import "./button.jinja" as Button #}
+```html+jinja title="my_ui_kit/components/card.jx"
+{#import "./button.jx" as Button #}
 {#def title #}
 {#css "card.css" #}
 

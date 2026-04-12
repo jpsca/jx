@@ -31,14 +31,14 @@ from jx.parser import JxParser
 # ---------------------------------------------------------------------------
 
 COMPONENT_TEMPLATES = {
-    "icon.jinja": """\
+    "icon.jx": """\
 {# def name: str, size: str = "md" #}
 {# css "icon.css" #}
 <svg class="icon icon-{{ size }}"><use href="#{{ name }}"></use></svg>
 """,
-    "button.jinja": """\
+    "button.jx": """\
 {# def bid: str, text: str = "Click", variant: str = "primary", disabled: bool = False #}
-{# import "icon.jinja" as Icon #}
+{# import "icon.jx" as Icon #}
 {# css "button.css" #}
 {# js "button.js" #}
 <button id="{{ bid }}" class="btn btn-{{ variant }}" {{ attrs.render(disabled=disabled) }}>
@@ -46,13 +46,13 @@ COMPONENT_TEMPLATES = {
   {{ text }}
 </button>
 """,
-    "input.jinja": """\
+    "input.jx": """\
 {# def name: str, label: str = "", type: str = "text", value: str = "", required: bool = False #}
 {# css "input.css" #}
 <label class="input-label" for="{{ name }}">{{ label }}</label>
 <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value }}" {{ attrs.render(required=required) }}>
 """,
-    "card.jinja": """\
+    "card.jx": """\
 {# def title: str, subtitle: str = "" #}
 {# css "card.css" #}
 <div class="card" {{ attrs.render() }}>
@@ -66,7 +66,7 @@ COMPONENT_TEMPLATES = {
   {% slot footer %}{% endslot %}
 </div>
 """,
-    "nav.jinja": """\
+    "nav.jx": """\
 {# def items: list, active: str = "" #}
 {# css "nav.css" #}
 {# js "nav.js" #}
@@ -80,10 +80,10 @@ COMPONENT_TEMPLATES = {
   </ul>
 </nav>
 """,
-    "form.jinja": """\
+    "form.jx": """\
 {# def action: str, method: str = "post" #}
-{# import "input.jinja" as Input #}
-{# import "button.jinja" as Button #}
+{# import "input.jx" as Input #}
+{# import "button.jx" as Button #}
 {# css "form.css" #}
 {# js "form.js" #}
 <form action="{{ action }}" method="{{ method }}" {{ attrs.render() }}>
@@ -93,18 +93,18 @@ COMPONENT_TEMPLATES = {
   {{ content }}
 </form>
 """,
-    "alert.jinja": """\
+    "alert.jx": """\
 {# def message: str, level: str = "info" #}
-{# import "icon.jinja" as Icon #}
+{# import "icon.jx" as Icon #}
 {# css "alert.css" #}
 <div class="alert alert-{{ level }}" role="alert" {{ attrs.render() }}>
   <Icon name="{{ level }}" />
   <span>{{ message }}</span>
 </div>
 """,
-    "sidebar.jinja": """\
+    "sidebar.jx": """\
 {# def title: str = "Menu" #}
-{# import "nav.jinja" as Nav #}
+{# import "nav.jx" as Nav #}
 {# css "sidebar.css" #}
 <aside class="sidebar" {{ attrs.render() }}>
   <h2>{{ title }}</h2>
@@ -112,10 +112,10 @@ COMPONENT_TEMPLATES = {
   {{ content }}
 </aside>
 """,
-    "layout.jinja": """\
+    "layout.jx": """\
 {# def title: str = "Page" #}
-{# import "sidebar.jinja" as Sidebar #}
-{# import "alert.jinja" as Alert #}
+{# import "sidebar.jx" as Sidebar #}
+{# import "alert.jx" as Alert #}
 {# css "layout.css" #}
 {# js "layout.js" #}
 {{ assets.render() }}
@@ -129,12 +129,12 @@ COMPONENT_TEMPLATES = {
   {% slot footer %}<footer>Default footer</footer>{% endslot %}
 </div>
 """,
-    "page.jinja": """\
+    "page.jx": """\
 {# def title: str, items: list, user: str = "Guest" #}
-{# import "layout.jinja" as Layout #}
-{# import "card.jinja" as Card #}
-{# import "form.jinja" as Form #}
-{# import "button.jinja" as Button #}
+{# import "layout.jx" as Layout #}
+{# import "card.jx" as Card #}
+{# import "form.jx" as Form #}
+{# import "button.jx" as Button #}
 {# css "page.css" #}
 {# js "page.js" #}
 <Layout title={{ title }}>
@@ -244,34 +244,34 @@ def bench_render_cached(folder: Path, iterations: int):
     """Benchmark rendering with fully cached/compiled templates."""
     catalog = Catalog(folder, auto_reload=False)
     # Warm up
-    catalog.render("page.jinja", **RENDER_KWARGS)
+    catalog.render("page.jx", **RENDER_KWARGS)
 
     def run():
-        catalog.render("page.jinja", **RENDER_KWARGS)
+        catalog.render("page.jx", **RENDER_KWARGS)
 
-    bench("render page.jinja (cached)", run, iterations=iterations)
+    bench("render page.jx (cached)", run, iterations=iterations)
 
 
 def bench_render_simple(folder: Path, iterations: int):
     """Benchmark rendering a simple leaf component."""
     catalog = Catalog(folder, auto_reload=False)
-    catalog.render("button.jinja", bid="b1", text="Go")
+    catalog.render("button.jx", bid="b1", text="Go")
 
     def run():
-        catalog.render("button.jinja", bid="b1", text="Go")
+        catalog.render("button.jx", bid="b1", text="Go")
 
-    bench("render button.jinja (cached)", run, iterations=iterations)
+    bench("render button.jx (cached)", run, iterations=iterations)
 
 
 def bench_render_auto_reload(folder: Path, iterations: int):
     """Benchmark rendering with auto_reload=True (mtime checks)."""
     catalog = Catalog(folder, auto_reload=True)
-    catalog.render("page.jinja", **RENDER_KWARGS)
+    catalog.render("page.jx", **RENDER_KWARGS)
 
     def run():
-        catalog.render("page.jinja", **RENDER_KWARGS)
+        catalog.render("page.jx", **RENDER_KWARGS)
 
-    bench("render page.jinja (auto_reload)", run, iterations=iterations)
+    bench("render page.jx (auto_reload)", run, iterations=iterations)
 
 
 # ---------------------------------------------------------------------------
@@ -281,16 +281,16 @@ def bench_render_auto_reload(folder: Path, iterations: int):
 def run_cprofile(folder: Path):
     """Run cProfile on a representative workload and print top functions."""
     catalog = Catalog(folder, auto_reload=False)
-    catalog.render("page.jinja", **RENDER_KWARGS)  # warm up
+    catalog.render("page.jx", **RENDER_KWARGS)  # warm up
 
     prof = cProfile.Profile()
     prof.enable()
     for _ in range(500):
-        catalog.render("page.jinja", **RENDER_KWARGS)
+        catalog.render("page.jx", **RENDER_KWARGS)
     prof.disable()
 
     print("\n" + "=" * 80)
-    print("cProfile results (500 cached renders of page.jinja)")
+    print("cProfile results (500 cached renders of page.jx)")
     print("=" * 80)
     stats = pstats.Stats(prof)
     stats.strip_dirs()

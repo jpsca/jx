@@ -18,7 +18,7 @@ catalog = Catalog("components/", auto_reload=True)
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return catalog.render("pages/home.jinja")
+    return catalog.render("pages/home.jx")
 ```
 
 ## Passing Request Context
@@ -37,7 +37,7 @@ catalog = Catalog("components/", auto_reload=True)
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return catalog.render(
-        "pages/home.jinja",
+        "pages/home.jx",
         globals={"request": request},
     )
 ```
@@ -67,13 +67,13 @@ def render(request: Request, component: str, status_code: int = 200, **context):
 
 @app.get("/")
 def home(request: Request):
-    return render(request, "pages/home.jinja")
+    return render(request, "pages/home.jx")
 
 
 @app.get("/products")
 def products(request: Request):
     products = get_products()
-    return render(request, "pages/products.jinja", products=products)
+    return render(request, "pages/products.jx", products=products)
 ```
 
 ## Using Dependency Injection
@@ -110,13 +110,13 @@ app = FastAPI()
 
 @app.get("/")
 def home(templates: Templates = Depends()):
-    return templates.render("pages/home.jinja")
+    return templates.render("pages/home.jx")
 
 
 @app.get("/products/{product_id}")
 def product_detail(product_id: int, templates: Templates = Depends()):
     product = get_product(product_id)
-    return templates.render("pages/product.jinja", product=product)
+    return templates.render("pages/product.jx", product=product)
 ```
 
 ## URL Generation
@@ -140,7 +140,7 @@ class Templates:
         return HTMLResponse(html, status_code=status_code)
 ```
 
-```html+jinja title="components/nav.jinja"
+```html+jinja title="components/nav.jx"
 <nav>
   <a href="{{ url_for('home') }}">Home</a>
   <a href="{{ url_for('products') }}">Products</a>
@@ -153,12 +153,12 @@ Make sure your routes have names:
 ```python title="app.py"
 @app.get("/", name="home")
 def home(templates: Templates = Depends()):
-    return templates.render("pages/home.jinja")
+    return templates.render("pages/home.jx")
 
 
 @app.get("/products", name="products")
 def products(templates: Templates = Depends()):
-    return templates.render("pages/products.jinja")
+    return templates.render("pages/products.jx")
 ```
 
 ## Static Files
@@ -194,7 +194,7 @@ class Templates:
         return HTMLResponse(html, status_code=status_code)
 ```
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 
 <!DOCTYPE html>
@@ -266,7 +266,7 @@ class Templates:
         return HTMLResponse(html, status_code=status_code)
 ```
 
-```html+jinja title="components/messages.jinja"
+```html+jinja title="components/messages.jx"
 {#css messages.css #}
 
 {% if messages %}
@@ -320,7 +320,7 @@ class Templates:
         return HTMLResponse(html, status_code=status_code)
 ```
 
-```html+jinja title="components/nav.jinja"
+```html+jinja title="components/nav.jx"
 <nav>
   <a href="{{ url_for('home') }}">Home</a>
 
@@ -347,21 +347,21 @@ app = FastAPI()
 @app.get("/")
 def home(templates: Templates = Depends()):
     items = get_items()
-    return templates.render("pages/home.jinja", items=items)
+    return templates.render("pages/home.jx", items=items)
 
 
 @app.get("/items")
 def item_list(request: Request):
     """Return just the item list partial for htmx requests."""
     items = get_items()
-    return HTMLResponse(catalog.render("partials/item-list.jinja", items=items))
+    return HTMLResponse(catalog.render("partials/item-list.jx", items=items))
 
 
 @app.post("/items")
 def create_item(request: Request):
     item = create_new_item()
     # Return the new item partial to be swapped in
-    return HTMLResponse(catalog.render("partials/item.jinja", item=item))
+    return HTMLResponse(catalog.render("partials/item.jx", item=item))
 
 
 @app.delete("/items/{item_id}")
@@ -370,9 +370,9 @@ def delete_item(item_id: int):
     return HTMLResponse("")  # Empty response removes the element
 ```
 
-```html+jinja title="components/pages/home.jinja"
-{#import "../layout.jinja" as Layout #}
-{#import "../partials/item-list.jinja" as ItemList #}
+```html+jinja title="components/pages/home.jx"
+{#import "../layout.jx" as Layout #}
+{#import "../partials/item-list.jx" as ItemList #}
 {#def items #}
 
 <Layout title="Items">
@@ -389,7 +389,7 @@ def delete_item(item_id: int):
 </Layout>
 ```
 
-```html+jinja title="components/partials/item.jinja"
+```html+jinja title="components/partials/item.jx"
 {#def item #}
 
 <div id="item-{{ item.id }}" class="item">
@@ -417,7 +417,7 @@ catalog = Catalog("components/", auto_reload=True)
 @app.exception_handler(404)
 def not_found(request: Request, exc: HTTPException):
     html = catalog.render(
-        "errors/404.jinja",
+        "errors/404.jx",
         globals={"request": request},
     )
     return HTMLResponse(html, status_code=404)
@@ -425,7 +425,7 @@ def not_found(request: Request, exc: HTTPException):
 
 @app.exception_handler(500)
 def server_error(request: Request, exc: Exception):
-    html = catalog.render("errors/500.jinja")
+    html = catalog.render("errors/500.jx")
     return HTMLResponse(html, status_code=500)
 ```
 
@@ -483,13 +483,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Routes
 @app.get("/", name="home")
 def home(templates: Templates = Depends()):
-    return templates.render("pages/home.jinja")
+    return templates.render("pages/home.jx")
 
 
 @app.get("/products", name="products")
 def products(templates: Templates = Depends()):
     products = get_products()
-    return templates.render("pages/products.jinja", products=products)
+    return templates.render("pages/products.jx", products=products)
 
 
 @app.get("/products/{product_id}", name="product_detail")
@@ -497,7 +497,7 @@ def product_detail(product_id: int, templates: Templates = Depends()):
     product = get_product(product_id)
     if not product:
         raise HTTPException(status_code=404)
-    return templates.render("pages/product.jinja", product=product)
+    return templates.render("pages/product.jx", product=product)
 
 
 @app.post("/products", name="create_product")
@@ -510,13 +510,13 @@ def create_product(request: Request, templates: Templates = Depends()):
 # Error handlers
 @app.exception_handler(404)
 def not_found(request: Request, exc):
-    html = catalog.render("errors/404.jinja", globals={"request": request})
+    html = catalog.render("errors/404.jx", globals={"request": request})
     return HTMLResponse(html, status_code=404)
 ```
 
-```html+jinja title="components/layout.jinja"
-{#import "./nav.jinja" as Nav #}
-{#import "./messages.jinja" as Messages #}
+```html+jinja title="components/layout.jx"
+{#import "./nav.jx" as Nav #}
+{#import "./messages.jx" as Messages #}
 {#css layout.css #}
 {#def title #}
 
@@ -555,7 +555,7 @@ async def dashboard(templates: Templates = Depends()):
     stats = await get_dashboard_stats()
 
     # Sync template rendering (fast, CPU-bound)
-    return templates.render("pages/dashboard.jinja", stats=stats)
+    return templates.render("pages/dashboard.jx", stats=stats)
 ```
 
 If you prefer, define sync routes and FastAPI will run them in a thread pool:
@@ -564,7 +564,7 @@ If you prefer, define sync routes and FastAPI will run them in a thread pool:
 @app.get("/dashboard")
 def dashboard(templates: Templates = Depends()):
     stats = get_dashboard_stats()  # sync
-    return templates.render("pages/dashboard.jinja", stats=stats)
+    return templates.render("pages/dashboard.jx", stats=stats)
 ```
 
 Both approaches work well. Choose based on whether your data fetching is async or sync.

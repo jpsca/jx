@@ -10,7 +10,12 @@ import jinja2
 from markupsafe import Markup
 
 from .attrs import Attrs
-from .exceptions import InvalidPropType, MaxRecursionDepthError, MissingRequiredArgument
+from .exceptions import (
+    ComponentNotFoundError,
+    InvalidPropType,
+    MaxRecursionDepthError,
+    MissingRequiredArgument,
+)
 
 
 MAX_COMPONENT_DEPTH = 100
@@ -152,7 +157,11 @@ class Component:
         return props, kw
 
     def get_child(self, name: str) -> "Component":
-        relpath = self.imports[name]
+        relpath = self.imports.get(name)
+        if relpath is None:
+            raise ComponentNotFoundError(
+                f"{name} (imported in {self.relpath})"
+            )
         child = self.get_component(relpath)
         child.globals = self.globals
         return child

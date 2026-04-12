@@ -6,6 +6,7 @@ import pytest
 
 from jx import (
     Catalog,
+    ComponentNotFoundError,
     InvalidPropType,
     MaxRecursionDepthError,
     MissingRequiredArgument,
@@ -14,13 +15,13 @@ from jx import (
 
 
 def test_render_simple(folder):
-    (folder / "button.jinja").write_text("""
+    (folder / "button.jx").write_text("""
 {# def bid, text="Click me!" #}
 <button id="{{ bid }}">{{ text }}</button>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("button.jinja", bid="btn1", text="Submit")
+    html = cat.render("button.jx", bid="btn1", text="Submit")
     assert html.strip() == '<button id="btn1">Submit</button>'
 
 
@@ -36,26 +37,26 @@ def test_render_simple_from_string():
 
 
 def test_render_content(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 <div><Child>Hello</Child></div>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("parent.jinja")
+    html = cat.render("parent.jx")
     assert html.strip() == "<div><span>Hello</span></div>"
 
 
 def test_render_content_from_string(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 <span>{{ content }}</span>
 """)
     source = """
-{# import "child.jinja" as Child #}
+{# import "child.jx" as Child #}
 <div><Child>Hello</Child></div>
 """
     cat = Catalog(folder)
@@ -64,36 +65,36 @@ def test_render_content_from_string(folder):
 
 
 def test_render_custom_content(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 <div><Child content="Hello" /></div>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("parent.jinja")
+    html = cat.render("parent.jx")
     assert html.strip() == "<div><span>Hello</span></div>"
 
 
 def test_unknown_child(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
+    (folder / "parent.jx").write_text("""
 <div><Child>Hello</Child></div>
 """)
 
     cat = Catalog(folder)
     with pytest.raises(TemplateSyntaxError, match="Unknown component `Child`.*"):
-        cat.render("parent.jinja")
+        cat.render("parent.jx")
 
 
 def test_missing_required_prop(folder):
-    (folder / "button.jinja").write_text("""
+    (folder / "button.jx").write_text("""
 {# def bid, text="Click me!" #}
 <button id="{{ bid }}">{{ text }}</button>
 """)
@@ -101,87 +102,87 @@ def test_missing_required_prop(folder):
     cat = Catalog(folder)
 
     with pytest.raises(MissingRequiredArgument, match=".*`bid`.*"):
-      cat.render("button.jinja")
+      cat.render("button.jx")
 
 
 def test_missing_required_child_prop(folder):
-    (folder / "button.jinja").write_text("""
+    (folder / "button.jx").write_text("""
 {# def bid, text="Click me!" #}
 <button id="{{ bid }}">{{ text }}</button>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "button.jinja" as Button #}
+    (folder / "parent.jx").write_text("""
+{# import "button.jx" as Button #}
 <Button text="text" />
 """)
 
     cat = Catalog(folder)
 
     with pytest.raises(MissingRequiredArgument, match=".*`bid`.*"):
-      cat.render("parent.jinja")
+      cat.render("parent.jx")
 
 
 def test_inherited_attrs(folder):
-    (folder / "button.jinja").write_text("""
+    (folder / "button.jx").write_text("""
 <button {{ attrs.render() }}>{{ content }}</button>
 """)
 
-    (folder / "child.jinja").write_text("""
-{# import "button.jinja" as Button #}
+    (folder / "child.jx").write_text("""
+{# import "button.jx" as Button #}
 <span><Button attrs={{ attrs }}>{{ content }}</Button></span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 <div><Child class="btn btn-primary">Hello</Child></div>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("parent.jinja")
+    html = cat.render("parent.jx")
     assert html.strip() == '<div><span><button class="btn btn-primary">Hello</button></span></div>'
 
 
 def test_get_random_id(folder):
-    (folder / "button.jinja").write_text("""
+    (folder / "button.jx").write_text("""
 <button id="{{ _get_random_id() }}">Click me</button>
 """)
 
     cat = Catalog(folder)
     # Ensure different IDs are generated
-    assert cat.render("button.jinja") != cat.render("button.jinja")
+    assert cat.render("button.jx") != cat.render("button.jx")
 
 
 def test_catalog_globals(folder):
-    (folder / "button.jinja").write_text("""<button>{{ lorem }}</button>""")
+    (folder / "button.jx").write_text("""<button>{{ lorem }}</button>""")
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("button.jinja")
+    html = cat.render("button.jx")
     assert html.strip() == "<button>ipsum</button>"
 
 
 def test_render_globals(folder):
-    (folder / "child.jinja").write_text("""<p>{{ lorem }}</p>""")
+    (folder / "child.jx").write_text("""<p>{{ lorem }}</p>""")
 
-    (folder / "layout.jinja").write_text("""<div class="{{ lorem }}">{{ content }}</div>""")
+    (folder / "layout.jx").write_text("""<div class="{{ lorem }}">{{ content }}</div>""")
 
-    (folder / "page.jinja").write_text("""
-{# import "layout.jinja" as Layout #}
-{# import "child.jinja" as Child #}
+    (folder / "page.jx").write_text("""
+{# import "layout.jx" as Layout #}
+{# import "child.jx" as Child #}
 <Layout><Child /></Layout>
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    assert cat.render("page.jinja") == '<div class="ipsum"><p>ipsum</p></div>'
+    assert cat.render("page.jx") == '<div class="ipsum"><p>ipsum</p></div>'
 
 
 def test_render_globals_from_string(folder):
-    (folder / "child.jinja").write_text("""<p>{{ lorem }}</p>""")
+    (folder / "child.jx").write_text("""<p>{{ lorem }}</p>""")
 
-    (folder / "layout.jinja").write_text("""<div class="{{ lorem }}">{{ content }}</div>""")
+    (folder / "layout.jx").write_text("""<div class="{{ lorem }}">{{ content }}</div>""")
 
     source = """
-{# import "layout.jinja" as Layout #}
-{# import "child.jinja" as Child #}
+{# import "layout.jx" as Layout #}
+{# import "child.jx" as Child #}
 <Layout><Child /></Layout>
 """
 
@@ -190,21 +191,21 @@ def test_render_globals_from_string(folder):
 
 
 def test_collect_assets(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 {# css "child.css", "/static/common/parent.css" #}
 {# js "child.js", "https://example.com/child.js", "https://example.com/common.js" #}
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 {# css "parent.css", "/static/common/parent.css" #}
 {# js "parent.js", "https://example.com/common.js" #}
 <Child>Hello</Child>
 """)
 
     cat = Catalog(folder)
-    component = cat.get_component("parent.jinja")
+    component = cat.get_component("parent.jx")
 
     # Check CSS collection (deduplicated)
     css_files = component.collect_css()
@@ -225,19 +226,19 @@ def test_collect_assets(folder):
 
 
 def test_render_css(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 {# css "child.css" #}
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 {# css "parent.css", "/static/common/parent.css" #}
 <Child>Hello</Child>
 """)
 
     cat = Catalog(folder)
-    component = cat.get_component("parent.jinja")
+    component = cat.get_component("parent.jx")
 
     css_html = component.render_css()
     print(css_html)
@@ -249,19 +250,19 @@ def test_render_css(folder):
 
 
 def test_render_js(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 {# js "child.js", "https://example.com/child.js" #}
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 {# js "parent.js" #}
 <Child>Hello</Child>
 """)
 
     cat = Catalog(folder)
-    component = cat.get_component("parent.jinja")
+    component = cat.get_component("parent.jx")
 
     js_html = component.render_js()
     print(js_html)
@@ -289,21 +290,21 @@ def test_render_js(folder):
 
 
 def test_render_assets(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 {# css "child.css" #}
 {# js "child.js", "https://example.com/child.js" #}
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 {# css "parent.css", "/static/common/parent.css" #}
 {# js "parent.js" #}
 <Child>Hello</Child>
 """)
 
     cat = Catalog(folder)
-    component = cat.get_component("parent.jinja")
+    component = cat.get_component("parent.jx")
 
     html = component.render_assets()
     print(html)
@@ -318,21 +319,21 @@ def test_render_assets(folder):
 
 
 def test_render_assets_module_defer_combinations(folder):
-    (folder / "child.jinja").write_text("""
+    (folder / "child.jx").write_text("""
 {# css "child.css" #}
 {# js "child.js" #}
 <span>{{ content }}</span>
 """)
 
-    (folder / "parent.jinja").write_text("""
-{# import "child.jinja" as Child #}
+    (folder / "parent.jx").write_text("""
+{# import "child.jx" as Child #}
 {# css "parent.css" #}
 {# js "parent.js" #}
 <Child>Hello</Child>
 """)
 
     cat = Catalog(folder)
-    co = cat.get_component("parent.jinja")
+    co = cat.get_component("parent.jx")
 
     # Default: module=True, defer=True → type="module" scripts (defer is irrelevant)
     html1 = co.render_assets()
@@ -368,22 +369,22 @@ def test_render_assets_module_defer_combinations(folder):
 
 
 def test_global_assets_render(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {{ assets.render() }}
 <div>{{ content }}</div>
 """)
 
-    (folder / "main.jinja").write_text("""
-{# import "layout.jinja" as Layout #}
+    (folder / "main.jx").write_text("""
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("main.jinja")
+    html = cat.render("main.jx")
     print(html)
     assert html.strip() == """
 <link rel="stylesheet" href="main.css">
@@ -397,7 +398,7 @@ def test_global_assets_render(folder):
 
 
 def test_global_assets_render_string(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {{ assets.render() }}
@@ -405,7 +406,7 @@ def test_global_assets_render_string(folder):
 """)
 
     source ="""
-{# import "layout.jinja" as Layout #}
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
@@ -426,22 +427,22 @@ def test_global_assets_render_string(folder):
 
 
 def test_global_assets_render_js(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {{ assets.render_js() }}
 <div>{{ content }}</div>
 """)
 
-    (folder / "main.jinja").write_text("""
-{# import "layout.jinja" as Layout #}
+    (folder / "main.jx").write_text("""
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("main.jinja")
+    html = cat.render("main.jx")
     print(html)
     assert html.strip() == """
 <script type="module" src="main.js"></script>
@@ -452,7 +453,7 @@ def test_global_assets_render_js(folder):
 
 
 def test_global_assets_render_js_string(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {{ assets.render_js() }}
@@ -460,7 +461,7 @@ def test_global_assets_render_js_string(folder):
 """)
 
     source = """
-{# import "layout.jinja" as Layout #}
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
@@ -478,22 +479,22 @@ def test_global_assets_render_js_string(folder):
 
 
 def test_global_assets_render_css(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {{ assets.render_css() }}
 <div>{{ content }}</div>
 """)
 
-    (folder / "main.jinja").write_text("""
-{# import "layout.jinja" as Layout #}
+    (folder / "main.jx").write_text("""
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("main.jinja")
+    html = cat.render("main.jx")
     print(html)
     assert html.strip() == """
 <link rel="stylesheet" href="main.css">
@@ -504,7 +505,7 @@ def test_global_assets_render_css(folder):
 
 
 def test_global_assets_render_css_string(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {{ assets.render_css() }}
@@ -512,7 +513,7 @@ def test_global_assets_render_css_string(folder):
 """)
 
     source = """
-{# import "layout.jinja" as Layout #}
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
@@ -530,7 +531,7 @@ def test_global_assets_render_css_string(folder):
 
 
 def test_global_assets_collect(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {% for url in assets.collect_css() -%}
@@ -542,15 +543,15 @@ def test_global_assets_collect(folder):
 <div>{{ content }}</div>
 """)
 
-    (folder / "main.jinja").write_text("""
-{# import "layout.jinja" as Layout #}
+    (folder / "main.jx").write_text("""
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
 """)
 
     cat = Catalog(folder)
-    html = cat.render("main.jinja")
+    html = cat.render("main.jx")
     print(html)
     assert html.strip() == """
 <link href="main.css" rel="stylesheet">
@@ -564,7 +565,7 @@ def test_global_assets_collect(folder):
 
 
 def test_global_assets_collect_string(folder):
-    (folder / "layout.jinja").write_text("""
+    (folder / "layout.jx").write_text("""
 {# css "layout.css" #}
 {# js "layout.js", "https://example.com/layout.js" #}
 {% for url in assets.collect_css() -%}
@@ -577,7 +578,7 @@ def test_global_assets_collect_string(folder):
 """)
 
     source = """
-{# import "layout.jinja" as Layout #}
+{# import "layout.jx" as Layout #}
 {# css "main.css", "/static/common/main.css" #}
 {# js "main.js" #}
 <Layout>Hello</Layout>
@@ -598,8 +599,8 @@ def test_global_assets_collect_string(folder):
 
 
 def test_recursive_component(folder):
-    (folder / "recu.jinja").write_text("""
-{# import "recu.jinja" as Recu #}
+    (folder / "recu.jx").write_text("""
+{# import "recu.jx" as Recu #}
 {# def items: list[str], level=1 #}
 {# css "recu.css" #}
 {% if items %}
@@ -609,8 +610,8 @@ def test_recursive_component(folder):
 {%- endif %}
 """)
 
-    (folder / "main.jinja").write_text("""
-{# import "recu.jinja" as Recu #}
+    (folder / "main.jx").write_text("""
+{# import "recu.jx" as Recu #}
 {# def items: list[str] #}
 {# css "main.css" #}
 {{ assets.render() }}
@@ -618,7 +619,7 @@ def test_recursive_component(folder):
 """)
 
     cat = Catalog(folder)
-    html = cat.render("main.jinja", items=["one", "two", "three"])
+    html = cat.render("main.jx", items=["one", "two", "three"])
     print(html)
     assert html.strip() == """
 <link rel="stylesheet" href="main.css">
@@ -633,8 +634,8 @@ def test_recursive_component(folder):
 
 
 def test_indirect_recursion(folder):
-    (folder / "a.jinja").write_text("""
-{# import "b.jinja" as B #}
+    (folder / "a.jx").write_text("""
+{# import "b.jx" as B #}
 {# def level #}
 {# css "a.css" #}
 {% if level > 0 -%}
@@ -643,8 +644,8 @@ def test_indirect_recursion(folder):
 {%- endif %}
 """)
 
-    (folder / "b.jinja").write_text("""
-{# import "a.jinja" as A #}
+    (folder / "b.jx").write_text("""
+{# import "a.jx" as A #}
 {# def level #}
 {# css "b.css" #}
 {% if level > 0 -%}
@@ -653,14 +654,14 @@ def test_indirect_recursion(folder):
 {%- endif %}
 """)
 
-    (folder / "main.jinja").write_text("""
-{# import "a.jinja" as A #}
+    (folder / "main.jx").write_text("""
+{# import "a.jx" as A #}
 {{ assets.render_css() }}
 <A level={{ 10 }} />
 """)
 
     cat = Catalog(folder)
-    html = cat.render("main.jinja")
+    html = cat.render("main.jx")
     print(html)
     assert html.strip() == """
 <link rel="stylesheet" href="a.css">
@@ -679,7 +680,7 @@ def test_indirect_recursion(folder):
 
 
 def test_autoreload(folder):
-    (folder / "test.jinja").write_text("""
+    (folder / "test.jx").write_text("""
 {# css before.css #}
 {{ assets.render_css() }}
 BEFORE
@@ -687,19 +688,19 @@ BEFORE
 
     cat = Catalog(folder, auto_reload=True)
 
-    html = cat.render("test.jinja")
+    html = cat.render("test.jx")
     assert html.strip() == """
 <link rel="stylesheet" href="before.css">
 BEFORE
 """.strip()
 
-    (folder / "test.jinja").write_text("""
+    (folder / "test.jx").write_text("""
 {# css after.css #}
 {{ assets.render_css() }}
 AFTER
 """)
 
-    html = cat.render("test.jinja")
+    html = cat.render("test.jx")
     assert html == """
 <link rel="stylesheet" href="after.css">
 AFTER
@@ -707,26 +708,26 @@ AFTER
 
 
 def test_no_autoreload(folder):
-    (folder / "test.jinja").write_text("""
+    (folder / "test.jx").write_text("""
 {# css before.css #}
 {{ assets.render_css() }}
 BEFORE
 """)
     cat = Catalog(folder, auto_reload=False)
 
-    html = cat.render("test.jinja")
+    html = cat.render("test.jx")
     assert html == """
 <link rel="stylesheet" href="before.css">
 BEFORE
 """.strip()
 
-    (folder / "test.jinja").write_text("""
+    (folder / "test.jx").write_text("""
 {# css after.css #}
 {{ assets.render_css() }}
 AFTER
 """)
 
-    html = cat.render("test.jinja")
+    html = cat.render("test.jx")
     assert html == """
 <link rel="stylesheet" href="before.css">
 BEFORE
@@ -734,28 +735,28 @@ BEFORE
 
 
 def test_alpine_sintax(folder):
-    (folder / "greeting.jinja").write_text("""
+    (folder / "greeting.jx").write_text("""
 {#def message #}
 <button @click.prevent="alert('{{ message }}')">Say Hi</button>""")
     cat = Catalog(folder, auto_reload=False)
 
-    html = cat.render("greeting.jinja", message="Hello world!")
+    html = cat.render("greeting.jx", message="Hello world!")
     print(html)
     assert html == """<button @click.prevent="alert('Hello world!')">Say Hi</button>"""
 
 
 def test_alpine_sintax_in_component(folder):
-    (folder / "button.jinja").write_text(
+    (folder / "button.jx").write_text(
         """<button {{ attrs.render() }}>{{ content }}</button>"""
     )
 
-    (folder / "greeting.jinja").write_text("""
-{# import "button.jinja" as Button #}
+    (folder / "greeting.jx").write_text("""
+{# import "button.jx" as Button #}
 <Button @click.prevent="alert('Hello world!')">Say Hi</Button>
 """)
     cat = Catalog(folder, auto_reload=False)
 
-    html = cat.render("greeting.jinja")
+    html = cat.render("greeting.jx")
     print(html)
     assert html == """<button @click.prevent="alert('Hello world!')">Say Hi</button>"""
 
@@ -763,8 +764,8 @@ def test_alpine_sintax_in_component(folder):
 def test_recursion_depth_limit(folder):
     """Test that deeply nested components raise MaxRecursionDepthError."""
     # Create a component that infinitely recurses without termination
-    (folder / "infinite.jinja").write_text("""
-{# import "infinite.jinja" as Infinite #}
+    (folder / "infinite.jx").write_text("""
+{# import "infinite.jx" as Infinite #}
 {# def level=1 #}
 <div>Level {{ level }}</div>
 <Infinite level={{ level + 1 }} />
@@ -772,14 +773,14 @@ def test_recursion_depth_limit(folder):
 
     cat = Catalog(folder)
     with pytest.raises(MaxRecursionDepthError) as exc_info:
-        cat.render("infinite.jinja")
+        cat.render("infinite.jx")
     assert "Maximum component nesting depth exceeded" in str(exc_info.value)
     assert "100" in str(exc_info.value)
 
 
 def test_prop_type_validation(folder):
     """Test that props with type annotations are validated."""
-    (folder / "typed.jinja").write_text("""
+    (folder / "typed.jx").write_text("""
 {# def title: str, count: int = 0 #}
 <div>{{ title }} ({{ count }})</div>
 """)
@@ -787,19 +788,19 @@ def test_prop_type_validation(folder):
     cat = Catalog(folder)
 
     # Valid types
-    html = cat.render("typed.jinja", title="Hello", count=5)
+    html = cat.render("typed.jx", title="Hello", count=5)
     assert html.strip() == "<div>Hello (5)</div>"
 
     # Invalid required prop type
     with pytest.raises(InvalidPropType) as exc_info:
-        cat.render("typed.jinja", title=123)
+        cat.render("typed.jx", title=123)
     assert "title" in str(exc_info.value)
     assert "expected str" in str(exc_info.value)
     assert "got int" in str(exc_info.value)
 
     # Invalid optional prop type
     with pytest.raises(InvalidPropType) as exc_info:
-        cat.render("typed.jinja", title="Hello", count="five")
+        cat.render("typed.jx", title="Hello", count="five")
     assert "count" in str(exc_info.value)
     assert "expected int" in str(exc_info.value)
     assert "got str" in str(exc_info.value)
@@ -807,7 +808,7 @@ def test_prop_type_validation(folder):
 
 def test_prop_type_validation_without_annotation(folder):
     """Test that props without type annotations skip validation."""
-    (folder / "untyped.jinja").write_text("""
+    (folder / "untyped.jx").write_text("""
 {# def title, count=0 #}
 <div>{{ title }} ({{ count }})</div>
 """)
@@ -815,13 +816,13 @@ def test_prop_type_validation_without_annotation(folder):
     cat = Catalog(folder)
 
     # Any type should work when no annotation
-    html = cat.render("untyped.jinja", title=123, count="five")
+    html = cat.render("untyped.jx", title=123, count="five")
     assert html.strip() == "<div>123 (five)</div>"
 
 
 def test_prop_type_validation_list(folder):
     """Test type validation with list type."""
-    (folder / "list_typed.jinja").write_text("""
+    (folder / "list_typed.jx").write_text("""
 {# def items: list #}
 <ul>{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul>
 """)
@@ -829,12 +830,12 @@ def test_prop_type_validation_list(folder):
     cat = Catalog(folder)
 
     # Valid list
-    html = cat.render("list_typed.jinja", items=["a", "b"])
+    html = cat.render("list_typed.jx", items=["a", "b"])
     assert html.strip() == "<ul><li>a</li><li>b</li></ul>"
 
     # Invalid type (string instead of list)
     with pytest.raises(InvalidPropType) as exc_info:
-        cat.render("list_typed.jinja", items="not a list")
+        cat.render("list_typed.jx", items="not a list")
     assert "items" in str(exc_info.value)
     assert "expected list" in str(exc_info.value)
 
@@ -846,7 +847,7 @@ def test_asset_resolver_basic(tmp_path):
     """Resolver transforms URLs for prefixed components with an assets dir."""
     components = tmp_path / "pkg_components"
     components.mkdir()
-    (components / "button.jinja").write_text("{#css button.css #}\n<button />")
+    (components / "button.jx").write_text("{#css button.css #}\n<button />")
 
     assets = tmp_path / "pkg_assets"
     assets.mkdir()
@@ -857,7 +858,7 @@ def test_asset_resolver_basic(tmp_path):
     cat = Catalog(asset_resolver=resolver)
     cat.add_folder(components, prefix="ui", assets=assets)
 
-    co = cat.get_component("@ui/button.jinja")
+    co = cat.get_component("@ui/button.jx")
     css = co.collect_css()
     assert css == ["/pkg/ui/button.css"]
 
@@ -866,7 +867,7 @@ def test_asset_resolver_skips_no_assets_dir(tmp_path):
     """Resolver is NOT called for a prefix that has no assets dir."""
     components = tmp_path / "local"
     components.mkdir()
-    (components / "card.jinja").write_text("{#css card.css #}\n<div />")
+    (components / "card.jx").write_text("{#css card.css #}\n<div />")
 
     calls = []
 
@@ -877,7 +878,7 @@ def test_asset_resolver_skips_no_assets_dir(tmp_path):
     cat = Catalog(asset_resolver=resolver)
     cat.add_folder(components, prefix="local")  # no assets= param
 
-    co = cat.get_component("@local/card.jinja")
+    co = cat.get_component("@local/card.jx")
     css = co.collect_css()
     assert css == ["card.css"]  # pass-through, not resolved
     assert calls == []  # resolver was never called
@@ -887,7 +888,7 @@ def test_asset_resolver_skips_unprefixed(tmp_path):
     """Resolver is NOT called for unprefixed components without assets dir."""
     components = tmp_path / "local"
     components.mkdir()
-    (components / "card.jinja").write_text("{#css card.css #}\n<div />")
+    (components / "card.jx").write_text("{#css card.css #}\n<div />")
 
     calls = []
 
@@ -898,7 +899,7 @@ def test_asset_resolver_skips_unprefixed(tmp_path):
     cat = Catalog(asset_resolver=resolver)
     cat.add_folder(components)
 
-    co = cat.get_component("card.jinja")
+    co = cat.get_component("card.jx")
     css = co.collect_css()
     assert css == ["card.css"]
     assert calls == []
@@ -908,15 +909,15 @@ def test_asset_resolver_with_children(tmp_path):
     """Child components from different prefixes resolve correctly."""
     pkg_dir = tmp_path / "pkg"
     pkg_dir.mkdir()
-    (pkg_dir / "button.jinja").write_text("{#css button.css #}\n<button />")
+    (pkg_dir / "button.jx").write_text("{#css button.css #}\n<button />")
 
     pkg_assets = tmp_path / "pkg_assets"
     pkg_assets.mkdir()
 
     local_dir = tmp_path / "local"
     local_dir.mkdir()
-    (local_dir / "page.jinja").write_text(
-        '{#import "@ui/button.jinja" as Button #}\n'
+    (local_dir / "page.jx").write_text(
+        '{#import "@ui/button.jx" as Button #}\n'
         '{#css page.css #}\n'
         '<Button />'
     )
@@ -928,7 +929,7 @@ def test_asset_resolver_with_children(tmp_path):
     cat.add_folder(local_dir)
     cat.add_folder(pkg_dir, prefix="ui", assets=pkg_assets)
 
-    co = cat.get_component("page.jinja")
+    co = cat.get_component("page.jx")
     css = co.collect_css()
     # page.css is local (no assets dir), passes through
     # button.css is from @ui (has assets dir), gets resolved
@@ -939,7 +940,7 @@ def test_asset_resolver_js(tmp_path):
     """Resolver also works for JS assets."""
     components = tmp_path / "pkg"
     components.mkdir()
-    (components / "widget.jinja").write_text(
+    (components / "widget.jx").write_text(
         "{#js widget.js #}\n<div>widget</div>"
     )
 
@@ -952,7 +953,7 @@ def test_asset_resolver_js(tmp_path):
     cat = Catalog(asset_resolver=resolver)
     cat.add_folder(components, prefix="ui", assets=assets)
 
-    co = cat.get_component("@ui/widget.jinja")
+    co = cat.get_component("@ui/widget.jx")
     js = co.collect_js()
     assert js == ["/pkg/ui/widget.js"]
 
@@ -961,7 +962,7 @@ def test_asset_resolver_render_integration(tmp_path):
     """Full render pipeline applies resolver in assets.render_css()."""
     pkg_dir = tmp_path / "pkg"
     pkg_dir.mkdir()
-    (pkg_dir / "button.jinja").write_text(
+    (pkg_dir / "button.jx").write_text(
         "{#css button.css #}\n<button>{{ content }}</button>"
     )
 
@@ -970,8 +971,8 @@ def test_asset_resolver_render_integration(tmp_path):
 
     local_dir = tmp_path / "local"
     local_dir.mkdir()
-    (local_dir / "page.jinja").write_text(
-        '{#import "@ui/button.jinja" as Button #}\n'
+    (local_dir / "page.jx").write_text(
+        '{#import "@ui/button.jx" as Button #}\n'
         '{#css page.css #}\n'
         '{{ assets.render_css() }}\n'
         '<Button>click</Button>'
@@ -984,7 +985,7 @@ def test_asset_resolver_render_integration(tmp_path):
     cat.add_folder(local_dir)
     cat.add_folder(pkg_dir, prefix="ui", assets=pkg_assets)
 
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     assert '<link rel="stylesheet" href="page.css">' in html
     assert '<link rel="stylesheet" href="/pkg/ui/button.css">' in html
 
@@ -993,24 +994,24 @@ def test_no_resolver_backward_compatible(tmp_path):
     """Without asset_resolver, everything works exactly as before."""
     components = tmp_path / "views"
     components.mkdir()
-    (components / "btn.jinja").write_text("{#css btn.css #}\n<button />")
+    (components / "btn.jx").write_text("{#css btn.css #}\n<button />")
 
     cat = Catalog(components)
-    co = cat.get_component("btn.jinja")
+    co = cat.get_component("btn.jx")
     assert co.collect_css() == ["btn.css"]
 
 
 def test_mutable_default_not_shared(folder):
     """Mutable default values (list, dict) should not be shared across renders."""
-    (folder / "mutator.jinja").write_text("""
+    (folder / "mutator.jx").write_text("""
 {# def items=[] #}
 {% do items.append("added") %}
 {{ items | length }}
 """)
 
     cat = Catalog(folder)
-    html1 = cat.render("mutator.jinja")
-    html2 = cat.render("mutator.jinja")
+    html1 = cat.render("mutator.jx")
+    html2 = cat.render("mutator.jx")
     # Each render should start with a fresh empty list
     assert html1.strip() == "1"
     assert html2.strip() == "1"
@@ -1018,16 +1019,16 @@ def test_mutable_default_not_shared(folder):
 
 def test_collect_assets_with_visited(folder):
     """collect_css/collect_js with an explicit _visited set bypass the cache."""
-    (folder / "child.jinja").write_text(
+    (folder / "child.jx").write_text(
         '{# css "child.css" #}\n{# js "child.js" #}\n<span>hi</span>'
     )
-    (folder / "parent.jinja").write_text(
-        '{# import "child.jinja" as Child #}\n'
+    (folder / "parent.jx").write_text(
+        '{# import "child.jx" as Child #}\n'
         '{# css "parent.css" #}\n{# js "parent.js" #}\n<Child />'
     )
 
     cat = Catalog(folder)
-    co = cat.get_component("parent.jinja")
+    co = cat.get_component("parent.jx")
 
     # Pass explicit _visited to exercise the non-cached branch
     css = co.collect_css(_visited=set())
@@ -1037,3 +1038,12 @@ def test_collect_assets_with_visited(folder):
     js = co.collect_js(_visited=set())
     assert "parent.js" in js
     assert "child.js" in js
+
+
+def test_get_child_unknown_import_raises(folder):
+    """Accessing a non-imported child raises ComponentNotFoundError with context."""
+    (folder / "comp.jx").write_text("<p>hi</p>")
+    cat = Catalog(folder)
+    co = cat.get_component("comp.jx")
+    with pytest.raises(ComponentNotFoundError, match="NoSuchChild.*comp.jx"):
+        co.get_child("NoSuchChild")

@@ -1,6 +1,6 @@
 {# def search_data: dict #}
-{# import "./layout.jinja" as Layout #}
-{# import "./toc.jinja" as Toc #}
+{# import "./layout.jx" as Layout #}
+{# import "./toc.jx" as Toc #}
 
 <Layout sidebar>
   <div class="page__wrapper">

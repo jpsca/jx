@@ -13,7 +13,7 @@ This page is a work in progress and may contain errors.
 
 Include htmx in your layout:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#def title #}
 
 <!DOCTYPE html>
@@ -35,7 +35,7 @@ Include htmx in your layout:
 Jx automatically converts underscores to dashes, so htmx attributes work naturally:
 
 ```html+jinja
-{#import "button.jinja" as Button #}
+{#import "button.jx" as Button #}
 
 <Button
   hx_get="/api/data"
@@ -56,7 +56,7 @@ Renders as:
 
 ## htmx Button Component
 
-```html+jinja title="components/htmx-button.jinja"
+```html+jinja title="components/htmx-button.jx"
 {#def
   text,
   url,
@@ -78,7 +78,7 @@ Renders as:
 ```
 
 ```html+jinja title="usage"
-{#import "htmx-button.jinja" as HtmxButton #}
+{#import "htmx-button.jx" as HtmxButton #}
 
 <HtmxButton
   text="Load More"
@@ -98,7 +98,7 @@ Renders as:
 
 ## Loading States
 
-```html+jinja title="components/loading-button.jinja"
+```html+jinja title="components/loading-button.jx"
 {#def text, loading_text="Loading..." #}
 {#css loading-button.css #}
 
@@ -134,7 +134,7 @@ Renders as:
 
 Create components that render just the part that changes:
 
-```html+jinja title="components/todo-item.jinja"
+```html+jinja title="components/todo-item.jx"
 {#def todo #}
 
 <li id="todo-{{ todo.id }}" class="todo-item">
@@ -162,7 +162,7 @@ Create components that render just the part that changes:
 @app.patch("/todos/<id>/toggle")
 def toggle_todo(id):
     todo = toggle_todo_status(id)
-    return catalog.render("todo-item.jinja", todo=todo)
+    return catalog.render("todo-item.jx", todo=todo)
 
 @app.delete("/todos/<id>")
 def delete_todo(id):
@@ -172,7 +172,7 @@ def delete_todo(id):
 
 ## Search with Debounce
 
-```html+jinja title="components/search-input.jinja"
+```html+jinja title="components/search-input.jx"
 {#def url, target, placeholder="Search..." #}
 
 <input
@@ -189,7 +189,7 @@ def delete_todo(id):
 ```
 
 ```html+jinja title="usage"
-{#import "search-input.jinja" as SearchInput #}
+{#import "search-input.jx" as SearchInput #}
 
 <SearchInput url="/api/search" target="#results" />
 <div id="results"></div>
@@ -197,7 +197,7 @@ def delete_todo(id):
 
 ## Infinite Scroll
 
-```html+jinja title="components/infinite-scroll.jinja"
+```html+jinja title="components/infinite-scroll.jx"
 {#def items, next_url="" #}
 
 {% for item in items %}
@@ -222,12 +222,12 @@ def list_items():
     page = request.args.get("page", 1, type=int)
     items = get_items(page=page, per_page=20)
     next_url = f"/items?page={page + 1}" if items.has_next else ""
-    return catalog.render("infinite-scroll.jinja", items=items, next_url=next_url)
+    return catalog.render("infinite-scroll.jx", items=items, next_url=next_url)
 ```
 
 ## Modal with htmx
 
-```html+jinja title="components/htmx-modal.jinja"
+```html+jinja title="components/htmx-modal.jx"
 {#def id, title="" #}
 {#css modal.css #}
 
@@ -262,12 +262,12 @@ def list_items():
 @app.get("/modals/edit-user/<id>")
 def edit_user_modal(id):
     user = get_user(id)
-    return catalog.render("modals/edit-user.jinja", user=user)
+    return catalog.render("modals/edit-user.jx", user=user)
 ```
 
-```html+jinja title="components/modals/edit-user.jinja"
-{#import "../htmx-modal.jinja" as Modal #}
-{#import "../forms/input.jinja" as Input #}
+```html+jinja title="components/modals/edit-user.jx"
+{#import "../htmx-modal.jx" as Modal #}
+{#import "../forms/input.jx" as Input #}
 
 <Modal id="edit-user-modal" title="Edit User">
   <form hx-put="/users/{{ user.id }}" hx-swap="none">
@@ -280,7 +280,7 @@ def edit_user_modal(id):
 
 ## Form Validation
 
-```html+jinja title="components/validated-input.jinja"
+```html+jinja title="components/validated-input.jx"
 {#def name, label, validation_url #}
 
 <div class="form-group">
@@ -313,7 +313,7 @@ def validate_email():
 
 Update multiple parts of the page:
 
-```html+jinja title="components/notification-badge.jinja"
+```html+jinja title="components/notification-badge.jx"
 {#def count #}
 
 <span id="notification-count" hx-swap-oob="true" class="badge">
@@ -329,7 +329,7 @@ def mark_read(id):
     # Return both the main response and OOB update
     return catalog.render_string("""
         <div>Notification marked as read</div>
-        {#import "notification-badge.jinja" as Badge #}
+        {#import "notification-badge.jx" as Badge #}
         <Badge count={{ count }} />
     """, count=count)
 ```

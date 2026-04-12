@@ -194,7 +194,7 @@ For more complex tables where cells need custom markup, use content with `{% slo
 A responsive sidebar that collapses to a `<dialog>` drawer on mobile. This is a fragment — it produces a flex container, not a full HTML page.
 
 ```html
-{#import "./sidebar-nav.jinja" as SidebarNav #}
+{#import "./sidebar-nav.jx" as SidebarNav #}
 {#css transitions.css #}
 {#def title="", nav_items=[], current="" #}
 

@@ -19,7 +19,7 @@ def test_empty_source():
     """Test that empty source returns empty metadata."""
     source = ""
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
     assert meta.required == {}
     assert meta.optional == {}
     assert meta.imports == {}
@@ -31,7 +31,7 @@ def test_source_without_metadata():
     """Test that source without metadata comments returns empty metadata."""
     source = """<div>Hello world</div>"""
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.required == {}
     assert meta.optional == {}
@@ -51,7 +51,7 @@ def test_def_metadata():
 <div>Hello {{ name }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.required == {"name": None}
     assert meta.optional == {"age": (18, None), "is_active": (True, None)}
@@ -69,7 +69,7 @@ def test_def_with_type_annotations():
 <div>{{ title }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.required == {"title": str}
     assert meta.optional == {
@@ -88,7 +88,7 @@ def test_unknown_types():
 <div>Hello {{ name }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.required == {"name": None}
     assert meta.optional == {"items": ([], list)}
@@ -104,7 +104,7 @@ def test_unsupported_type_annotations():
 <div>{{ value }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     # Union types (ast.BinOp) and qualified names (ast.Attribute) are not supported
     # and should return None for the type
@@ -126,7 +126,7 @@ def test_def_with_allowed_expressions():
 <div>Config</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.optional == {
         "max_items": (20, None),
@@ -144,7 +144,7 @@ def test_invalid_argument():
 """
     with pytest.raises(InvalidArgument):
         base = Path("dummy")
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
 
 
 def test_unparsable_argument():
@@ -155,7 +155,7 @@ def test_unparsable_argument():
 """
     with pytest.raises(InvalidArgument):
         base = Path("dummy")
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
 
 
 def test_invalid_expression():
@@ -166,22 +166,22 @@ def test_invalid_expression():
 """
     with pytest.raises(ZeroDivisionError):
         base = Path("dummy")
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
 
 
 def test_import_metadata():
     """Test extraction of imports."""
     source = """
-{# import "components/button.jinja" as Button #}
-{# import "components/header.jinja" as Header #}
+{# import "components/button.jx" as Button #}
+{# import "components/header.jx" as Header #}
 <div>{{ Button() }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.imports == {
-        "Button": "components/button.jinja",
-        "Header": "components/header.jinja"
+        "Button": "components/button.jx",
+        "Header": "components/header.jx"
     }
 
 
@@ -189,13 +189,13 @@ def test_relative_import_metadata():
     """Test extraction of relative imports."""
     base = Path("/app/views")
     source = """
-{# import "./button.jinja" as Button #}
+{# import "./button.jx" as Button #}
 <div>{{ Button() }}</div>
     """
-    meta = extract_metadata(source, base, base / "foo/bar.jinja")
+    meta = extract_metadata(source, base, base / "foo/bar.jx")
 
     assert meta.imports == {
-        "Button": "foo/button.jinja",
+        "Button": "foo/button.jx",
     }
 
 
@@ -203,24 +203,24 @@ def test_complex_relative_import_metadata():
     """Test extraction of complex relative imports."""
     base = Path.cwd() / "views"
     source = """
-{# import "../forms/button.jinja" as Button #}
+{# import "../forms/button.jx" as Button #}
 <div>{{ Button() }}</div>
     """
-    meta = extract_metadata(source, base, base / "foo/bar/header.jinja")
+    meta = extract_metadata(source, base, base / "foo/bar/header.jx")
 
     assert meta.imports == {
-        "Button": "foo/forms/button.jinja",
+        "Button": "foo/forms/button.jx",
     }
 
 def test_invalid_relative_import():
     """Test that invalid relative imports raise an exception."""
     base = Path("/app/views")
     source = """
-{# import ../button.jinja as Button #}
+{# import ../button.jx as Button #}
 <div>{{ Button() }}</div>
 """
     with pytest.raises(InvalidImport):
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
 
 
 def test_path_traversal_attack():
@@ -231,7 +231,7 @@ def test_path_traversal_attack():
 <div>{{ Secret() }}</div>
 """
     with pytest.raises(PathTraversalError) as exc_info:
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
     assert "escapes component root" in str(exc_info.value)
 
 
@@ -244,7 +244,7 @@ def test_path_traversal_from_nested_component():
 """
     # Paths starting with ".." are also relative and validated
     with pytest.raises(PathTraversalError) as exc_info:
-        extract_metadata(source, base, base / "deep/nested/component.jinja")
+        extract_metadata(source, base, base / "deep/nested/component.jx")
     assert "escapes component root" in str(exc_info.value)
 
 
@@ -256,7 +256,7 @@ def test_path_traversal_with_dot_prefix():
 <div>{{ Secret() }}</div>
 """
     with pytest.raises(PathTraversalError) as exc_info:
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
     assert "escapes component root" in str(exc_info.value)
 
 
@@ -267,7 +267,7 @@ def test_css_metadata():
 <div>Styled content</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.css == (
         "/static/styles.css",
@@ -282,7 +282,7 @@ def test_js_metadata():
 <div>Interactive content</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.js == (
         "/static/script.js",
@@ -297,7 +297,7 @@ def test_css_commas():
 <div>Styled content</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.css == (
         "/static/styles.css",
@@ -312,7 +312,7 @@ def test_js_commas():
 <div>Interactive content</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.js == (
         "/static/script.js",
@@ -330,7 +330,7 @@ def test_comments_in_metadata():
 <div>Hello {{ name }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.required == {"name": None}
     assert meta.optional == {"age": (18, None)}
@@ -340,17 +340,17 @@ def test_multiple_metadata_blocks():
     """Test extracting multiple metadata blocks."""
     source = """
 {# def name, age=21 #}
-{# import "button.jinja" as Button #}
+{# import "button.jx" as Button #}
 {# css "/style.css" #}
 {# js "/script.js" #}
 <div>Hello {{ name }}</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
 
     assert meta.required == {"name": None}
     assert meta.optional == {"age": (21, None)}
-    assert meta.imports == {"Button": "button.jinja"}
+    assert meta.imports == {"Button": "button.jx"}
     assert meta.css == ("/style.css", )
     assert meta.js == ("/script.js", )
 
@@ -364,7 +364,7 @@ def test_duplicate_def_declaration():
 """
     with pytest.raises(DuplicateDefDeclaration):
         base = Path("dummy")
-        extract_metadata(source, base, base / "test.jinja")
+        extract_metadata(source, base, base / "test.jx")
 
 
 def test_empty_meta_declarations():
@@ -374,7 +374,7 @@ def test_empty_meta_declarations():
 <div>Hello world</div>
 """
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
     assert meta.required == {}
     assert meta.optional == {}
     assert meta.imports == {}
@@ -384,7 +384,7 @@ def test_hash_in_css_url_preserved():
     """URLs with # fragments in CSS declarations should not be corrupted."""
     source = '{#css "/style.css#v2", "/other.css" #}\n<div>test</div>'
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
     assert meta.css == ("/style.css#v2", "/other.css")
 
 
@@ -392,7 +392,7 @@ def test_hash_in_js_url_preserved():
     """URLs with # fragments in JS declarations should not be corrupted."""
     source = '{#js "/script.js#module" #}\n<div>test</div>'
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
     assert meta.js == ("/script.js#module",)
 
 
@@ -400,12 +400,12 @@ def test_inline_comment_with_quoted_hash():
     """Inline comments should still work alongside quoted URLs with #."""
     source = '{#css "/style.css#v2" # load versioned styles\n#}\n<div />'
     base = Path("dummy")
-    meta = extract_metadata(source, base, base / "test.jinja")
+    meta = extract_metadata(source, base, base / "test.jx")
     assert meta.css == ("/style.css#v2",)
 
 
 def test_relative_import_in_string_template():
     """Relative imports should raise InvalidImport when fullpath is empty (string templates)."""
-    source = '{#import "./button.jinja" as Button #}\n<Button />'
+    source = '{#import "./button.jx" as Button #}\n<Button />'
     with pytest.raises(InvalidImport, match="Relative import"):
         extract_metadata(source, base_path=Path(), fullpath=Path())

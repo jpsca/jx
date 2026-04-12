@@ -24,7 +24,7 @@ With per-component assets:
 
 Use `{#css ... #}` and `{#js ... #}` comments at the top of your component:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#css card.css, animations.css #}
 {#js card.js #}
 {#def title #}
@@ -51,7 +51,7 @@ When you render a component, Jx provides an `assets` global object with methods 
 
 The simplest approach; renders both CSS and JS:
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {#css layout.css #}
 {#js layout.js #}
 
@@ -162,9 +162,9 @@ Jx collects assets by walking the component tree:
 
 **Example:**
 
-```html+jinja title="page.jinja"
-{#import "./layout.jinja" as Layout #}
-{#import "./card.jinja" as Card #}
+```html+jinja title="page.jx"
+{#import "./layout.jx" as Layout #}
+{#import "./card.jx" as Card #}
 {#css page.css #}
 
 <Layout>
@@ -172,8 +172,8 @@ Jx collects assets by walking the component tree:
 </Layout>
 ```
 
-```html+jinja title="layout.jinja"
-{#import "./header.jinja" as Header #}
+```html+jinja title="layout.jx"
+{#import "./header.jx" as Header #}
 {#css layout.css #}
 
 <div>
@@ -182,12 +182,12 @@ Jx collects assets by walking the component tree:
 </div>
 ```
 
-```html+jinja title="header.jinja"
+```html+jinja title="header.jx"
 {#css header.css #}
 <header>...</header>
 ```
 
-```html+jinja title="card.jinja"
+```html+jinja title="card.jx"
 {#css card.css #}
 <div class="card">{{ content }}</div>
 ```
@@ -230,16 +230,16 @@ How these resolve depends on your HTML base path and server configuration.
 ```
 components/
   card/
-    card.jinja
+    card.jx
     card.css
     card.js
   button/
-    button.jinja
+    button.jx
     button.css
     button.js
 ```
 
-```html+jinja title="components/card/card.jinja"
+```html+jinja title="components/card/card.jx"
 {#css /static/components/card/card.css #}
 {#js /static/components/card/card.js #}
 ```
@@ -250,8 +250,8 @@ Keep components and assets separate:
 
 ```
 components/
-  card.jinja
-  button.jinja
+  card.jx
+  button.jx
 static/
   css/
     card.css
@@ -263,23 +263,23 @@ static/
 
 Use absolute paths:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#css /static/css/card.css #}
 {#js /static/js/card.js #}
 ```
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {{ assets.render() }}
 ```
 
 Or relative ones and use your web framework to resolve them:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#css css/card.css #}
 {#js js/card.js #}
 ```
 
-```html+jinja title="components/layout.jinja"
+```html+jinja title="components/layout.jx"
 {% for name in assets.collect_css() %}
   <link rel="stylesheet" href="{{ url_for('static', filename=name) }}">
 {% endfor %}
@@ -292,7 +292,7 @@ Or relative ones and use your web framework to resolve them:
 
 Use Vite, Webpack, or another bundler:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#css /dist/card.css #}
 {#js /dist/card.js #}
 ```
@@ -311,7 +311,7 @@ Your build tool will generate the files with hashes for cache-busting:
 ```html+jinja
 {# ✅ Good - explicit dependencies #}
 {#css https://cdn.example.com/library.css #}
-{#import "./component-using-library.jinja" as Component #}
+{#import "./component-using-library.jx" as Component #}
 ```
 
 ### 2. Keep Asset Files Small
@@ -376,9 +376,9 @@ Jx just collects the URLs you declare and renders them as tags.
 Jx automatically deduplicates assets. If multiple components declare the same CSS file, it's only included once:
 
 ```html+jinja
-{# card.jinja uses common.css #}
-{# button.jinja uses common.css #}
-{# page.jinja uses both #}
+{# card.jx uses common.css #}
+{# button.jx uses common.css #}
+{# page.jx uses both #}
 ```
 
 Results in:

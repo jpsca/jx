@@ -6,7 +6,7 @@ from jx import Catalog
 
 
 def test_slots(folder):
-    (folder / "modal.jinja").write_text("""
+    (folder / "modal.jx").write_text("""
 <div {{ attrs.render(class="modal") }}>
 <div class="modal-header">{% slot header %}My header{% endslot %}</div>
 <div class="modal-body">{{ content }}</div>
@@ -14,8 +14,8 @@ def test_slots(folder):
 </div>
 """)
 
-    (folder / "page.jinja").write_text("""
-{# import "modal.jinja" as Modal #}
+    (folder / "page.jx").write_text("""
+{# import "modal.jx" as Modal #}
 <Modal>
 {% fill header %}My custom header{% endfill %}
 <p>Hello world!</p>
@@ -24,7 +24,7 @@ def test_slots(folder):
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     print(html)
     assert html == """
 <div class="modal">
@@ -36,7 +36,7 @@ def test_slots(folder):
 
 
 def test_slots_defaults(folder):
-    (folder / "modal.jinja").write_text("""
+    (folder / "modal.jx").write_text("""
 <div {{ attrs.render(class="modal") }}>
 <div class="modal-header">{% slot header %}My header{% endslot %}</div>
 <div class="modal-body">{{ content }}</div>
@@ -44,8 +44,8 @@ def test_slots_defaults(folder):
 </div>
 """)
 
-    (folder / "page.jinja").write_text("""
-{# import "modal.jinja" as Modal #}
+    (folder / "page.jx").write_text("""
+{# import "modal.jx" as Modal #}
 <Modal>
 <p>Hello world!</p>
 {% fill random %}Random content{% endfill %}
@@ -53,7 +53,7 @@ def test_slots_defaults(folder):
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     print(html)
     assert html == """
 <div class="modal">
@@ -65,7 +65,7 @@ def test_slots_defaults(folder):
 
 
 def test_slots_are_namespaced(folder):
-    (folder / "modal.jinja").write_text("""
+    (folder / "modal.jx").write_text("""
 <div {{ attrs.render(class="modal") }}>
 <div class="modal-header">{% slot header %}My header{% endslot %}</div>
 <div class="modal-body">{{ content }}</div>
@@ -73,8 +73,8 @@ def test_slots_are_namespaced(folder):
 </div>
 """)
 
-    (folder / "page.jinja").write_text("""
-{# import "modal.jinja" as Modal #}
+    (folder / "page.jx").write_text("""
+{# import "modal.jx" as Modal #}
 <Modal id="m1">
 {% fill header %}Header 1{% endfill %}
 <p>Hello world!</p>
@@ -88,7 +88,7 @@ def test_slots_are_namespaced(folder):
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     print(html)
     assert html == """
 <div class="modal" id="m1">
@@ -105,7 +105,7 @@ def test_slots_are_namespaced(folder):
 
 
 def test_slots_when_inline(folder):
-    (folder / "modal.jinja").write_text("""
+    (folder / "modal.jx").write_text("""
 <div {{ attrs.render(class="modal") }}>
 <div class="modal-header">{% slot header %}My header{% endslot %}</div>
 <div class="modal-body">{{ content }}</div>
@@ -113,13 +113,13 @@ def test_slots_when_inline(folder):
 </div>
 """)
 
-    (folder / "page.jinja").write_text("""
-{# import "modal.jinja" as Modal #}
+    (folder / "page.jx").write_text("""
+{# import "modal.jx" as Modal #}
 <Modal content="Hi" />
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     print(html)
     assert html == """
 <div class="modal">
@@ -131,12 +131,12 @@ def test_slots_when_inline(folder):
 
 
 def test_fill_rendered(folder):
-    (folder / "icon.jinja").write_text("""
+    (folder / "icon.jx").write_text("""
 {# def name #}
 <span class="fa fa-{{ name }}"></span>
 """.strip())
 
-    (folder / "modal.jinja").write_text("""
+    (folder / "modal.jx").write_text("""
 <div {{ attrs.render(class="modal") }}>
 <div class="modal-header">
 {% slot header %}My header{% endslot %}
@@ -146,9 +146,9 @@ def test_fill_rendered(folder):
 """.strip())
 
 
-    (folder / "page.jinja").write_text("""
-{# import "modal.jinja" as Modal #}
-{# import "icon.jinja" as Icon #}
+    (folder / "page.jx").write_text("""
+{# import "modal.jx" as Modal #}
+{# import "icon.jx" as Icon #}
 <Modal>
 {% fill header -%}
 <Icon name="wave" /> Hi!
@@ -158,7 +158,7 @@ def test_fill_rendered(folder):
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     print(html)
     assert html == """
 <div class="modal">
@@ -171,13 +171,13 @@ def test_fill_rendered(folder):
 
 
 def test_slot_default_rendered(folder):
-    (folder / "icon.jinja").write_text("""
+    (folder / "icon.jx").write_text("""
 {# def name #}
 <span class="fa fa-{{ name }}"></span>
 """.strip())
 
-    (folder / "modal.jinja").write_text("""
-{# import "icon.jinja" as Icon #}
+    (folder / "modal.jx").write_text("""
+{# import "icon.jx" as Icon #}
 <div {{ attrs.render(class="modal") }}>
 <div class="modal-header">
 {% slot header %}<Icon name="wave" /> Hi!{% endslot %}
@@ -186,15 +186,15 @@ def test_slot_default_rendered(folder):
 </div>
 """.strip())
 
-    (folder / "page.jinja").write_text("""
-{# import "modal.jinja" as Modal #}
+    (folder / "page.jx").write_text("""
+{# import "modal.jx" as Modal #}
 <Modal>
 <p>Hello world!</p>
 </Modal>
 """)
 
     cat = Catalog(folder, lorem="ipsum")
-    html = cat.render("page.jinja")
+    html = cat.render("page.jx")
     print(html)
     assert html == """
 <div class="modal">

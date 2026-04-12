@@ -1,6 +1,6 @@
 ---
 name: jx-components
-description: Create web UI components using Jx (Jinja2 component library), TailwindCSS v4, and modern vanilla JavaScript. Use this skill whenever the user asks to build, create, or generate Jinja components, Jx components, UI components for a Python web app, reusable template components, or anything involving `.jinja` component files. Also trigger when the user mentions Jx, JinjaX, TailwindCSS with Jinja, or asks for buttons, cards, modals, forms, tables, layouts, navigation, dropdowns, accordions, or any other UI element as a Jinja/Jx component. Even if the user just says "make me a card component" or "I need a dropdown" in the context of a Python web project, use this skill.
+description: Create web UI components using Jx (Jinja2 component library), TailwindCSS v4, and modern vanilla JavaScript. Use this skill whenever the user asks to build, create, or generate Jinja components, Jx components, UI components for a Python web app, reusable template components, or anything involving `.jx` component files. Also trigger when the user mentions Jx, JinjaX, TailwindCSS with Jinja, or asks for buttons, cards, modals, forms, tables, layouts, navigation, dropdowns, accordions, or any other UI element as a Jinja/Jx component. Even if the user just says "make me a card component" or "I need a dropdown" in the context of a Python web project, use this skill.
 ---
 
 # Jx Components Skill
@@ -27,21 +27,21 @@ Create production-ready, reusable UI components using **Jx** (a Jinja2 component
 
 ## Component File Structure
 
-Output each component as a `.jinja` file. For components that need JS, output a companion `.js` file declared via `{#js ...#}`.
+Output each component as a `.jx` file. For components that need JS, output a companion `.js` file declared via `{#js ...#}`.
 
 ```
 components/
-  button.jinja
-  card.jinja
-  modal.jinja
+  button.jx
+  card.jx
+  modal.jx
   modal.js          ← only if JS is needed
   forms/
-    input.jinja
-    select.jinja
-    textarea.jinja
+    input.jx
+    select.jx
+    textarea.jx
   layout/
-    page.jinja
-    sidebar.jinja
+    page.jx
+    sidebar.jx
 ```
 
 ## Jx Syntax Reference
@@ -49,7 +49,7 @@ components/
 ### Imports, Props, Assets
 
 ```html+jinja
-{#import "./icon.jinja" as Icon #}
+{#import "./icon.jx" as Icon #}
 {#css button.css #}
 {#js button.js #}
 {#def label, variant="primary", size="md", disabled=false #}
@@ -162,7 +162,7 @@ Any other class should be kebab-cased.
 
 Example:
 
-```html+jinja title="tab_group.jinja"
+```html+jinja title="tab_group.jx"
 <div {{ attrs.render(class="TabGroup") }}>
   <select class="tab-group-control"
   {{ content }}
@@ -190,7 +190,7 @@ The file provides three animation patterns:
 
 ### `transitions.css` contents
 
-The full CSS is bundled at `assets/transitions.css` in this skill's folder. When generating a component that uses animations, read that file and output it alongside the `.jinja` files (unless the user already has it).
+The full CSS is bundled at `assets/transitions.css` in this skill's folder. When generating a component that uses animations, read that file and output it alongside the `.jx` files (unless the user already has it).
 
 The CSS uses `@starting-style` and `allow-discrete` for proper enter/exit transitions — these are well-supported in modern browsers. No JavaScript is involved.
 
@@ -248,20 +248,20 @@ When generating **both** modes, apply `dark:` variants to every color-bearing ut
 
 Only generate test files if the user explicitly asks for them (e.g., "give me test data", "create a test page", "I want to test this component").
 
-When asked, output a `test-<component>.jinja` file for each **top-level** component — meaning the component the user directly asked for, not its internal sub-components. For example, if you create `sidebar.jinja` and `sidebar-nav.jinja` (a helper it imports), generate `test-sidebar.jinja` but not `test-sidebar-nav.jinja`.
+When asked, output a `test-<component>.jx` file for each **top-level** component — meaning the component the user directly asked for, not its internal sub-components. For example, if you create `sidebar.jx` and `sidebar-nav.jx` (a helper it imports), generate `test-sidebar.jx` but not `test-sidebar-nav.jx`.
 
 Each test file should:
 
 - Import the component with a relative path.
 - Pass realistic, representative test data that exercises all the component's features: required props, optional props with non-default values, slots, edge cases like empty content or long text.
-- Be self-contained — renderable on its own with `catalog.render("test-sidebar.jinja")` without any external data.
+- Be self-contained — renderable on its own with `catalog.render("test-sidebar.jx")` without any external data.
 - Include inline test data (dicts, lists) directly in the template rather than relying on Python-side context.
 
-**Example:** for a `toast.jinja` with variants and auto-dismiss:
+**Example:** for a `toast.jx` with variants and auto-dismiss:
 
 ```html+jinja
-{#import "./toast-container.jinja" as ToastContainer #}
-{#import "./toast.jinja" as Toast #}
+{#import "./toast-container.jx" as ToastContainer #}
+{#import "./toast.jx" as Toast #}
 
 <ToastContainer position="top-right">
   <Toast variant="success" message="Changes saved successfully." />

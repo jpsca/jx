@@ -41,9 +41,9 @@ class LazyString(UserString):
 
 
 class Attrs:
-    __classes: tuple[str, ...]
-    __attributes: dict[str, str | LazyString]
-    __properties: set[str]
+    _classes: tuple[str, ...]
+    _attributes: dict[str, str | LazyString]
+    _properties: set[str]
 
     def __init__(self, attrs: "dict[str, t.Any | LazyString]") -> None:
         """
@@ -61,9 +61,9 @@ class Attrs:
         """
         # Fast path: empty attrs (common for most child components)
         if not attrs:
-            self.__classes = ()
-            self.__attributes = {}
-            self.__properties = set()
+            self._classes = ()
+            self._attributes = {}
+            self._properties = set()
             return
 
         attributes: "dict[str, str | LazyString]" = {}
@@ -77,9 +77,9 @@ class Attrs:
             for name in class_names:
                 if name and name not in classes:
                     classes.append(name)
-            self.__classes = tuple(classes)
+            self._classes = tuple(classes)
         else:
-            self.__classes = ()
+            self._classes = ()
 
         for name, value in attrs.items():
             if name.startswith("_"):
@@ -90,8 +90,8 @@ class Attrs:
             elif value is not False and value is not None:
                 attributes[name] = LazyString(value)
 
-        self.__attributes = attributes
-        self.__properties = properties
+        self._attributes = attributes
+        self._properties = properties
 
     @property
     def classes(self) -> str:
@@ -108,7 +108,7 @@ class Attrs:
             ```
 
         """
-        return " ".join(self.__classes)
+        return " ".join(self._classes)
 
     @property
     def as_dict(self) -> dict[str, t.Any]:
@@ -137,13 +137,13 @@ class Attrs:
             ```
 
         """
-        attributes = self.__attributes.copy()
+        attributes = self._attributes.copy()
         classes = self.classes
         if classes:
             attributes[CLASS_KEY] = classes
 
         out: dict[str, t.Any] = dict(sorted(attributes.items()))
-        for name in sorted(self.__properties):
+        for name in sorted(self._properties):
             out[name] = True
         return out
 
@@ -196,9 +196,9 @@ class Attrs:
             if name in CLASS_KEYS:
                 self.add_class(value)
             elif value is True:
-                self.__properties.add(name)
+                self._properties.add(name)
             else:
-                self.__attributes[name] = LazyString(value)
+                self._attributes[name] = LazyString(value)
 
     def setdefault(self, **kw) -> None:
         """
@@ -224,15 +224,15 @@ class Attrs:
                 continue
 
             if name in CLASS_KEYS:
-                if not self.__classes:
+                if not self._classes:
                     self.add_class(value)
                 continue
 
             if value is True:
-                if name not in self.__properties:
-                    self.__properties.add(name)
-            elif name not in self.__attributes:
-                self.__attributes[name] = LazyString(value)
+                if name not in self._properties:
+                    self._properties.add(name)
+            elif name not in self._attributes:
+                self._attributes[name] = LazyString(value)
 
     def add_class(self, *values: str) -> None:
         """
@@ -253,12 +253,12 @@ class Attrs:
             ```
 
         """
-        new = list(self.__classes)
+        new = list(self._classes)
         for names in values:
             for name in names.strip().split():
                 if name not in new:
                     new.append(name)
-        self.__classes = tuple(new)
+        self._classes = tuple(new)
 
     def prepend_class(self, *values: str) -> None:
         """
@@ -283,10 +283,10 @@ class Attrs:
             name
             for names in values
             for name in names.strip().split()
-            if name not in self.__classes
+            if name not in self._classes
         ]
 
-        self.__classes = tuple(new_classes) + self.__classes
+        self._classes = tuple(new_classes) + self._classes
 
     def remove_class(self, *names: str) -> None:
         """
@@ -302,7 +302,7 @@ class Attrs:
             ```
 
         """
-        self.__classes = tuple(c for c in self.__classes if c not in names)
+        self._classes = tuple(c for c in self._classes if c not in names)
 
     def get(self, name: str, default: t.Any = None) -> t.Any:
         """
@@ -339,9 +339,9 @@ class Attrs:
         name = name.replace("_", "-")
         if name in CLASS_KEYS:
             return self.classes
-        if name in self.__attributes:
-            return self.__attributes[name]
-        if name in self.__properties:
+        if name in self._attributes:
+            return self._attributes[name]
+        if name in self._properties:
             return True
         return default
 
@@ -378,18 +378,37 @@ class Attrs:
 
         """
         if kw:
+            # Work on copies so render() doesn't mutate self
             render_classes = None
             for key in CLASS_KEYS:
                 if key in kw:
                     render_classes = kw.pop(key)
-            if kw:
-                self.set(**kw)
-            if render_classes:
-                self.prepend_class(render_classes)
 
-        attributes = self.__attributes
-        classes = self.__classes
-        properties = self.__properties
+            attributes = dict(self._attributes)
+            classes = list(self._classes)
+            properties = set(self._properties)
+
+            for name, value in kw.items():
+                name = name.replace("_", "-")
+                if value is False or value is None:
+                    attributes.pop(name, None)
+                    properties.discard(name)
+                elif value is True:
+                    properties.add(name)
+                else:
+                    attributes[name] = LazyString(value)
+
+            if render_classes:
+                new = [
+                    name
+                    for name in render_classes.strip().split()
+                    if name not in classes
+                ]
+                classes = new + classes
+        else:
+            attributes = self._attributes
+            classes = list(self._classes)
+            properties = self._properties
 
         # Fast path: nothing to render
         if not attributes and not classes and not properties:
@@ -420,7 +439,7 @@ class Attrs:
         Removes an attribute or property.
         """
         if name in CLASS_KEYS:
-            self.__classes = ()
+            self._classes = ()
         else:
-            self.__attributes.pop(name, None)
-            self.__properties.discard(name)
+            self._attributes.pop(name, None)
+            self._properties.discard(name)

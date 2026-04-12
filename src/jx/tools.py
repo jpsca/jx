@@ -122,7 +122,7 @@ def check_component(
 def relpath_to_tag(relpath: str) -> str:
     """Convert a component relpath to a PascalCase tag name.
 
-    "button.jinja" -> "Button", "close-btn.jinja" -> "CloseBtn"
+    "button.jx" -> "Button", "close-btn.jx" -> "CloseBtn"
     """
     name = Path(relpath).stem
     return "".join(part.capitalize() for part in re.split(r"[-_]", name))

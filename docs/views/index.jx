@@ -1,5 +1,5 @@
-{# import "./layout.jinja" as Layout #}
-{# import "./footer.jinja" as Footer #}
+{# import "./layout.jx" as Layout #}
+{# import "./footer.jx" as Footer #}
 
 <Layout>
   <svg id="index-bg">

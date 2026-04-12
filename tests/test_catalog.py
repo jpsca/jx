@@ -9,125 +9,135 @@ from jx import Catalog, ComponentNotFoundError, FileEncodingError
 
 
 def test_add_folder(folder):
-    (folder / "a.jinja").write_text("AAAAA")
-    (folder / "b.jinja").write_text("BBBBB")
+    (folder / "a.jx").write_text("AAAAA")
+    (folder / "b.jx").write_text("BBBBB")
 
     catalog = Catalog()
     catalog.add_folder(folder)
 
-    assert "a.jinja" in catalog.components
-    assert "b.jinja" in catalog.components
+    assert "a.jx" in catalog.components
+    assert "b.jx" in catalog.components
 
-    assert catalog.components["a.jinja"].base_path == folder
-    assert catalog.components["a.jinja"].path == folder / "a.jinja"
-    assert catalog.components["a.jinja"].mtime > 0
-    assert catalog.components["a.jinja"].code is None
+    assert catalog.components["a.jx"].base_path == folder
+    assert catalog.components["a.jx"].path == folder / "a.jx"
+    assert catalog.components["a.jx"].mtime > 0
+    assert catalog.components["a.jx"].code is None
 
-    assert catalog.components["b.jinja"].base_path == folder
-    assert catalog.components["b.jinja"].path == folder / "b.jinja"
-    assert catalog.components["b.jinja"].mtime > 0
-    assert catalog.components["b.jinja"].code is None
+    assert catalog.components["b.jx"].base_path == folder
+    assert catalog.components["b.jx"].path == folder / "b.jx"
+    assert catalog.components["b.jx"].mtime > 0
+    assert catalog.components["b.jx"].code is None
+
+
+def test_has(folder):
+    (folder / "a.jx").write_text("AAAAA")
+    catalog = Catalog()
+    catalog.add_folder(folder)
+
+    assert catalog.has("a.jx")
+    assert catalog.has("/a.jx")
+    assert not catalog.has("missing.jx")
 
 
 def test_add_folder_nested(tmp_path):
     folder = tmp_path / "views"
     nested = folder / "a" / "b" / "c"
     nested.mkdir(parents=True)
-    (nested / "d.jinja").write_text("hello")
+    (nested / "d.jx").write_text("hello")
 
     catalog = Catalog(folder)
 
-    assert catalog.components.keys() == {"a/b/c/d.jinja"}
+    assert catalog.components.keys() == {"a/b/c/d.jx"}
 
 
 def test_add_folder_with_prefix(tmp_path):
     folder1 = tmp_path / "views1"
     folder1.mkdir()
-    (folder1 / "a.jinja").write_text("AAAAA")
+    (folder1 / "a.jx").write_text("AAAAA")
 
     folder2 = tmp_path / "views2"
     folder2.mkdir()
-    (folder2 / "b.jinja").write_text("BBBBB")
+    (folder2 / "b.jx").write_text("BBBBB")
 
     catalog = Catalog()
     catalog.add_folder(folder1)
     catalog.add_folder(folder2, prefix="bla")
 
-    assert "a.jinja" in catalog.components
-    assert "@bla/b.jinja" in catalog.components
+    assert "a.jx" in catalog.components
+    assert "@bla/b.jx" in catalog.components
 
-    assert catalog.components["a.jinja"].base_path == folder1
-    assert catalog.components["a.jinja"].path == folder1 / "a.jinja"
-    assert catalog.components["a.jinja"].mtime > 0
+    assert catalog.components["a.jx"].base_path == folder1
+    assert catalog.components["a.jx"].path == folder1 / "a.jx"
+    assert catalog.components["a.jx"].mtime > 0
 
-    assert catalog.components["@bla/b.jinja"].base_path == folder2
-    assert catalog.components["@bla/b.jinja"].path == folder2 / "b.jinja"
-    assert catalog.components["@bla/b.jinja"].mtime > 0
+    assert catalog.components["@bla/b.jx"].base_path == folder2
+    assert catalog.components["@bla/b.jx"].path == folder2 / "b.jx"
+    assert catalog.components["@bla/b.jx"].mtime > 0
 
 
 def test_dot_in_prefix(tmp_path):
     folder = tmp_path / "views"
     folder.mkdir()
-    (folder / "a.jinja").write_text("AAAAA")
+    (folder / "a.jx").write_text("AAAAA")
 
     catalog = Catalog()
     catalog.add_folder(folder, prefix="ui.forms")
 
-    assert "@ui.forms/a.jinja" in catalog.components
+    assert "@ui.forms/a.jx" in catalog.components
 
-    assert catalog.components["@ui.forms/a.jinja"].base_path == folder
-    assert catalog.components["@ui.forms/a.jinja"].path == folder / "a.jinja"
-    assert catalog.components["@ui.forms/a.jinja"].mtime > 0
+    assert catalog.components["@ui.forms/a.jx"].base_path == folder
+    assert catalog.components["@ui.forms/a.jx"].path == folder / "a.jx"
+    assert catalog.components["@ui.forms/a.jx"].mtime > 0
 
 
 def test_add_same_folder_many_times(folder):
-    (folder / "a.jinja").write_text("AAAAA")
-    (folder / "b.jinja").write_text("BBBBB")
+    (folder / "a.jx").write_text("AAAAA")
+    (folder / "b.jx").write_text("BBBBB")
 
     catalog = Catalog()
     catalog.add_folder(folder)
     catalog.add_folder(folder)
 
-    assert catalog.components.keys() == {"a.jinja", "b.jinja"}
+    assert catalog.components.keys() == {"a.jx", "b.jx"}
 
 
 def test_overwrite_relpath(tmp_path):
     folder1 = tmp_path / "views1"
     folder1.mkdir()
-    (folder1 / "a.jinja").write_text("folder1")
+    (folder1 / "a.jx").write_text("folder1")
 
     folder2 = tmp_path / "views2"
     folder2.mkdir()
-    (folder2 / "a.jinja").write_text("folder2")
+    (folder2 / "a.jx").write_text("folder2")
 
     catalog = Catalog()
     catalog.add_folder(folder1)
     catalog.add_folder(folder2)
 
-    assert catalog.components.keys() == {"a.jinja"}
-    assert catalog.components["a.jinja"].base_path == folder1
+    assert catalog.components.keys() == {"a.jx"}
+    assert catalog.components["a.jx"].base_path == folder1
 
 
 def test_add_same_folder_with_prefix(folder):
-    (folder / "a.jinja").write_text("AAAAA")
+    (folder / "a.jx").write_text("AAAAA")
 
     catalog = Catalog()
     catalog.add_folder(folder)
     catalog.add_folder(folder, prefix="copy")
 
-    assert catalog.components.keys() == {"a.jinja", "@copy/a.jinja"}
-    assert catalog.components["a.jinja"].base_path == folder
-    assert catalog.components["@copy/a.jinja"].base_path == folder
+    assert catalog.components.keys() == {"a.jx", "@copy/a.jx"}
+    assert catalog.components["a.jx"].base_path == folder
+    assert catalog.components["@copy/a.jx"].base_path == folder
 
 
 def test_unknown_component(folder):
     catalog = Catalog(folder)
 
-    with pytest.raises(ComponentNotFoundError, match="Component not found: a.jinja"):
-        catalog.render("a.jinja")
+    with pytest.raises(ComponentNotFoundError, match="Component not found: a.jx"):
+        catalog.render("a.jx")
 
-    with pytest.raises(ComponentNotFoundError, match="Component not found: b.jinja"):
-        catalog.get_component("b.jinja")
+    with pytest.raises(ComponentNotFoundError, match="Component not found: b.jx"):
+        catalog.get_component("b.jx")
 
 
 def test_reuse_jinja_env():
@@ -150,14 +160,14 @@ def test_jinja_env_preserves_user_settings():
 
 
 def test_list_components(folder):
-    (folder / "button.jinja").write_text("<button>Click</button>")
-    (folder / "card.jinja").write_text("<div>Card</div>")
+    (folder / "button.jx").write_text("<button>Click</button>")
+    (folder / "card.jx").write_text("<div>Card</div>")
 
     catalog = Catalog(folder)
     components = catalog.list_components()
 
     assert isinstance(components, list)
-    assert set(components) == {"button.jinja", "card.jinja"}
+    assert set(components) == {"button.jx", "card.jx"}
 
 
 def test_list_components_empty():
@@ -170,22 +180,22 @@ def test_list_components_empty():
 def test_list_components_with_prefix(tmp_path):
     folder1 = tmp_path / "views1"
     folder1.mkdir()
-    (folder1 / "a.jinja").write_text("A")
+    (folder1 / "a.jx").write_text("A")
 
     folder2 = tmp_path / "views2"
     folder2.mkdir()
-    (folder2 / "b.jinja").write_text("B")
+    (folder2 / "b.jx").write_text("B")
 
     catalog = Catalog()
     catalog.add_folder(folder1)
     catalog.add_folder(folder2, prefix="ui")
 
     components = catalog.list_components()
-    assert set(components) == {"a.jinja", "@ui/b.jinja"}
+    assert set(components) == {"a.jx", "@ui/b.jx"}
 
 
 def test_get_signature(folder):
-    (folder / "button.jinja").write_text(
+    (folder / "button.jx").write_text(
         '{#def label, size="md", disabled=False #}\n'
         '{#css "/static/button.css" #}\n'
         '{#js "/static/button.js" #}\n'
@@ -193,7 +203,7 @@ def test_get_signature(folder):
     )
 
     catalog = Catalog(folder)
-    sig = catalog.get_signature("button.jinja")
+    sig = catalog.get_signature("button.jx")
 
     assert sig["required"] == {"label": None}
     assert sig["optional"] == {"size": ("md", None), "disabled": (False, None)}
@@ -203,7 +213,7 @@ def test_get_signature(folder):
 
 
 def test_get_signature_with_slots(folder):
-    (folder / "card.jinja").write_text(
+    (folder / "card.jx").write_text(
         "{#def title #}\n"
         "<div>\n"
         "  <h2>{{ title }}</h2>\n"
@@ -213,7 +223,7 @@ def test_get_signature_with_slots(folder):
     )
 
     catalog = Catalog(folder)
-    sig = catalog.get_signature("card.jinja")
+    sig = catalog.get_signature("card.jx")
 
     assert sig["required"] == {"title": None}
     assert sig["optional"] == {}
@@ -223,10 +233,10 @@ def test_get_signature_with_slots(folder):
 
 
 def test_get_signature_no_metadata(folder):
-    (folder / "simple.jinja").write_text("<div>Simple</div>")
+    (folder / "simple.jx").write_text("<div>Simple</div>")
 
     catalog = Catalog(folder)
-    sig = catalog.get_signature("simple.jinja")
+    sig = catalog.get_signature("simple.jx")
 
     assert sig["required"] == {}
     assert sig["optional"] == {}
@@ -238,18 +248,18 @@ def test_get_signature_no_metadata(folder):
 def test_get_signature_unknown_component(folder):
     catalog = Catalog(folder)
 
-    with pytest.raises(ComponentNotFoundError, match="Component not found: unknown.jinja"):
-        catalog.get_signature("unknown.jinja")
+    with pytest.raises(ComponentNotFoundError, match="Component not found: unknown.jx"):
+        catalog.get_signature("unknown.jx")
 
 
 def test_file_encoding_error(folder):
     # Write invalid UTF-8 bytes (Latin-1 encoded text)
-    (folder / "bad.jinja").write_bytes(b"<div>\xe9\xe8\xe0</div>")
+    (folder / "bad.jx").write_bytes(b"<div>\xe9\xe8\xe0</div>")
 
     catalog = Catalog(folder)
 
-    with pytest.raises(FileEncodingError, match="Cannot read .*/bad.jinja: not valid UTF-8"):
-        catalog.render("bad.jinja")
+    with pytest.raises(FileEncodingError, match="Cannot read .*/bad.jx: not valid UTF-8"):
+        catalog.render("bad.jx")
 
 
 # ---- Asset folder / package tests ----
@@ -258,7 +268,7 @@ def test_file_encoding_error(folder):
 def test_add_folder_with_assets(tmp_path):
     components = tmp_path / "components"
     components.mkdir()
-    (components / "a.jinja").write_text("A")
+    (components / "a.jx").write_text("A")
 
     assets = tmp_path / "assets"
     assets.mkdir()
@@ -267,13 +277,13 @@ def test_add_folder_with_assets(tmp_path):
     catalog.add_folder(components, prefix="ui", assets=assets)
 
     assert catalog.get_assets_folder("ui") == assets.resolve()
-    assert "@ui/a.jinja" in catalog.components
+    assert "@ui/a.jx" in catalog.components
 
 
 def test_get_assets_folder_none(tmp_path):
     components = tmp_path / "components"
     components.mkdir()
-    (components / "a.jinja").write_text("A")
+    (components / "a.jx").write_text("A")
 
     catalog = Catalog()
     catalog.add_folder(components, prefix="ui")
@@ -288,7 +298,7 @@ def test_add_package(tmp_path):
 
     components = tmp_path / "pkg_components"
     components.mkdir()
-    (components / "btn.jinja").write_text("<button />")
+    (components / "btn.jx").write_text("<button />")
 
     assets = tmp_path / "pkg_assets"
     assets.mkdir()
@@ -304,7 +314,7 @@ def test_add_package(tmp_path):
         catalog = Catalog()
         catalog.add_package("fake_ui_kit", prefix="ui")
 
-        assert "@ui/btn.jinja" in catalog.components
+        assert "@ui/btn.jx" in catalog.components
         assert catalog.get_assets_folder("ui") == assets.resolve()
     finally:
         del sys.modules["fake_ui_kit"]
@@ -331,7 +341,7 @@ def test_add_package_no_assets(tmp_path):
 
     components = tmp_path / "pkg_components"
     components.mkdir()
-    (components / "a.jinja").write_text("A")
+    (components / "a.jx").write_text("A")
 
     fake_mod = types.ModuleType("fake_no_assets")
     fake_mod.JX_COMPONENTS = components
@@ -342,7 +352,7 @@ def test_add_package_no_assets(tmp_path):
         catalog = Catalog()
         catalog.add_package("fake_no_assets", prefix="na")
 
-        assert "@na/a.jinja" in catalog.components
+        assert "@na/a.jx" in catalog.components
         assert catalog.get_assets_folder("na") is None
     finally:
         del sys.modules["fake_no_assets"]
@@ -352,7 +362,7 @@ def test_collect_assets(tmp_path):
     """collect_assets copies files from assets dirs to output."""
     components = tmp_path / "components"
     components.mkdir()
-    (components / "a.jinja").write_text("A")
+    (components / "a.jx").write_text("A")
 
     assets = tmp_path / "assets"
     assets.mkdir()
@@ -379,7 +389,7 @@ def test_collect_assets_multiple_prefixes(tmp_path):
     """collect_assets handles multiple prefixes."""
     comp1 = tmp_path / "comp1"
     comp1.mkdir()
-    (comp1 / "a.jinja").write_text("A")
+    (comp1 / "a.jx").write_text("A")
 
     assets1 = tmp_path / "assets1"
     assets1.mkdir()
@@ -387,7 +397,7 @@ def test_collect_assets_multiple_prefixes(tmp_path):
 
     comp2 = tmp_path / "comp2"
     comp2.mkdir()
-    (comp2 / "b.jinja").write_text("B")
+    (comp2 / "b.jx").write_text("B")
 
     assets2 = tmp_path / "assets2"
     assets2.mkdir()
@@ -407,7 +417,7 @@ def test_collect_assets_multiple_prefixes(tmp_path):
 def test_assets_without_prefix_raises(tmp_path):
     components = tmp_path / "components"
     components.mkdir()
-    (components / "a.jinja").write_text("A")
+    (components / "a.jx").write_text("A")
 
     assets = tmp_path / "assets"
     assets.mkdir()
@@ -418,10 +428,10 @@ def test_assets_without_prefix_raises(tmp_path):
 
 
 def test_render(folder):
-    (folder / "hello.jinja").write_text("{#def name #}\n<p>Hello {{ name }}</p>")
+    (folder / "hello.jx").write_text("{#def name #}\n<p>Hello {{ name }}</p>")
 
     catalog = Catalog(folder)
-    html = catalog.render("hello.jinja", name="World")
+    html = catalog.render("hello.jx", name="World")
 
     assert "<p>Hello World</p>" in html
 
@@ -434,12 +444,12 @@ def test_render_string():
 
 
 def test_auto_reload_false_cache(folder):
-    (folder / "a.jinja").write_text("<p>cached</p>")
+    (folder / "a.jx").write_text("<p>cached</p>")
 
     catalog = Catalog(folder, auto_reload=False)
     # First call compiles; second call returns cached code
-    cdata1 = catalog.get_component_data("a.jinja")
-    cdata2 = catalog.get_component_data("a.jinja")
+    cdata1 = catalog.get_component_data("a.jx")
+    cdata2 = catalog.get_component_data("a.jx")
 
     assert cdata1 is cdata2
     assert cdata1.code is not None
@@ -448,7 +458,7 @@ def test_auto_reload_false_cache(folder):
 def test_asset_resolver_invoked(tmp_path):
     components = tmp_path / "components"
     components.mkdir()
-    (components / "btn.jinja").write_text(
+    (components / "btn.jx").write_text(
         '{#css "btn.css" #}\n<button>click</button>\n{{ assets.render_css() }}'
     )
 
@@ -460,7 +470,7 @@ def test_asset_resolver_invoked(tmp_path):
         asset_resolver=lambda url, prefix: f"/pkg/{prefix}/{url}",
     )
     catalog.add_folder(components, prefix="ui", assets=assets)
-    html = catalog.render("@ui/btn.jinja")
+    html = catalog.render("@ui/btn.jx")
 
     assert "/pkg/ui/btn.css" in html
 
@@ -469,7 +479,7 @@ def test_asset_resolver_skipped_without_assets_folder(tmp_path):
     """Resolver is not called for prefixes without a registered assets folder."""
     components = tmp_path / "components"
     components.mkdir()
-    (components / "btn.jinja").write_text(
+    (components / "btn.jx").write_text(
         '{#css "btn.css" #}\n<button />\n{{ assets.render_css() }}'
     )
 
@@ -478,18 +488,18 @@ def test_asset_resolver_skipped_without_assets_folder(tmp_path):
     )
     # No assets= argument, so resolver should NOT transform the URL
     catalog.add_folder(components, prefix="ui")
-    html = catalog.render("@ui/btn.jinja")
+    html = catalog.render("@ui/btn.jx")
 
     assert "btn.css" in html
     assert "/pkg/" not in html
 
 
 def test_auto_reload_recompiles_on_change(folder):
-    comp = folder / "a.jinja"
+    comp = folder / "a.jx"
     comp.write_text("<p>v1</p>")
 
     catalog = Catalog(folder, auto_reload=True)
-    html1 = catalog.render("a.jinja")
+    html1 = catalog.render("a.jx")
     assert "v1" in html1
 
     # Modify the file (ensure mtime changes)
@@ -497,5 +507,5 @@ def test_auto_reload_recompiles_on_change(folder):
     time.sleep(0.05)
     comp.write_text("<p>v2</p>")
 
-    html2 = catalog.render("a.jinja")
+    html2 = catalog.render("a.jx")
     assert "v2" in html2

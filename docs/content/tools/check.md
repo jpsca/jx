@@ -22,9 +22,9 @@ $ jx check docs/docs.py:catalog
 
 The `check` command goes beyond the validation the catalog does when loading components:
 
-1. **Cross-component validation** — verifies that import paths (e.g. `{#import "buton.jinja" ...}`) actually resolve to components in the catalog. The catalog only verifies imports exist at render time.
+1. **Cross-component validation** — verifies that import paths (e.g. `{#import "buton.jx" ...}`) actually resolve to components in the catalog. The catalog only verifies imports exist at render time.
 2. **Unimported tag detection** — finds PascalCase tags like `<Button />` that aren't imported but exist in the catalog ("used but not imported").
-3. **Suggestions** — "did you mean 'button.jinja'?" / "did you mean 'Button'?" for typos.
+3. **Suggestions** — "did you mean 'button.jx'?" / "did you mean 'Button'?" for typos.
 4. **Collects all errors** — check reports every issue across every component.
 5. **Structured JSON output** — for IDE integration (the VS Code extension uses this).
 
@@ -38,10 +38,10 @@ $ jx check myapp.setup:catalog
 ```
 
 ```sh
-✓ button.jinja - OK
-✓ card.jinja - OK
-✗ page.jinja:12 - Component 'Buton' used but not imported (did you mean 'Button'?)
-✗ modal.jinja - Unknown import 'dialog.jinja' (did you mean 'dialogs/dialog.jinja'?)
+✓ button.jx - OK
+✓ card.jx - OK
+✗ page.jx:12 - Component 'Buton' used but not imported (did you mean 'Button'?)
+✗ modal.jx - Unknown import 'dialog.jx' (did you mean 'dialogs/dialog.jx'?)
 
 4 components checked, 2 errors
 ```
@@ -57,18 +57,18 @@ $ jx check --format json myapp.setup:catalog
   "checked": 4,
   "errors": [
     {
-      "file": "page.jinja",
-      "abs_path": "/path/to/components/page.jinja",
+      "file": "page.jx",
+      "abs_path": "/path/to/components/page.jx",
       "line": 12,
       "message": "Component 'Buton' used but not imported",
       "suggestion": "Button"
     },
     {
-      "file": "modal.jinja",
-      "abs_path": "/path/to/components/modal.jinja",
+      "file": "modal.jx",
+      "abs_path": "/path/to/components/modal.jx",
       "line": null,
-      "message": "Unknown import 'dialog.jinja'",
-      "suggestion": "dialogs/dialog.jinja"
+      "message": "Unknown import 'dialog.jx'",
+      "suggestion": "dialogs/dialog.jx"
     }
   ]
 }

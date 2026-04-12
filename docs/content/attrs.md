@@ -253,7 +253,7 @@ Returns all attributes as a dictionary:
 
 ### Button Component
 
-```html+jinja title="components/button.jinja"
+```html+jinja title="components/button.jx"
 {#def text="Click me", variant="primary" #}
 
 <button {{ attrs.render(
@@ -270,7 +270,7 @@ Returns all attributes as a dictionary:
 
 ### Card Component
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#def title="" #}
 
 <div {{ attrs.render(class="card") }}>
@@ -293,7 +293,7 @@ Returns all attributes as a dictionary:
 
 ### Input Component
 
-```html+jinja title="components/input.jinja"
+```html+jinja title="components/input.jx"
 {#def name, label="", required=false #}
 
 {% do attrs.setdefault(type="text", id=name) %}
@@ -322,7 +322,7 @@ Returns all attributes as a dictionary:
 
 ### Conditional Styling
 
-```html+jinja title="components/alert.jinja"
+```html+jinja title="components/alert.jx"
 {#def message, type="info" #}
 
 {% do attrs.add_class("alert", "alert-" ~ type) %}
@@ -341,7 +341,7 @@ Returns all attributes as a dictionary:
 To forward `attrs` to a child component, pass it explicitly:
 
 ```html+jinja
-{#import "./button.jinja" as Button #}
+{#import "./button.jx" as Button #}
 {#def text #}
 
 <div class="button-wrapper">

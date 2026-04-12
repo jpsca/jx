@@ -53,7 +53,8 @@ class Catalog:
         tests: dict[str, t.Any] | None = None,
         auto_reload: bool = True,
         asset_resolver: Callable[[str, str], str] | None = None,
-        **globals: t.Any,
+        file_ext: str = ".jx",
+        **template_globals: t.Any,
     ) -> None:
         """
         Manager of the components and their global settings.
@@ -81,7 +82,12 @@ class Catalog:
                 Receives `(url, prefix)` and returns the resolved URL.
                 Only invoked for components whose prefix has a registered assets
                 folder; all other asset URLs pass through unchanged.
-            **globals:
+            file_ext:
+                File extension (including the leading dot) used to discover
+                component files within registered folders. Defaults to `.jx`.
+                Set to `.jinja` to keep the legacy naming, or any other value
+                if you prefer your own convention.
+            **template_globals:
                 Variables to make available to all components by default.
 
         """
@@ -92,12 +98,13 @@ class Catalog:
         self.asset_resolver = asset_resolver
         self.jinja_env = self._make_jinja_env(
             jinja_env=jinja_env,
-            globals=globals,
+            globals=template_globals,
             filters=filters,
             tests=tests,
             extensions=extensions,
         )
         self.auto_reload = auto_reload
+        self.file_ext = file_ext
         if folder:
             self.add_folder(folder)
 
@@ -112,15 +119,15 @@ class Catalog:
         Add a folder path from which to search for components, optionally under a prefix.
 
         Components without a prefix can be imported as a path relative to the folder,
-        e.g.: `sub/folder/component.jinja` or with a path relative to the component
-        where it is used: `./folder/component.jinja`.
+        e.g.: `sub/folder/component.jx` or with a path relative to the component
+        where it is used: `./folder/component.jx`.
 
         Relative imports cannot go outside the folder.
 
         Components added with a prefix must be imported using the `@prefix/`
-        syntax: `@prefix/sub/folder/component.jinja`. If the importing is
+        syntax: `@prefix/sub/folder/component.jx`. If the importing is
         done from within a component with the prefix itself, a relative
-        import can also be used, e.g.: `./component.jinja`.
+        import can also be used, e.g.: `./component.jx`.
 
         All the folders added under the same prefix will be treated as if they
         were a single folder. This means if you add two folders, under the same prefix,
@@ -156,7 +163,7 @@ class Catalog:
             logger.debug(f"Adding folder `{base_path}`")
 
         with self._lock:
-            for filepath in base_path.rglob("*.jinja"):
+            for filepath in base_path.rglob(f"*{self.file_ext}"):
                 relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"
                 if relpath in self.components:
                     logger.debug(f"Component already exists: {relpath}")
@@ -239,7 +246,7 @@ class Catalog:
         Arguments:
             relpath:
                 The path of the component to render, including the extension, relative to its view folder.
-                e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
+                e.g.: "sub/component.jx". Always use the forward slash (/) as the path separator.
             globals:
                 Optional global variables to make available to the component and all its
                 imported components.
@@ -302,6 +309,14 @@ class Catalog:
         co.globals = self._prepare_globals(co, globals)
         return co.render(**kwargs)
 
+    def has(self, relpath: str) -> bool:
+        """Return True if a component with the given relative path is registered.
+
+        Does not read the file or recompile — just checks the catalog index.
+        """
+        relpath = relpath.replace("\\", "/").strip("/")
+        return relpath in self.components
+
     def get_component_data(self, relpath: str) -> CData:
         """
         Get the component data from the cache.
@@ -310,7 +325,7 @@ class Catalog:
         Arguments:
             relpath:
                 The path of the component to render, including the extension, relative to its view folder.
-                e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
+                e.g.: "sub/component.jx". Always use the forward slash (/) as the path separator.
 
         """
         with self._lock:
@@ -318,12 +333,11 @@ class Catalog:
             if not cdata:
                 raise ComponentNotFoundError(relpath)
 
-            mtime = cdata.path.stat().st_mtime if self.auto_reload else 0
             if cdata.code is not None:
-                if self.auto_reload:
-                    if mtime == cdata.mtime:
-                        return cdata
-                else:
+                if not self.auto_reload:
+                    return cdata
+                mtime = cdata.path.stat().st_mtime
+                if mtime == cdata.mtime:
                     return cdata
 
             # Need to recompile - read file and parse while holding the lock
@@ -348,7 +362,7 @@ class Catalog:
             )
 
             # Update all fields atomically (from other threads' perspective)
-            cdata.mtime = mtime
+            cdata.mtime = cdata.path.stat().st_mtime
             cdata.code = code
             cdata.tmpl = tmpl
             cdata.required = meta.required
@@ -367,7 +381,7 @@ class Catalog:
         Arguments:
             relpath:
                 The path of the component to render, including the extension, relative to its view folder.
-                e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
+                e.g.: "sub/component.jx". Always use the forward slash (/) as the path separator.
 
         """
         cdata = self.get_component_data(relpath)
@@ -391,7 +405,7 @@ class Catalog:
         Return all registered component paths.
 
         Returns:
-            A list of component relative paths (e.g., ["button.jinja", "card.jinja"]).
+            A list of component relative paths (e.g., ["button.jx", "card.jx"]).
 
         """
         with self._lock:
@@ -404,7 +418,7 @@ class Catalog:
         Arguments:
             relpath:
                 The path of the component, including the extension, relative to its view folder.
-                e.g.: "sub/component.jinja". Always use the forward slash (/) as the path separator.
+                e.g.: "sub/component.jx". Always use the forward slash (/) as the path separator.
 
         Returns:
             A dictionary containing:

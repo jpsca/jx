@@ -40,12 +40,12 @@ title: Home
 ::::: div
 **After**: decoupled, reusable, clean ✨.
 
-::: tab | view.jinja
+::: tab | view.jx
 
 ```html+jinja
-{#import "layout.jinja" as Layout #}
-{#import "product.jinja" as Product #}
-{#import "pagination.jinja" as Pagination #}
+{#import "layout.jx" as Layout #}
+{#import "product.jx" as Product #}
+{#import "pagination.jx" as Pagination #}
 {#def products #}
 
 <Layout title="My title">
@@ -58,10 +58,10 @@ title: Home
 
 :::
 
-::: tab | product.jinja
+::: tab | product.jx
 
 ```html+jinja
-{#import "card.jinja" as Card #}
+{#import "card.jx" as Card #}
 {#def product #}
 
 <Card class="product"
@@ -75,7 +75,7 @@ title: Home
 
 :::
 
-::: tab | card.jinja
+::: tab | card.jx
 
 ```html+jinja
 {#def title, img_url #}

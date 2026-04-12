@@ -443,3 +443,18 @@ def test_expr_with_nested_quotes_in_attrs():
     parser = JxParser(name="test", source=source, components=["Foo"])
     result, _ = parser.parse()
     assert "_get" in result
+
+
+def test_unclosed_expr_block_raises():
+    """An unclosed {{ in _replace_expr_blocks raises TemplateSyntaxError."""
+    parser = JxParser(name="test", source="", components=[])
+    with pytest.raises(TemplateSyntaxError, match="Unclosed expression"):
+        parser._replace_expr_blocks("bar={{ oops")
+
+
+def test_escaped_quotes_in_tag_attrs():
+    r"""Escaped quotes inside attribute values don't break tag parsing."""
+    source = r"""<Foo title="say \"hello\"" />"""
+    parser = JxParser(name="test", source=source, components=["Foo"])
+    result, _ = parser.parse()
+    assert r"\"hello\"" in result

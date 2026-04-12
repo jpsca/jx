@@ -9,9 +9,9 @@ Think of components as the building blocks of your interface; buttons, cards, fo
 
 ## Creating a Component
 
-Components are Jinja template files with a `.jinja` extension:
+Components are Jinja template files with a `.jx` extension:
 
-```html+jinja title="components/button.jinja"
+```html+jinja title="components/button.jx"
 {#def text #}
 
 <button class="btn">{{ text }}</button>
@@ -21,8 +21,8 @@ Components are Jinja template files with a `.jinja` extension:
 
 A complete component can have these parts:
 
-```html+jinja title="components/card.jinja"
-{#import "./header.jinja" as Header #}
+```html+jinja title="components/card.jx"
+{#import "./header.jx" as Header #}
 {#css card.css #}
 {#js card.js #}
 {#def title, subtitle="" #}
@@ -49,8 +49,8 @@ All parts are optional except the template.
 Import a component, then use it like an HTML tag:
 
 ```html+jinja
-{#import "button.jinja" as Button #}
-{#import "card.jinja" as Card #}
+{#import "button.jx" as Button #}
+{#import "card.jx" as Card #}
 
 <Card title="Welcome">
   <p>Hello world!</p>
@@ -81,16 +81,16 @@ Jx requires explicit imports before using components.
 ### Basic Syntax
 
 ```html+jinja
-{#import "path/to/component.jinja" as Name #}
+{#import "path/to/component.jx" as Name #}
 ```
 
 ### File Naming
 
-Component files and folders can use any naming convention: `button.jinja`, `user-card.jinja`, `form_input.jinja`, etc. The **import alias**, however, must be `PascalCase` to distinguish components from HTML:
+Component files and folders can use any naming convention: `button.jx`, `user-card.jx`, `form_input.jx`, etc. The **import alias**, however, must be `PascalCase` to distinguish components from HTML:
 
 ```html+jinja
-{#import "user-card.jinja" as UserCard #}
-{#import "form_input.jinja" as FormInput #}
+{#import "user-card.jx" as UserCard #}
+{#import "form_input.jx" as FormInput #}
 
 <UserCard />   {# Component #}
 <div />        {# HTML #}
@@ -101,8 +101,8 @@ Component files and folders can use any naming convention: `button.jinja`, `user
 Paths relative to a catalog folder:
 
 ```html+jinja
-{#import "components/button.jinja" as Button #}
-{#import "layouts/base.jinja" as Base #}
+{#import "components/button.jx" as Button #}
+{#import "layouts/base.jx" as Base #}
 ```
 
 Use for shared components used across your project.
@@ -112,9 +112,9 @@ Use for shared components used across your project.
 Paths relative to the current file:
 
 ```html+jinja
-{#import "./sibling.jinja" as Sibling #}
-{#import "../parent/component.jinja" as Component #}
-{#import "./subfolder/child.jinja" as Child #}
+{#import "./sibling.jx" as Sibling #}
+{#import "../parent/component.jx" as Component #}
+{#import "./subfolder/child.jx" as Child #}
 ```
 
 Use for tightly related components. Move an entire folder and internal imports still work.
@@ -124,9 +124,9 @@ Use for tightly related components. Move an entire folder and internal imports s
 ```
 components/
   modal/
-    modal.jinja       {#import "./header.jinja" as Header #}
-    header.jinja      {#import "./close-btn.jinja" as CloseBtn #}
-    close-btn.jinja
+    modal.jx       {#import "./header.jx" as Header #}
+    header.jx      {#import "./close-btn.jx" as CloseBtn #}
+    close-btn.jx
 ```
 
 ### Prefixed Imports
@@ -138,8 +138,8 @@ catalog.add_folder("vendor/ui-lib", prefix="ui")
 ```
 
 ```html+jinja
-{#import "@ui/button.jinja" as Button #}
-{#import "@ui/modal.jinja" as Modal #}
+{#import "@ui/button.jx" as Button #}
+{#import "@ui/modal.jx" as Modal #}
 ```
 
 Use for third-party component libraries.
@@ -245,7 +245,7 @@ Components can wrap content passed between their tags.
 
 Everything between a component's tags is available as `content`:
 
-```html+jinja title="components/card.jinja"
+```html+jinja title="components/card.jx"
 {#def title #}
 
 <div class="card">
@@ -276,7 +276,7 @@ For multiple content areas, use named slots.
 
 **Define slots** in the component with `{% slot %}`:
 
-```html+jinja title="components/modal.jinja"
+```html+jinja title="components/modal.jx"
 <div class="modal">
   <div class="modal-header">
     {% slot header %}

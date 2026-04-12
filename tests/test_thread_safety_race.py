@@ -47,13 +47,13 @@ def test_concurrent_auto_reload_race_condition(tmp_path):
     folder = tmp_path / "components"
     folder.mkdir()
 
-    comp_file = folder / "counter.jinja"
+    comp_file = folder / "counter.jx"
     comp_file.write_text("{#def count=0 #}<div>{{ count }}</div>")
 
     catalog = Catalog(folder, auto_reload=True)
 
     # First render to populate cache
-    catalog.render("counter.jinja")
+    catalog.render("counter.jx")
 
     results = []
     errors = []
@@ -71,7 +71,7 @@ def test_concurrent_auto_reload_race_condition(tmp_path):
                         f"{{#def count=0 #}}<div>v{i}: {{{{ count }}}}</div>",
                     )
 
-                result = catalog.render("counter.jinja", count=thread_id)
+                result = catalog.render("counter.jx", count=thread_id)
                 results.append((thread_id, result))
             except Exception as e:
                 errors.append((thread_id, e))

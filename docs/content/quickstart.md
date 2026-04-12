@@ -32,9 +32,9 @@ catalog = Catalog("components/")
 
 ## Create a component
 
-Create a new folder for your components. Inside this folder create a new file called `card.jinja` with the following content:
+Create a new folder for your components. Inside this folder create a new file called `card.jx` with the following content:
 
-```html+jinja {title="components/card.jinja"}
+```html+jinja {title="components/card.jx"}
 {#def title, url #}
 
 <div class="bg-white shadow rounded border p-4">
@@ -50,11 +50,11 @@ Create a new folder for your components. Inside this folder create a new file ca
 from .app import catalog
 
 def dashboard_view():
-    return catalog.render("dashboard.jinja")
+    return catalog.render("dashboard.jx")
 ```
 
-```html+jinja {title="components/dashboard.jinja"}
-{#import "card.jinja" as Card #}
+```html+jinja {title="components/dashboard.jx"}
+{#import "card.jx" as Card #}
 
 <Card title="Trees" url="trees">
   We have the best trees
