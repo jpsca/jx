@@ -333,7 +333,16 @@ Run `uvx https://raw.githubusercontent.com/jpsca/jx-migrate/main/migrate.py` and
 
 If you prefer doing the component migration by hand, follow these steps.
 
-#### Step 1: Add Imports
+#### Step 1: Change the extension of the templaet files
+
+Jx uses the `.jx` extension by default so, ideally, you should change the names of your template files from `name.jinja` to `name.jx`.
+
+Alternativly, you can keep using `.jinja` by declaring it in the catalog:
+
+```python
+catalog = Catalog(..., file_ext=".jinja")
+```
+#### Step 2: Add Imports
 
 Go through each component and add explicit imports at the top:
 
@@ -361,7 +370,7 @@ Go through each component and add explicit imports at the top:
 
 This makes your components more portable and easier to reorganize.
 
-#### Step 2: Replace Component References
+#### Step 3: Replace Component References
 
 Change dotted component names to imported names:
 
@@ -370,7 +379,7 @@ Change dotted component names to imported names:
 + <Card>
 ```
 
-#### Step 3: Update Asset Rendering
+#### Step 4: Update Asset Rendering
 
 ```diff
 - {{ catalog.render_assets() }}
@@ -384,7 +393,7 @@ Or use the more granular methods:
 {{ assets.render_js(module=True) }}
 ```
 
-#### Step 4: Update Named Slots (if used)
+#### Step 5: Update Named Slots (if used)
 
 Replace `_slot` conditionals with `{% fill %}` blocks:
 
