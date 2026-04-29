@@ -190,5 +190,5 @@ known-local-folder = ["src/jx"]
 # Use two line after imports.
 lines-after-imports = 2
 
-[tool.uv.sources]
-writeadoc = { path = "../writeadoc", editable = true }
+# [tool.uv.sources]
+# writeadoc = { path = "../writeadoc", editable = true }

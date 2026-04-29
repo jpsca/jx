@@ -210,7 +210,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "jinja2", specifier = ">=3.0" },
-    { name = "writeadoc", editable = "../writeadoc" },
+    { name = "writeadoc" },
 ]
 
 [package.metadata.requires-dev]
@@ -220,7 +220,7 @@ dev = [
     { name = "tox-uv" },
     { name = "ty" },
 ]
-docs = [{ name = "writeadoc", editable = "../writeadoc" }]
+docs = [{ name = "writeadoc", specifier = ">=0.19" }]
 test = [
     { name = "pytest", specifier = ">=7.2" },
     { name = "pytest-cov" },
@@ -663,8 +663,8 @@ wheels = [
 
 [[package]]
 name = "writeadoc"
-version = "0.20.0"
-source = { editable = "../writeadoc" }
+version = "0.19.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docstring-parser" },
     { name = "hecto" },
@@ -676,26 +676,7 @@ dependencies = [
     { name = "ty" },
     { name = "watchdog" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "docstring-parser", specifier = ">=0.17.0" },
-    { name = "hecto", specifier = ">=2.0.1" },
-    { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "jx", specifier = ">=0.11.0" },
-    { name = "mistune", specifier = ">=3.2.0" },
-    { name = "pygments", specifier = ">=2.19.2" },
-    { name = "strictyaml", specifier = ">=1.7.3" },
-    { name = "ty", specifier = ">=0.0.1a15" },
-    { name = "watchdog", specifier = ">=6.0.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/56/44/4931b610b81df6dd5805e51fcf6afe1e2d2ba5f7cc4ccdf5a332dd43867d/writeadoc-0.19.0.tar.gz", hash = "sha256:f9c00161ba2a8d8311b842ba92c74bb28a7655b05467f81b3e211ee12dab0226", size = 391899, upload-time = "2026-04-12T18:19:21.366Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/cd/2225b0daabe35f3170e2dec6ae8d0802cd1bb9d099541969593fbc254497/writeadoc-0.19.0-py3-none-any.whl", hash = "sha256:aaee96b445f1b97954446f253531da3d1c3f0605c760f53a0d099de91e2920aa", size = 402207, upload-time = "2026-04-12T18:19:19.954Z" },
 ]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ipdb", specifier = ">=0.13.13" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
-    { name = "ruff", specifier = ">=0.12.4" },
-    { name = "tox-uv" },
-    { name = "ty", specifier = ">=0.0.1a15" },
-]
-test = [{ name = "pytest", specifier = ">=8.4.1" }]
