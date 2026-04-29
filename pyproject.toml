@@ -29,6 +29,7 @@ classifiers = [
 requires-python = ">=3.12,<4"
 dependencies = [
     "jinja2 >= 3.0",
+    "writeadoc",
 ]
 
 [project.scripts]
@@ -188,3 +189,6 @@ known-local-folder = ["src/jx"]
 
 # Use two line after imports.
 lines-after-imports = 2
+
+[tool.uv.sources]
+writeadoc = { path = "../writeadoc", editable = true }

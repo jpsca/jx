@@ -81,7 +81,7 @@ The scan re-runs whenever a `.py` file is created, changed, or deleted.
 Launch VSCode Quick Open (<kbd>Ctrl</kbd>+<kbd>P</kbd>), paste the following command, and press ENTER.
 
 ```bash
-ext install jpscaletti.jx-jx
+ext install jpscaletti.jinja-jx
 ```
 
 Alternatively:

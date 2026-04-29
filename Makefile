@@ -27,11 +27,11 @@ docs:
 
 .PHONY: docs-build
 docs-build:
-	cd docs && uv run python docs.py build
+	cd docs && uv run python docs.py build --llm
 
 .PHONY: docs-deploy
 docs-deploy:
 	rm -rf docs/build
-	cd docs && \
-		uv run python docs.py build --llm && \
-		rsync --recursive --delete --progress build code:/var/www/jx/
+	cd docs && uv run python docs.py build --llm
+	zip -r docs/build/skill.zip skills/jx
+	rsync --recursive --delete --progress docs/build code:/var/www/jx/
