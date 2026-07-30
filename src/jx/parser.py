@@ -135,12 +135,14 @@ class JxParser:
             source = source.replace(uid, code)
         return source
 
-    _LINE_PAD = "\n\x00"
-
     def process_tags(self, source: str, *, validate_tags: bool = True) -> str:
         """
         Search for TitledCased HTML tags in the template source code and replace
         them with their corresponding component calls.
+
+        The tags are processed from the last one to the first, so a nested tag is
+        always replaced before its parent. Otherwise, the parent would swallow the
+        `{% fill %}` blocks of its children.
 
         Arguments:
             source:
@@ -149,12 +151,12 @@ class JxParser:
                 Whether to raise an error for unknown TitleCased tags.
 
         """
-        while True:
-            match = RX_TAG_NAME.search(source)
-            if not match:
-                break
+        # A replacement only affects the text from its tag onwards, so going
+        # backwards keeps the position of the pending tags valid, and their line
+        # numbers are always those of the original source.
+        for match in reversed(list(RX_TAG_NAME.finditer(source))):
             source = self.replace_tag(source, match, validate_tags=validate_tags)
-        return source.replace(self._LINE_PAD, "")
+        return source
 
     def replace_tag(
         self,
@@ -220,14 +222,6 @@ class JxParser:
 
         attrs = self._parse_attrs(raw_attrs)
         repl = self._build_call(tag, attrs, content)
-
-        # Pad with marker newlines to preserve line numbers for subsequent
-        # tags. The markers are stripped after all tags are processed.
-        original_newlines = source[start:end].count("\n")
-        repl_newlines = repl.count("\n")
-        if repl_newlines < original_newlines:
-            repl += self._LINE_PAD * (original_newlines - repl_newlines)
-
         return f"{source[:start]}{repl}{source[end:]}"
 
     def process_slots(self, source: str) -> tuple[str, tuple[str, ...]]:

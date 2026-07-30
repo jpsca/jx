@@ -424,16 +424,15 @@ def test_multiline_comment_blocks_are_protected():
 
 
 def test_malformed_nested_opening_tag():
-    """A nested opening tag that can't be parsed causes an unclosed error.
+    """A nested opening tag that can't be parsed is reported at its own position.
 
     The outer <Foo> is well-formed, but inside it there's another <Foo
     whose opening tag never closes (unmatched braces prevent finding '>').
-    _find_closing_tag calls _parse_opening_tag on the inner <Foo, gets -1,
-    and returns -1 itself, which triggers the "Unclosed component" error.
+    Nested tags are processed first, so the error points at the inner tag.
     """
     source = "<Foo>inner <Foo {{ broken</Foo></Foo>"
     parser = JxParser(name="test", source=source, components=["Foo"])
-    with pytest.raises(TemplateSyntaxError, match="Unclosed component"):
+    with pytest.raises(TemplateSyntaxError, match=r"\[test:1:11\] Syntax error: `Foo`"):
         parser.parse()
 
 

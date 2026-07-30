@@ -170,6 +170,37 @@ def test_fill_rendered(folder):
 """.strip()
 
 
+def test_fills_of_a_nested_component(folder):
+    """A fill must be applied to its own component, not to a wrapping one."""
+    (folder / "wrapper.jx").write_text("""
+<section>{{ content }}</section>
+""".strip())
+
+    (folder / "modal.jx").write_text("""
+<div class="modal-header">{% slot header %}My header{% endslot %}</div>
+<div class="modal-body">{{ content }}</div>
+""".strip())
+
+    (folder / "page.jx").write_text("""
+{# import "wrapper.jx" as Wrapper #}
+{# import "modal.jx" as Modal #}
+<Wrapper>
+<Modal>
+{% fill header %}My custom header{% endfill %}
+<p>Hello world!</p>
+</Modal>
+</Wrapper>
+""")
+
+    cat = Catalog(folder, lorem="ipsum")
+    html = cat.render("page.jx")
+    print(html)
+    assert html == """
+<section><div class="modal-header">My custom header</div>
+<div class="modal-body"><p>Hello world!</p></div></section>
+""".strip()
+
+
 def test_slot_default_rendered(folder):
     (folder / "icon.jx").write_text("""
 {# def name #}
