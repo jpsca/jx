@@ -184,11 +184,10 @@ wheels = [
 
 [[package]]
 name = "jx"
-version = "0.12.0"
+version = "0.13.0"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
-    { name = "writeadoc" },
 ]
 
 [package.dev-dependencies]
@@ -208,10 +207,7 @@ test = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "jinja2", specifier = ">=3.0" },
-    { name = "writeadoc" },
-]
+requires-dist = [{ name = "jinja2", specifier = ">=3.0" }]
 
 [package.metadata.requires-dev]
 dev = [
