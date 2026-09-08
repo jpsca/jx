@@ -4,7 +4,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 
 import os
 import time
-from threading import Event, Thread
+from threading import Event, Thread, current_thread
 
 from jx import Catalog
 from jx.component import Component
@@ -178,3 +178,50 @@ def test_asset_cache_not_poisoned_by_concurrent_reload(folder):
     collector.join()
 
     assert catalog.get_component("page.jx").collect_css() == ["v2.css"]
+
+
+def test_component_snapshot_is_consistent_during_concurrent_reload(folder):
+    """
+    `get_component()` reads nine fields off the `CData` it just looked up.
+    A reload must therefore publish a whole new `CData` rather than rebinding
+    the fields of the live one -- otherwise a reload landing between those reads
+    hands back a `Component` built from two different versions of the file
+    (e.g. the old `tmpl` paired with the new `required`).
+    """
+    comp = folder / "a.jx"
+    comp.write_text("{#def name #}\n<p>{{ name }}</p>")
+
+    gate = Event()
+    reached = Event()
+
+    class GatedCatalog(Catalog):
+        def get_component_data(self, relpath):
+            cdata = super().get_component_data(relpath)
+            if current_thread().name == "reader":
+                # Sits between "CData obtained" and "CData fields read".
+                reached.set()
+                gate.wait(5)
+            return cdata
+
+    catalog = GatedCatalog(folder, auto_reload=True)
+    catalog.render("a.jx", name="x")  # warm the cache
+
+    reader = ThreadWithReturnValue(
+        target=lambda: catalog.get_component("a.jx").render(name="x")
+    )
+    reader.name = "reader"
+    reader.start()
+    reached.wait(5)
+
+    # The file changes and another thread reloads it while the reader is
+    # part-way through building its Component.
+    comp.write_text("{#def title #}\n<p>{{ title }}</p>")
+    os.utime(comp, (time.time() + 10, time.time() + 10))
+    writer = Thread(target=catalog.get_component_data, args=("a.jx",))
+    writer.start()
+    time.sleep(0.2)
+
+    gate.set()
+    assert reader.join() == "<p>x</p>"
+    writer.join()
+    assert catalog.get_signature("a.jx")["required"] == {"title": None}

@@ -21,8 +21,14 @@ from .parser import JxParser
 from .utils import logger
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class CData:
+    """
+    An immutable snapshot of a compiled component. Never mutated in place:
+    a reload builds a new one and swaps it into `Catalog.components`, so any
+    reader holding a reference keeps a self-consistent view of one version.
+    """
+
     base_path: Path
     path: Path
     mtime: float
@@ -91,7 +97,7 @@ class Catalog:
                 Variables to make available to all components by default.
 
         """
-        self._lock = threading.RLock()  # Protects self.components access
+        self._lock = threading.RLock()  # Serializes recompilation and folder registration
         self.components = {}
         self._asset_cache: dict[str, list[str]] = {}
         self.assets_folders: dict[str, Path] = {}
@@ -328,54 +334,20 @@ class Catalog:
                 e.g.: "sub/component.jx". Always use the forward slash (/) as the path separator.
 
         """
-        with self._lock:
-            cdata = self.components.get(relpath)
-            if not cdata:
-                raise ComponentNotFoundError(relpath)
-
-            if cdata.code is not None:
-                if not self.auto_reload:
-                    return cdata
-                mtime = cdata.path.stat().st_mtime
-                if mtime == cdata.mtime:
-                    return cdata
-
-            # Need to recompile - read file and parse while holding the lock
-            # to prevent other threads from seeing partial state
-            try:
-                source = cdata.path.read_text(encoding="utf-8")
-            except UnicodeDecodeError as err:
-                raise FileEncodingError(cdata.path.as_posix()) from err
-            meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
-
-            parser = JxParser(
-                name=relpath, source=source, components=list(meta.imports.keys())
-            )
-            parsed_source, slots = parser.parse()
-            logger.debug(f"Parsed {relpath}:\n{parsed_source}")
-            code = self.jinja_env.compile(
-                source=parsed_source, name=relpath, filename=cdata.path.as_posix()
-            )
-
-            tmpl = jinja2.Template.from_code(
-                self.jinja_env, code, self.jinja_env.globals
-            )
-
-            # Update all fields atomically (from other threads' perspective)
-            cdata.mtime = cdata.path.stat().st_mtime
-            cdata.code = code
-            cdata.tmpl = tmpl
-            cdata.required = meta.required
-            cdata.optional = meta.optional
-            cdata.imports = meta.imports
-            cdata.css = meta.css
-            cdata.js = meta.js
-            cdata.slots = slots
-            # Swap in a fresh dict instead of clearing in place: a `collect_css`
-            # already in flight keeps writing its now-stale result to the old
-            # dict, which is discarded, rather than poisoning the live cache.
-            self._asset_cache = {}
+        # A single dict lookup yields a complete, immutable snapshot, so the
+        # common case needs no lock at all.
+        cdata = self.components.get(relpath)
+        if cdata is None:
+            raise ComponentNotFoundError(relpath)
+        if self._is_fresh(cdata):
             return cdata
+
+        with self._lock:
+            # Another thread may have recompiled it while we waited for the lock.
+            cdata = self.components[relpath]
+            if self._is_fresh(cdata):
+                return cdata
+            return self._compile(relpath, cdata)
 
     def get_component(self, relpath: str) -> Component:
         """
@@ -387,6 +359,11 @@ class Catalog:
                 e.g.: "sub/component.jx". Always use the forward slash (/) as the path separator.
 
         """
+        # Read the asset cache *before* the component data. `_compile` publishes
+        # in the opposite order (new CData first, fresh cache second), and taking
+        # the two in opposite orders makes it impossible to pair a stale CData
+        # with the live cache and poison it.
+        asset_cache = self._asset_cache
         cdata = self.get_component_data(relpath)
         assert cdata.tmpl is not None
         return Component(
@@ -400,7 +377,7 @@ class Catalog:
             js=cdata.js,
             slots=cdata.slots,
             asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
-            asset_cache=self._asset_cache,
+            asset_cache=asset_cache,
         )
 
     def list_components(self) -> list[str]:
@@ -442,6 +419,57 @@ class Catalog:
         }
 
     # Private
+
+    def _is_fresh(self, cdata: CData) -> bool:
+        """
+        Whether a snapshot can be served as-is, without recompiling.
+        """
+        if cdata.code is None:
+            return False
+        if not self.auto_reload:
+            return True
+        return cdata.path.stat().st_mtime == cdata.mtime
+
+    def _compile(self, relpath: str, cdata: CData) -> CData:
+        """
+        Recompile a component and publish it. The caller must hold `self._lock`.
+        """
+        try:
+            source = cdata.path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as err:
+            raise FileEncodingError(cdata.path.as_posix()) from err
+        meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
+
+        parser = JxParser(
+            name=relpath, source=source, components=list(meta.imports.keys())
+        )
+        parsed_source, slots = parser.parse()
+        logger.debug(f"Parsed {relpath}:\n{parsed_source}")
+        code = self.jinja_env.compile(
+            source=parsed_source, name=relpath, filename=cdata.path.as_posix()
+        )
+        tmpl = jinja2.Template.from_code(self.jinja_env, code, self.jinja_env.globals)
+
+        fresh = CData(
+            base_path=cdata.base_path,
+            path=cdata.path,
+            mtime=cdata.path.stat().st_mtime,
+            code=code,
+            tmpl=tmpl,
+            required=meta.required,
+            optional=meta.optional,
+            imports=meta.imports,
+            css=meta.css,
+            js=meta.js,
+            slots=slots,
+        )
+        # The swap is a single atomic store, so a reader either sees the whole
+        # old snapshot or the whole new one, never a mix. Publish it before
+        # dropping the asset cache; `get_component` reads the two in the
+        # opposite order, which rules out caching stale assets.
+        self.components[relpath] = fresh
+        self._asset_cache = {}
+        return fresh
 
     def _prepare_globals(
         self, co: Component, globals: dict[str, t.Any] | None = None
