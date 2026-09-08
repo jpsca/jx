@@ -12,6 +12,7 @@ from jx import (
     MissingRequiredArgument,
     TemplateSyntaxError,
 )
+from jx.component import MAX_COMPONENT_DEPTH
 
 
 def test_render_simple(folder):
@@ -776,6 +777,34 @@ def test_recursion_depth_limit(folder):
         cat.render("infinite.jx")
     assert "Maximum component nesting depth exceeded" in str(exc_info.value)
     assert "100" in str(exc_info.value)
+
+
+def test_component_instance_can_be_rendered_repeatedly(folder):
+    """
+    The nesting depth belongs to a single render tree, not to the Component.
+    Leaking it onto the instance makes `get_component()` -- which is public --
+    fail once a reused object has been rendered MAX_COMPONENT_DEPTH times.
+    """
+    (folder / "hi.jx").write_text("{# def n #}<p>{{ n }}</p>")
+    cat = Catalog(folder)
+
+    co = cat.get_component("hi.jx")
+    for n in range(MAX_COMPONENT_DEPTH + 10):
+        assert co.render(n=n) == f"<p>{n}</p>"
+
+
+def test_repeated_renders_do_not_erode_the_depth_budget(folder):
+    """A reused parent must still allow a full-depth tree on its Nth render."""
+    (folder / "recu.jx").write_text("""
+{# import "recu.jx" as Recu #}
+{# def level=1 #}
+{%- if level < 50 %}<Recu level={{ level + 1 }} />{% else %}deep{% endif %}
+""")
+    cat = Catalog(folder)
+
+    co = cat.get_component("recu.jx")
+    for _ in range(MAX_COMPONENT_DEPTH):
+        assert co.render().strip() == "deep"
 
 
 def test_prop_type_validation(folder):

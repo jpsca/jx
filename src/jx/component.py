@@ -5,6 +5,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 import copy
 import typing as t
 from collections.abc import Callable
+from functools import partial
 
 import jinja2
 from markupsafe import Markup
@@ -109,15 +110,20 @@ class Component:
         if depth > MAX_COMPONENT_DEPTH:
             raise MaxRecursionDepthError(MAX_COMPONENT_DEPTH)
 
-        # Increment depth for child components
-        self.globals = {**self.globals, "_depth": depth + 1}
+        # Depth belongs to this render tree, not to the component, so keep the
+        # incremented globals local: rebinding `self.globals` here would make
+        # every render of a reused instance start one level deeper.
+        child_globals = {**self.globals, "_depth": depth + 1}
 
         content = content if content is not None else caller("") if caller else ""
         attrs = attrs.as_dict if isinstance(attrs, Attrs) else attrs or {}
         params = {**attrs, **params}
         props, attrs = self.filter_attrs(params)
 
-        tpl_globals = {**self.globals, "_get": self.get_child}
+        tpl_globals = {
+            **child_globals,
+            "_get": partial(self.get_child, globals=child_globals),
+        }
         tpl_globals.setdefault("attrs", Attrs(attrs))
         tpl_globals.setdefault("content", content)
 
@@ -156,14 +162,16 @@ class Component:
 
         return props, kw
 
-    def get_child(self, name: str) -> "Component":
+    def get_child(
+        self, name: str, globals: dict[str, t.Any] | None = None
+    ) -> "Component":
         relpath = self.imports.get(name)
         if relpath is None:
             raise ComponentNotFoundError(
                 f"{name} (imported in {self.relpath})"
             )
         child = self.get_component(relpath)
-        child.globals = self.globals
+        child.globals = self.globals if globals is None else globals
         return child
 
     def resolve_url(self, url: str) -> str:
