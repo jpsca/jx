@@ -350,3 +350,29 @@ def test_render_with_kw_no_classes():
     result = attrs.render(title="hi", open=True)
     assert 'title="hi"' in result
     assert "open" in result
+
+
+def test_prepend_class_dedupes_within_its_own_arguments():
+    attrs = Attrs({"class": "a"})
+    attrs.prepend_class("d d", "e", "d e")
+    assert attrs.classes == "d e a"
+
+
+def test_do_escape_entities_inside_attrs():
+    attrs = Attrs(
+        {
+            "href": "/search?a=1&b=2",
+            "title": "a < b & c",
+            "data-raw": "&amp;",
+        }
+    )
+    expected = (
+        'data-raw="&amp;amp;" href="/search?a=1&amp;b=2" title="a &lt; b &amp; c"'
+    )
+    assert attrs.render() == expected
+
+
+def test_escaped_entities_do_not_break_quote_switching():
+    # `&` is escaped before `"` becomes `&quot;`, so the entity is not double-escaped.
+    attrs = Attrs({"title": """B&B said "hi" to O'Neill"""})
+    assert attrs.render() == 'title="B&amp;B said &quot;hi&quot; to O\'Neill"'

@@ -15,6 +15,8 @@ CLASS_KEYS = (CLASS_KEY, CLASS_ALT_KEY)
 
 
 def quote(text: str) -> str:
+    # `&` first, so the `&quot;` produced below is not escaped a second time.
+    text = text.replace("&", "&amp;").replace("<", "&lt;")
     if '"' in text:
         if "'" in text:
             text = text.replace('"', "&quot;")
@@ -279,14 +281,13 @@ class Attrs:
             ```
 
         """
-        new_classes = [
-            name
-            for names in values
-            for name in names.strip().split()
-            if name not in self._classes
-        ]
+        new = []
+        for names in values:
+            for name in names.strip().split():
+                if name not in self._classes and name not in new:
+                    new.append(name)
 
-        self._classes = tuple(new_classes) + self._classes
+        self._classes = tuple(new) + self._classes
 
     def remove_class(self, *names: str) -> None:
         """
