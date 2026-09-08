@@ -509,3 +509,20 @@ def test_auto_reload_recompiles_on_change(folder):
 
     html2 = catalog.render("a.jx")
     assert "v2" in html2
+
+
+def test_render_string_does_not_share_assets_between_sources(folder):
+    """
+    Every string component is named `<string>`, so caching its collected
+    assets under that name would serve one source's CSS/JS to every other.
+    `render_string` is documented as not cached, so it must not use the cache.
+    """
+    catalog = Catalog(folder)
+
+    assert catalog.render_string(
+        '{#css "a.css" #}{#js "a.js" #}\n{{ assets.render() }}'
+    ) == '<link rel="stylesheet" href="a.css">\n<script type="module" src="a.js"></script>'
+
+    assert catalog.render_string(
+        '{#css "b.css" #}{#js "b.js" #}\n{{ assets.render() }}'
+    ) == '<link rel="stylesheet" href="b.css">\n<script type="module" src="b.js"></script>'

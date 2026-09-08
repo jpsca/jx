@@ -310,7 +310,9 @@ class Catalog:
             js=meta.js,
             slots=slots,
             asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
-            asset_cache=self._asset_cache,
+            # No asset cache: every string component is named `<string>`, so
+            # sharing the catalog's cache would serve one source's assets to
+            # every other one. Matches this method not caching the template.
         )
         co.globals = self._prepare_globals(co, globals)
         return co.render(**kwargs)
