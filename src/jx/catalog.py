@@ -371,7 +371,10 @@ class Catalog:
             cdata.css = meta.css
             cdata.js = meta.js
             cdata.slots = slots
-            self._asset_cache.clear()
+            # Swap in a fresh dict instead of clearing in place: a `collect_css`
+            # already in flight keeps writing its now-stale result to the old
+            # dict, which is discarded, rather than poisoning the live cache.
+            self._asset_cache = {}
             return cdata
 
     def get_component(self, relpath: str) -> Component:

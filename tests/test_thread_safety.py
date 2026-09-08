@@ -2,9 +2,12 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
-from threading import Thread
+import os
+import time
+from threading import Event, Thread
 
 from jx import Catalog
+from jx.component import Component
 
 
 class ThreadWithReturnValue(Thread):
@@ -121,3 +124,57 @@ def test_thread_safety_of_template_globals(folder):
 
     for i, result in enumerate(results):
         assert result == str(i)
+
+
+def test_asset_cache_not_poisoned_by_concurrent_reload(folder):
+    """
+    A `collect_css()` in flight must not write its now-stale result into the
+    shared asset cache after another thread has invalidated it by reloading
+    the component. Otherwise the stale list survives forever, because nothing
+    invalidates the cache again until some *other* component changes.
+    """
+    comp = folder / "page.jx"
+    comp.write_text('{#css "v1.css" #}\n<p>page</p>')
+
+    gate = Event()
+
+    class GatedComponent(Component):
+        def _collect_assets(self, attr, _visited=None):
+            result = super()._collect_assets(attr, _visited=_visited)
+            if _visited is None:
+                # Top-level call: hold here so the reload lands in the window
+                # between computing the result and storing it.
+                gate.wait(5)
+            return result
+
+    class GatedCatalog(Catalog):
+        def get_component(self, relpath):
+            co = super().get_component(relpath)
+            gated = GatedComponent(
+                relpath=co.relpath,
+                tmpl=co.tmpl,
+                get_component=self.get_component,
+                required=co.required,
+                optional=co.optional,
+                imports=co.imports,
+                css=co.css,
+                js=co.js,
+                slots=co.slots,
+                asset_cache=co._asset_cache,
+            )
+            gated.globals = co.globals
+            return gated
+
+    catalog = GatedCatalog(folder, auto_reload=True)
+    collector = ThreadWithReturnValue(target=catalog.get_component("page.jx").collect_css)
+    collector.start()
+
+    # Meanwhile the file changes; the reload must invalidate the asset cache.
+    comp.write_text('{#css "v2.css" #}\n<p>page</p>')
+    os.utime(comp, (time.time() + 10, time.time() + 10))
+    assert catalog.get_signature("page.jx")["css"] == ("v2.css",)
+
+    gate.set()
+    collector.join()
+
+    assert catalog.get_component("page.jx").collect_css() == ["v2.css"]
