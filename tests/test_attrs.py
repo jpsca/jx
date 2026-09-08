@@ -3,6 +3,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
 import pytest
+from markupsafe import Markup
 
 from jx.attrs import Attrs
 
@@ -191,9 +192,11 @@ def test_render_attrs_lik_set():
     assert expected == result
 
 
-def test_do_not_escape_tailwind_syntax():
+def test_escape_tailwind_syntax():
+    # The `&` is escaped, but the browser decodes it back while parsing, so the
+    # class lands in the DOM as `[&_a]:flex` and Tailwind's selector still matches.
     attrs = Attrs({"class": "lorem [&_a]:flex"})
-    expected = 'class="ipsum lorem [&_a]:flex" title="Hi&Stuff"'
+    expected = 'class="ipsum lorem [&amp;_a]:flex" title="Hi&amp;Stuff"'
     result = attrs.render(
         **{
             "title": "Hi&Stuff",
@@ -376,3 +379,20 @@ def test_escaped_entities_do_not_break_quote_switching():
     # `&` is escaped before `"` becomes `&quot;`, so the entity is not double-escaped.
     attrs = Attrs({"title": """B&B said "hi" to O'Neill"""})
     assert attrs.render() == 'title="B&amp;B said &quot;hi&quot; to O\'Neill"'
+
+
+def test_markup_values_are_not_double_escaped():
+    attrs = Attrs(
+        {
+            "href": Markup("/s?a=1&amp;b=2"),
+            "title": Markup("a&nbsp;b"),
+            "data-plain": "/s?a=1&b=2",
+        }
+    )
+    assert attrs.render() == (
+        'data-plain="/s?a=1&amp;b=2" href="/s?a=1&amp;b=2" title="a&nbsp;b"'
+    )
+
+
+def test_markup_values_survive_render_kwargs():
+    assert Attrs({}).render(href=Markup("/s?a=1&amp;b=2")) == 'href="/s?a=1&amp;b=2"'

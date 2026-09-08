@@ -14,9 +14,15 @@ CLASS_ALT_KEY = "classes"
 CLASS_KEYS = (CLASS_KEY, CLASS_ALT_KEY)
 
 
-def quote(text: str) -> str:
-    # `&` first, so the `&quot;` produced below is not escaped a second time.
-    text = text.replace("&", "&amp;").replace("<", "&lt;")
+def quote(value: "str | LazyString") -> str:
+    if isinstance(value, LazyString) and value.is_safe:
+        # Already knows how to render itself as HTML; escaping it again would
+        # turn its entities into visible text.
+        text = value.data
+    else:
+        # `&` first, so the `&quot;` produced below is not escaped a second time.
+        text = str(value).replace("&", "&amp;").replace("<", "&lt;")
+
     if '"' in text:
         if "'" in text:
             text = text.replace('"', "&quot;")
@@ -40,6 +46,11 @@ class LazyString(UserString):
     @cached_property
     def data(self):
         return str(self._seq)
+
+    @property
+    def is_safe(self) -> bool:
+        """Whether the wrapped value already carries its own HTML representation."""
+        return hasattr(self._seq, "__html__")
 
 
 class Attrs:
@@ -365,6 +376,10 @@ class Attrs:
         are sorted by name and rendered like this:
         `<sorted attributes> + <sorted properties>`.
 
+        Values are HTML-escaped, unless they are markup objects (those with an
+        `__html__` method, e.g. the result of Jinja's `|safe`), which are used
+        as-is.
+
         Example:
 
             ```python
@@ -425,7 +440,7 @@ class Attrs:
             items = dict(sorted(items.items()))
 
         html_attrs = [
-            f"{name}={quote(str(value))}"
+            f"{name}={quote(value)}"
             for name, value in items.items()
         ]
         if properties:
