@@ -34,6 +34,10 @@ def quote(value: "str | LazyString") -> str:
 
 
 class LazyString(UserString):
+    # `UserString` declares no `__slots__`, so instances keep a (lazily created)
+    # `__dict__` regardless -- which is what `data` below needs. This slot is
+    # still worth it: it keeps `_seq` out of that dict, so a LazyString that is
+    # never stringified stays small and never materialises the dict at all.
     __slots__ = ("_seq",)
 
     def __init__(self, seq):
@@ -82,8 +86,10 @@ class Attrs:
         attributes: "dict[str, str | LazyString]" = {}
         properties: set[str] = set()
 
-        cls1 = attrs.pop(CLASS_KEY, "")
-        cls2 = attrs.pop(CLASS_ALT_KEY, "")
+        # Read, never pop: `attrs` belongs to the caller. The class keys are
+        # skipped in the loop below instead.
+        cls1 = attrs.get(CLASS_KEY, "")
+        cls2 = attrs.get(CLASS_ALT_KEY, "")
         if cls1 or cls2:
             class_names = f"{cls1} {cls2}".split()
             classes = []
@@ -95,7 +101,7 @@ class Attrs:
             self._classes = ()
 
         for name, value in attrs.items():
-            if name.startswith("_"):
+            if name.startswith("_") or name in CLASS_KEYS:
                 continue
             name = name.replace("_", "-")
             if value is True:

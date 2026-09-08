@@ -158,10 +158,16 @@ class Catalog:
         """
         base_path = Path(path).resolve()
         prefix = prefix.replace("\\", "/").strip("./@ ")
+
+        assets_path = None
         if assets is not None:
             if not prefix:
                 raise ValueError("Cannot register assets folder without a prefix")
-            self.assets_folders[prefix] = Path(assets).resolve()
+            # Resolved out here because it touches the filesystem; the lock
+            # below only needs to cover the shared-state write.
+            assets_path = Path(assets).resolve()
+        assets_prefix = prefix
+
         prefix = f"@{prefix}/" if prefix else ""
         if prefix:
             logger.debug(f"Adding folder `{base_path}` with the prefix `{prefix}`")
@@ -169,6 +175,9 @@ class Catalog:
             logger.debug(f"Adding folder `{base_path}`")
 
         with self._lock:
+            if assets_path is not None:
+                self.assets_folders[assets_prefix] = assets_path
+
             for filepath in base_path.rglob(f"*{self.file_ext}"):
                 relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"
                 if relpath in self.components:

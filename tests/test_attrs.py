@@ -396,3 +396,14 @@ def test_markup_values_are_not_double_escaped():
 
 def test_markup_values_survive_render_kwargs():
     assert Attrs({}).render(href=Markup("/s?a=1&amp;b=2")) == 'href="/s?a=1&amp;b=2"'
+
+
+def test_attrs_does_not_mutate_the_dict_it_is_given():
+    source = {"class": "a b", "classes": "c", "id": "x"}
+
+    first = Attrs(source)
+    assert source == {"class": "a b", "classes": "c", "id": "x"}
+
+    # Reusing the same dict must give the same result, not one stripped of classes.
+    second = Attrs(source)
+    assert first.render() == second.render() == 'class="a b c" id="x"'
