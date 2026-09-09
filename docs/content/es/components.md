@@ -310,7 +310,13 @@ Para múltiples áreas de contenido, usa slots con nombre.
 </Modal>
 ```
 
-Los slots no llenados usan su contenido por defecto.
+Los slots no llenados usan su contenido por defecto. Un fill *vacío* no es lo mismo
+que un slot sin llenar: `{% fill header %}{% endfill %}` no renderiza nada y reemplaza
+al contenido por defecto.
+
+Los cuerpos de los fills se renderizan de forma diferida, solo cuando el componente
+llega efectivamente al `{% slot %}` correspondiente. Un slot dentro de un condicional
+que no se cumple no cuesta nada, y su fill no se ejecuta nunca.
 
 ### Cuándo usar slots vs props
 

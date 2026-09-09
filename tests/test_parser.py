@@ -12,7 +12,7 @@ VALID_DATA = (
     # Simple case
     (
         """<Foo bar="baz">content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}""",
     ),
     # Self-closing tag
     (
@@ -22,7 +22,7 @@ VALID_DATA = (
     # No attributes
     (
         """<Foo>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render() -%}content{%- endcall %}""",
+        """{% call _get("Foo").render() -%}content{%- endcall %}""",
     ),
     # No attributes, self-closing tag
     (
@@ -32,21 +32,21 @@ VALID_DATA = (
     # Strings vs expressions
     (
         """<Foo bar="baz" lorem={{ ipsum }}>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
     ),
     # Single quotes
     (
         """<Foo bar='say "hello world"'>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
     ),
     (
         """<Foo bar="say 'hello world'">content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
     ),
     # Braces inside quotes
     (
         """<Foo bar="say 'hello {{world}}'">content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
     ),
     # Line breaks
     (
@@ -54,7 +54,7 @@ VALID_DATA = (
           bar="baz"
           lorem="ipsum"
         >content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
     ),
     # Line breaks, self-closing tag
     (
@@ -68,7 +68,7 @@ VALID_DATA = (
     # Python expression in attribute and boolean attributes
     (
         """<Foo bar={{ 42 + 4 }} green large>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
+        """{% call _get("Foo").render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
     ),
     # `>` in expression
     (
@@ -107,7 +107,7 @@ VALID_DATA = (
         """<Foo bar="baz">content</Foo>
 {% raw %}{{ a + b }}{% endraw %}
 what""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}{{ a + b }}{% endraw %}
 what""",
     ),
@@ -115,7 +115,7 @@ what""",
     (
         """<Foo bar="baz">content</Foo>
 {% raw %}<div class="test">&amp;</div>{% endraw %}""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}<div class="test">&amp;</div>{% endraw %}""",
     ),
 )
@@ -180,11 +180,11 @@ def test_process_nested_same_tag():
 </Card>
     """
     expected = """
-{% call(_slot="") _get("Card").render(**{"class":"card"}) -%}
+{% call _get("Card").render(**{"class":"card"}) -%}
   WTF
-  {% call(_slot="") _get("Card").render(**{"class":"card-header"}) -%}abc{%- endcall %}
-  {% call(_slot="") _get("Card").render(**{"class":"card-body"}) -%}
-    <div>{% call(_slot="") _get("Card").render() -%}Text{%- endcall %}</div>
+  {% call _get("Card").render(**{"class":"card-header"}) -%}abc{%- endcall %}
+  {% call _get("Card").render(**{"class":"card-body"}) -%}
+    <div>{% call _get("Card").render() -%}Text{%- endcall %}</div>
   {%- endcall %}
 {%- endcall %}
 """
@@ -198,8 +198,8 @@ def test_nested_same_tag_with_content_between():
     """Content between nested same-name closing tags is preserved."""
     source = """<Card>a<Card>b</Card>c</Card>"""
     expected = (
-        '{% call(_slot="") _get("Card").render() -%}'
-        'a{% call(_slot="") _get("Card").render() -%}b{%- endcall %}c'
+        '{% call _get("Card").render() -%}'
+        'a{% call _get("Card").render() -%}b{%- endcall %}c'
         '{%- endcall %}'
     )
     parser = JxParser(name="test", source=source, components=[])
@@ -211,7 +211,7 @@ def test_nested_same_tag_self_closing_does_not_increase_depth():
     """Self-closing same-name tags inside a block don't affect nesting."""
     source = """<Card>a<Card />b</Card>"""
     expected = (
-        '{% call(_slot="") _get("Card").render() -%}'
+        '{% call _get("Card").render() -%}'
         'a{{ _get("Card").render() }}b'
         '{%- endcall %}'
     )
@@ -224,9 +224,9 @@ def test_nested_same_tag_siblings():
     """Multiple same-name siblings inside a parent of the same name."""
     source = """<Card><Card>a</Card><Card>b</Card></Card>"""
     expected = (
-        '{% call(_slot="") _get("Card").render() -%}'
-        '{% call(_slot="") _get("Card").render() -%}a{%- endcall %}'
-        '{% call(_slot="") _get("Card").render() -%}b{%- endcall %}'
+        '{% call _get("Card").render() -%}'
+        '{% call _get("Card").render() -%}a{%- endcall %}'
+        '{% call _get("Card").render() -%}b{%- endcall %}'
         '{%- endcall %}'
     )
     parser = JxParser(name="test", source=source, components=[])
@@ -287,7 +287,7 @@ def test_slots():
     assert slots == ("header", "footer")
     assert result.strip() == """
 <html>
-  {% if _slots.get('header') %}{{ _slots['header'] }}{% else %}
+  {% if 'header' in _slots %}{{ _slots['header']() }}{% else %}
   <h1>Header</h1>
   {% endif %}
 
@@ -296,7 +296,7 @@ def test_slots():
     <p>Hi, {{ user }}!</p>
   {% endif %}
 
-  {% if _slots.get('footer') %}{{ _slots['footer'] }}{% else %}
+  {% if 'footer' in _slots %}{{ _slots['footer']() }}{% else %}
     <footer>Footer content</footer>
   {% endif %}
 </html>
@@ -327,7 +327,7 @@ def test_slots_strip():
 
     assert result.strip() == """
 <html>
-  {% if _slots.get('header') %}{{ _slots['header'] }}{% else %}
+  {% if 'header' in _slots %}{{ _slots['header']() }}{% else %}
   <h1>Header</h1>
   {% endif %}
 
@@ -336,7 +336,7 @@ def test_slots_strip():
     <p>Hi, {{ user }}!</p>
   {% endif %}
 
-  {% if _slots.get('footer') %}{{ _slots['footer'] }}{% else %}<footer>Footer content</footer>{% endif %}
+  {% if 'footer' in _slots %}{{ _slots['footer']() }}{% else %}<footer>Footer content</footer>{% endif %}
 </html>
 """.strip()
 
@@ -361,16 +361,12 @@ def test_fills():
     print(result)
 
     assert result.strip() == """
-{% call(_slot="") _get("Layout").render() -%}
-{% if _slot == 'header' %}
+{% macro _jx_fill_1() %}
 <h1>Header</h1>
-{% elif _slot == 'footer' %}
+{% endmacro %}{% macro _jx_fill_2() %}
 <footer>Footer content</footer>
-{% else -%}
-<p>Main content</p>
-<p>Hi, {{ user }}!</p>
-{%- endif %}
-{%- endcall %}
+{% endmacro %}{% call _get("Layout").render(_fills={"header": _jx_fill_1, "footer": _jx_fill_2}) -%}<p>Main content</p>
+<p>Hi, {{ user }}!</p>{%- endcall %}
 """.strip()
 
 
@@ -394,13 +390,9 @@ def test_fills_strip():
     print(result)
 
     assert result.strip() == """
-{% call(_slot="") _get("Layout").render() -%}
-{% if _slot == 'header' %}<h1>Header</h1>{% elif _slot == 'footer' %}
-<footer>Footer content</footer>{% else -%}
-<p>Main content</p>
-<p>Hi, {{ user }}!</p>
-{%- endif %}
-{%- endcall %}
+{% macro _jx_fill_1() %}<h1>Header</h1>{% endmacro %}{% macro _jx_fill_2() %}
+<footer>Footer content</footer>{% endmacro %}{% call _get("Layout").render(_fills={"header": _jx_fill_1, "footer": _jx_fill_2}) -%}<p>Main content</p>
+<p>Hi, {{ user }}!</p>{%- endcall %}
 """.strip()
 
 

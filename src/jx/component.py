@@ -102,7 +102,8 @@ class Component:
         *,
         content: str | None = None,
         attrs: Attrs | dict[str, t.Any] | None = None,
-        caller: Callable[[str], str] | None = None,
+        caller: Callable[[], str] | None = None,
+        _fills: "dict[str, Callable[[], Markup]] | None" = None,
         **params: t.Any,
     ) -> Markup:
         # Check recursion depth
@@ -115,7 +116,7 @@ class Component:
         # every render of a reused instance start one level deeper.
         child_globals = {**self.globals, "_depth": depth + 1}
 
-        content = content if content is not None else caller("") if caller else ""
+        content = content if content is not None else caller() if caller else ""
         attrs = attrs.as_dict if isinstance(attrs, Attrs) else attrs or {}
         params = {**attrs, **params}
         props, attrs = self.filter_attrs(params)
@@ -127,13 +128,10 @@ class Component:
         tpl_globals.setdefault("attrs", Attrs(attrs))
         tpl_globals.setdefault("content", content)
 
-        slots = {}
-        if caller:
-            for name in self.slots:
-                body = caller(name)
-                if body != content:
-                    slots[name] = body
-        props["_slots"] = slots
+        # One body, one function: the caller states which slots it filled by
+        # passing them, so there is nothing to infer. A name the component does
+        # not declare is simply never looked up.
+        props["_slots"] = _fills or {}
 
         html = self.tmpl.render({**props, **tpl_globals}).lstrip()
         return Markup(html)

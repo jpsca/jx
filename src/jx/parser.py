@@ -67,6 +67,10 @@ class JxParser:
         self.source = source
         self.components = components
         self._closing_tag_rx_cache: dict[str, re.Pattern] = {}
+        # Names the `{% macro %}` emitted for each fill. Monotonic per template,
+        # which is enough: tags are replaced back-to-front, so a counter never
+        # reuses a name within one parse.
+        self._fill_counter = 0
 
     def parse(self, *, validate_tags: bool = True) -> tuple[str, tuple[str, ...]]:
         """
@@ -217,11 +221,12 @@ class JxParser:
             content = source[end:index]
             end = index + len(close_tag)
 
+        fills: dict[str, str] = {}
         if content:
-            content = self.process_fills(content)
+            content, fills = self.process_fills(content)
 
         attrs = self._parse_attrs(raw_attrs)
-        repl = self._build_call(tag, attrs, content)
+        repl = self._build_call(tag, attrs, content, fills)
         return f"{source[:start]}{repl}{source[end:]}"
 
     def process_slots(self, source: str) -> tuple[str, tuple[str, ...]]:
@@ -252,10 +257,12 @@ class JxParser:
             if rstrip:
                 slot_default = slot_default.rstrip()
 
+            # `in` and not `.get()`: a fill that renders to an empty string is
+            # still a fill, and must win over the default.
             slot_expr = "".join([
-                "{% if _slots.get('", slot_name,
-                "') %}{{ _slots['", slot_name,
-                "'] }}{% else %}", slot_default,
+                "{% if '", slot_name,
+                "' in _slots %}{{ _slots['", slot_name,
+                "']() }}{% else %}", slot_default,
                 "{% endif %}"
             ])
             source = f"{source[:start]}{slot_expr}{source[end:]}"
@@ -263,19 +270,21 @@ class JxParser:
 
         return source, tuple(slots.keys())
 
-    def process_fills(self, source: str) -> str:
+    def process_fills(self, source: str) -> tuple[str, dict[str, str]]:
         """
-        Processes `{% fill slot_name %}...{% endfill %}` blocks in the template source code.
+        Extracts the `{% fill slot_name %}...{% endfill %}` blocks from a
+        component's content.
 
         Arguments:
             source:
-                The template source code.
+                The content of a component tag.
 
         Returns:
-            The modified source code prepended by fill contents as `if` statements.
+            - The content with the `{% fill %}` blocks removed.
+            - The fill bodies, as `{ slot_name: body }`.
 
         """
-        fills = {}
+        fills: dict[str, str] = {}
 
         while True:
             match = RX_FILL.search(source)
@@ -293,16 +302,12 @@ class JxParser:
             fills[fill_name] = fill_body
             source = f"{source[:start]}{source[end:]}"
 
-        if not fills:
-            return source
+        if fills:
+            # What is left between the fills is the default content. Whitespace
+            # around it is layout of the call site, not content.
+            source = source.strip()
 
-        parts = []
-        for i, (fill_name, fill_body) in enumerate(fills.items()):
-            keyword = "if" if i == 0 else "elif"
-            parts.append(f"{{% {keyword} _slot == '{fill_name}' %}}{fill_body}")
-        str_ifs = "\n" + "".join(parts)
-
-        return f"{str_ifs}{{% else -%}}\n{source.strip()}\n{{%- endif %}}\n"
+        return source, fills
 
     # Private
 
@@ -503,20 +508,47 @@ class JxParser:
 
         return "".join(parts), blocks
 
-    def _build_call(self, tag: str, attrs: list[str], content: str = "") -> str:
+    def _build_call(
+        self,
+        tag: str,
+        attrs: list[str],
+        content: str = "",
+        fills: dict[str, str] | None = None,
+    ) -> str:
         """
         Builds a component call string.
+
+        Each fill becomes its own `{% macro %}`, declared just before the call and
+        passed by reference. That way a fill body is compiled once, invoked at most
+        once, and only if the component actually reaches its `{% slot %}`.
         """
         logger.debug(f"{tag} {attrs} {'inline' if not content else ''}")
 
-        str_attrs = ""
+        macros = []
+        args = []
+
+        if fills:
+            refs = []
+            for name, body in fills.items():
+                self._fill_counter += 1
+                macro_name = f"_jx_fill_{self._fill_counter}"
+                macros.append(f"{{% macro {macro_name}() %}}{body}{{% endmacro %}}")
+                refs.append(f'"{name}": {macro_name}')
+            args.append("_fills={" + ", ".join(refs) + "}")
+
         if attrs:
-            str_attrs = "**{" + ", ".join(attrs) + "}"
+            args.append("**{" + ", ".join(attrs) + "}")
+
+        str_args = ", ".join(args)
 
         if content:
-            return (
-                f'{{% call(_slot="") _get("{tag}").render({str_attrs}) -%}}'
+            call = (
+                f'{{% call _get("{tag}").render({str_args}) -%}}'
                 f"{content}"
                 f"{{%- endcall %}}"
             )
-        return f'{{{{ _get("{tag}").render({str_attrs}) }}}}'
+        else:
+            # No default content, so the component needs no `caller` at all.
+            call = f'{{{{ _get("{tag}").render({str_args}) }}}}'
+
+        return f"{''.join(macros)}{call}"
