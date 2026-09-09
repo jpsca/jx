@@ -3,6 +3,21 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
 from .catalog import CData, Catalog  # noqa
+from .nodes import (  # noqa
+    Block,
+    Comment,
+    Component,
+    Declaration,
+    Document,
+    Expr,
+    Fill,
+    Raw,
+    Slot,
+    Stmt,
+    Text,
+    walk,
+)
+from .parser import parse_ast  # noqa
 from .exceptions import (
     JxException,  # noqa
     TemplateSyntaxError,  # noqa

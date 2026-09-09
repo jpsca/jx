@@ -437,15 +437,24 @@ def test_expr_with_nested_quotes_in_attrs():
 
 
 def test_unclosed_expr_block_raises():
-    """An unclosed {{ in _replace_expr_blocks raises TemplateSyntaxError."""
-    parser = JxParser(name="test", source="", components=[])
-    with pytest.raises(TemplateSyntaxError, match="Unclosed expression"):
-        parser._replace_expr_blocks("bar={{ oops")
+    """An unclosed {{ is reported, with the position of the opening braces."""
+    parser = JxParser(name="test", source="bar={{ oops", components=[])
+    with pytest.raises(
+        TemplateSyntaxError, match=r"\[test:1:4\] Unclosed expression"
+    ):
+        parser.parse()
 
 
 def test_escaped_quotes_in_tag_attrs():
-    r"""Escaped quotes inside attribute values don't break tag parsing."""
+    r"""
+    An escaped quote does not end an attribute value.
+
+    The regex parser cut the value at the first `"`, escaped or not, and emitted
+    an unterminated Python string literal. Nothing caught it because the
+    generated source was never checked, only searched for `_get`.
+    """
     source = r"""<Foo title="say \"hello\"" />"""
     parser = JxParser(name="test", source=source, components=["Foo"])
     result, _ = parser.parse()
+    assert result == r"""{{ _get("Foo").render(**{"title":"say \"hello\""}) }}"""
     assert r"\"hello\"" in result

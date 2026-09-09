@@ -1,27 +1,51 @@
 """
+Frozen copy of the regex-based metadata extractor, kept as a differential
+oracle. Do not edit: its whole job is to not change.
+
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
 import ast
 import builtins
+import re
 import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .exceptions import (
+from jx.exceptions import (
     DuplicateDefDeclaration,
     InvalidArgument,
     InvalidImport,
     PathTraversalError,
 )
-from .lexer import (
-    TAG_NAME_CHARS,
-    TAG_NAME_START,
-    WHITESPACE,
-    scan_header,
-    strip_inline_comments,
-)
 
+
+re_tag_name = r"[A-Z][0-9A-Za-z_.:$-]*"
+
+
+# This regexp matches the meta declarations (`{#def .. #}`, `{#css .. #}`,
+# and `{#js .. #}`) and regular Jinja comments AT THE BEGINNING of the components source.
+# You can also have comments inside the declarations.
+RX_META_HEADER = re.compile(r"^(\s*{#.*?#})+", re.DOTALL)
+
+# Matches quoted strings (to skip them) or inline comments (to strip).
+# This preserves `#` inside quoted values like URLs with fragments.
+RX_INTER_COMMENTS = re.compile(r""""[^"]*"|'[^']*'|\s*#[^\n]*""")
+
+
+def _strip_comments(m: re.Match) -> str:
+    s = m.group(0)
+    if s[0] in "\"'":
+        return s
+    return ""
+
+
+RX_DEF_START = re.compile(r"{#-?\s*def\s+")
+RX_IMPORT_START = re.compile(r"{#-?\s*import\s+")
+RX_CSS_START = re.compile(r"{#-?\s*css\s+")
+RX_JS_START = re.compile(r"{#-?\s*js\s+")
+RX_COMMA = re.compile(r"\s*,\s*")
+RX_IMPORT = re.compile(fr'"([^"]+)"\s+as\s+({re_tag_name})')
 
 ALLOWED_NAMES_IN_EXPRESSION_VALUES = {
     "len": len,
@@ -44,7 +68,7 @@ class Meta:
     js: tuple[str, ...] = ()
 
 
-def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
+def legacy_extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
     """
     Extract metadata from the Jx template source.
 
@@ -61,21 +85,30 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
 
     """
     meta = Meta()
+
+    match = RX_META_HEADER.match(source)
+    if not match:
+        return meta
+
+    header = match.group(0)
+    # Reversed because I will use `header.pop()`
+    header = header.split("#}")[:-1][::-1]
     def_found = False
 
-    for keyword, expr, _offset in scan_header(source):
-        if keyword == "def":
-            # Not run through `strip_inline_comments`: a `#` here is already a
-            # Python comment, and `ast.parse` below knows what to do with it.
+    while header:
+        item = header.pop().strip(" -\n")
+
+        expr = read_metadata_item(item, RX_DEF_START)
+        if expr:
             if def_found:
                 raise DuplicateDefDeclaration(str(fullpath))
             meta.required, meta.optional = parse_args_expr(expr)
             def_found = True
             continue
 
-        expr = strip_inline_comments(expr).replace("\n", " ")
-
-        if keyword == "import":
+        expr = read_metadata_item(item, RX_IMPORT_START)
+        if expr:
+            expr = RX_INTER_COMMENTS.sub(_strip_comments, expr).replace("\n", " ")
             import_path, import_name = parse_import_expr(expr)
             if import_path.startswith("."):
                 if not fullpath.parts:
@@ -86,14 +119,28 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
                 validate_import_path(import_path, resolved, base_path)
                 import_path = resolved.relative_to(base_path).as_posix()
             meta.imports[import_name] = import_path
+            continue
 
-        elif keyword == "css":
+        expr = read_metadata_item(item, RX_CSS_START)
+        if expr:
+            expr = RX_INTER_COMMENTS.sub(_strip_comments, expr).replace("\n", " ")
             meta.css = (*meta.css, *parse_files_expr(expr))
+            continue
 
-        elif keyword == "js":
+        expr = read_metadata_item(item, RX_JS_START)
+        if expr:
+            expr = RX_INTER_COMMENTS.sub(_strip_comments, expr).replace("\n", " ")
             meta.js = (*meta.js, *parse_files_expr(expr))
+            continue
 
     return meta
+
+
+def read_metadata_item(source: str, rx_start: re.Pattern) -> str:
+    start = rx_start.match(source)
+    if not start:
+        return ""
+    return source[start.end():].strip()
 
 
 def annotation_to_type(annotation: ast.expr | None) -> type | None:
@@ -159,46 +206,18 @@ def eval_expression(input_string: str) -> t.Any:
 
 def parse_files_expr(expr: str) -> list[str]:
     files = []
-    for part in expr.split(","):
-        url = part.strip().strip("\"'").rstrip("/")
+    for url in RX_COMMA.split(expr):
+        url = url.strip("\"'").rstrip("/")
         if url:
             files.append(url)
     return files
 
 
 def parse_import_expr(expr: str) -> tuple[str, str]:
-    """Read a `"path/to/component.jx" as TagName` declaration."""
-    if expr[:1] != '"':
+    match = RX_IMPORT.match(expr)
+    if not match:
         raise InvalidImport(expr)
-    close = expr.find('"', 1)
-    if close < 2:  # an empty path is not a path
-        raise InvalidImport(expr)
-    path = expr[1:close]
-
-    rest = expr[close + 1:]
-    end = len(rest)
-
-    i = 0
-    while i < end and rest[i] in WHITESPACE:
-        i += 1
-    if i == 0 or rest[i : i + 2] != "as":
-        raise InvalidImport(expr)
-
-    i += 2
-    start = i
-    while i < end and rest[i] in WHITESPACE:
-        i += 1
-    if i == start:
-        raise InvalidImport(expr)
-
-    if i >= end or rest[i] not in TAG_NAME_START:
-        raise InvalidImport(expr)
-    start = i
-    i += 1
-    while i < end and rest[i] in TAG_NAME_CHARS:
-        i += 1
-
-    return path, rest[start:i]
+    return match.group(1), match.group(2)
 
 
 def validate_import_path(path: str, resolved: Path, base_path: Path) -> None:

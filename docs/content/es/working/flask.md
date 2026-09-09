@@ -58,6 +58,7 @@ Ahora tus componentes tienen acceso a todas las utilidades de plantillas de Flas
 ```
 
 Esto también aplica a cualquier extensión de Flask que agregue globales a las plantillas.
+Los procesadores de contexto son otra cosa; mirá [Procesadores de contexto](#procesadores-de-contexto) más abajo.
 
 ## Agrega globales de Flask manualmente
 
@@ -252,7 +253,9 @@ app.catalog = catalog
 
 ## Procesadores de contexto
 
-Usa los procesadores de contexto de Flask para que ciertas variables estén disponibles en todos los componentes:
+Flask ejecuta las funciones `@app.context_processor` desde dentro de
+`render_template()`. `catalog.render()` no pasa por ahí, así que **compartir el
+entorno Jinja no alcanza para recibirlas**:
 
 ```python title="app.py"
 @app.context_processor
@@ -264,13 +267,60 @@ def inject_globals():
     }
 ```
 
-Estos están disponibles automáticamente al usar el entorno Jinja de Flask:
-
 ```html+jinja title="components/footer.jx"
 <footer>
   <p>&copy; {{ current_year }} {{ site_name }}</p>
 </footer>
 ```
+
+Renderizado con `catalog.render("footer.jx")`, `site_name` sale vacío y
+`is_authenticated()` lanza `UndefinedError`. Los valores simples fallan en
+silencio; solo al llamar a uno aparece el error.
+
+Pedile el contexto a Flask vos mismo y pasalo como globales:
+
+```python
+context = {}
+app.update_template_context(context)
+return catalog.render("pages/home.jx", globals=context)
+```
+
+Un helper corto evita repetirlo en cada vista:
+
+```python title="app.py"
+def render(template, **values):
+    context = dict(values)
+    app.update_template_context(context)
+    return catalog.render(template, globals=context)
+
+
+@app.route("/")
+def home():
+    return render("pages/home.jx", user=g.user)
+```
+
+Si los valores no cambian con cada request, salteá los procesadores de contexto
+y dáselos al catálogo una sola vez:
+
+```python title="app.py"
+catalog = Catalog(
+    "components/",
+    jinja_env=app.jinja_env,
+    site_name="My App",
+    current_year=2026,
+)
+```
+
+Lo que sí funciona sin nada de esto es todo lo que Flask pone en
+`jinja_env.globals`: `url_for`, `get_flashed_messages`, `config`, `request`,
+`session` y `g`. Por eso los ejemplos anteriores los usan directamente. La misma
+división vale para las extensiones de Flask: sus globales llegan a tus
+componentes, sus procesadores de contexto no.
+
+Por la misma razón, las señales `before_render_template` y `template_rendered`
+no se disparan con `catalog.render()`. Las herramientas que dependen de ellas,
+como Flask-DebugToolbar o `captured_templates` en los tests, no ven los
+componentes renderizados así.
 
 ## Archivos estáticos
 

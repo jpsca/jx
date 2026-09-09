@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import hashlib
 import importlib
 import shutil
 import threading
@@ -60,6 +61,7 @@ class Catalog:
         auto_reload: bool = True,
         asset_resolver: Callable[[str, str], str] | None = None,
         file_ext: str = ".jx",
+        bytecode_cache: "jinja2.BytecodeCache | None" = None,
         **template_globals: t.Any,
     ) -> None:
         """
@@ -93,6 +95,21 @@ class Catalog:
                 component files within registered folders. Defaults to `.jx`.
                 Set to `.jinja` to keep the legacy naming, or any other value
                 if you prefer your own convention.
+            bytecode_cache:
+                Optional `jinja2.BytecodeCache` used to keep compiled
+                components between runs, e.g. `jinja2.FileSystemBytecodeCache()`
+                or `jinja2.MemcachedBytecodeCache(client)`.
+
+                Compiled components are always cached in memory for the life of
+                the process, so this only pays off across process boundaries:
+                a restarted server, a worker that did not fork from a warm
+                parent, a short-lived process. Compiling is the great majority
+                of the cost of loading a component, so where it applies the
+                difference is large.
+
+                An environment passed as `jinja_env` that already carries a
+                `bytecode_cache` is used as well; this argument takes
+                precedence over it.
             **template_globals:
                 Variables to make available to all components by default.
 
@@ -109,6 +126,9 @@ class Catalog:
             tests=tests,
             extensions=extensions,
         )
+        if bytecode_cache is not None:
+            self.jinja_env.bytecode_cache = bytecode_cache
+        self._env_fingerprint = self._fingerprint_env()
         self.auto_reload = auto_reload
         self.file_ext = file_ext
         if folder:
@@ -456,7 +476,7 @@ class Catalog:
         )
         parsed_source, slots = parser.parse()
         logger.debug(f"Parsed {relpath}:\n{parsed_source}")
-        code = self.jinja_env.compile(
+        code = self._compile_code(
             source=parsed_source, name=relpath, filename=cdata.path.as_posix()
         )
         tmpl = jinja2.Template.from_code(self.jinja_env, code, self.jinja_env.globals)
@@ -481,6 +501,54 @@ class Catalog:
         self.components[relpath] = fresh
         self._asset_cache = {}
         return fresh
+
+    def _fingerprint_env(self) -> str:
+        """
+        A short digest of everything about the environment that changes the
+        code Jinja generates.
+
+        Jinja keys a bytecode bucket by template name and source checksum only,
+        so flipping `autoescape` or adding an extension would otherwise keep
+        serving the bytecode compiled under the old settings.
+        """
+        env = self.jinja_env
+        parts = (
+            jinja2.__version__,
+            str(env.autoescape),
+            str(env.optimized),
+            env.block_start_string,
+            env.block_end_string,
+            env.variable_start_string,
+            env.variable_end_string,
+            env.comment_start_string,
+            env.comment_end_string,
+            ",".join(sorted(env.extensions)),
+        )
+        return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]
+
+    def _compile_code(self, *, source: str, name: str, filename: str) -> CodeType:
+        """
+        Compile a parsed component, going through the bytecode cache if there
+        is one.
+
+        This is the same three-step dance `jinja2.BaseLoader.load` does. Jx
+        never goes through a loader, which is why it has to be done here.
+        """
+        bcc = self.jinja_env.bytecode_cache
+        if bcc is None:
+            return self.jinja_env.compile(
+                source=source, name=name, filename=filename
+            )
+
+        bucket = bcc.get_bucket(
+            self.jinja_env, f"{name}|{self._env_fingerprint}", filename, source
+        )
+        if bucket.code is None:
+            bucket.code = self.jinja_env.compile(
+                source=source, name=name, filename=filename
+            )
+            bcc.set_bucket(bucket)
+        return bucket.code
 
     def _prepare_globals(
         self, co: Component, globals: dict[str, t.Any] | None = None
