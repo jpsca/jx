@@ -45,14 +45,27 @@ KNOWN_DIVERGENCES = {
 }
 
 
+RX_TWO_CALL_EMPTY = re.compile(r"""_get\(("[^"]*"|'[^']*')\)\.render\(\)""")
+RX_TWO_CALL = re.compile(r"""_get\(("[^"]*"|'[^']*')\)\.render\(""")
+
+
 def canonical(source: str) -> str:
     """
-    Renumber the generated fill macros by order of first appearance.
+    Renumber the generated fill macros by order of first appearance, and put
+    both parsers on the same component-call convention.
 
     The two parsers walk the tree in opposite directions, so they hand out
     different numbers to the same macros. The numbers are arbitrary; what must
     match is that each definition lines up with its use.
+
+    The frozen parser still emits `_get("X").render(...)`, the two-call form
+    the emitter replaced with a single `_render("X", ...)`. That is a codegen
+    change, not a parsing one, so it is normalized away here rather than by
+    editing the reference.
     """
+    source = RX_TWO_CALL_EMPTY.sub(r"_render(\1)", source)
+    source = RX_TWO_CALL.sub(r"_render(\1, ", source)
+
     mapping: dict[str, str] = {}
 
     def _sub(match: re.Match) -> str:

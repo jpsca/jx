@@ -82,7 +82,10 @@ class JinjaEmitter:
             pairs = [self._attr(attr) for attr in node.attrs]
             args.append("**{" + ", ".join(pairs) + "}")
 
-        str_args = ", ".join(args)
+        # The tag name travels as the first argument of a single call.
+        # `_get(name).render(...)` would be two calls, and Jinja routes every
+        # one of them through `Context.call`, which is not free.
+        str_args = ", ".join([f'"{node.name}"', *args])
 
         content = self._nodes(node.children)
         if node.fills:
@@ -92,13 +95,13 @@ class JinjaEmitter:
 
         if content:
             call = (
-                f'{{% call _get("{node.name}").render({str_args}) -%}}'
+                f"{{% call _render({str_args}) -%}}"
                 f"{content}"
                 f"{{%- endcall %}}"
             )
         else:
             # No default content, so the component needs no `caller` at all.
-            call = f'{{{{ _get("{node.name}").render({str_args}) }}}}'
+            call = f"{{{{ _render({str_args}) }}}}"
 
         return f"{''.join(macros)}{call}"
 

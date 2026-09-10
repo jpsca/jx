@@ -20,12 +20,12 @@ def test_add_folder(folder):
 
     assert catalog.components["a.jx"].base_path == folder
     assert catalog.components["a.jx"].path == folder / "a.jx"
-    assert catalog.components["a.jx"].mtime > 0
+    assert catalog.components["a.jx"].mtime == 0  # not compiled yet
     assert catalog.components["a.jx"].code is None
 
     assert catalog.components["b.jx"].base_path == folder
     assert catalog.components["b.jx"].path == folder / "b.jx"
-    assert catalog.components["b.jx"].mtime > 0
+    assert catalog.components["b.jx"].mtime == 0  # not compiled yet
     assert catalog.components["b.jx"].code is None
 
 
@@ -68,11 +68,11 @@ def test_add_folder_with_prefix(tmp_path):
 
     assert catalog.components["a.jx"].base_path == folder1
     assert catalog.components["a.jx"].path == folder1 / "a.jx"
-    assert catalog.components["a.jx"].mtime > 0
+    assert catalog.components["a.jx"].mtime == 0  # not compiled yet
 
     assert catalog.components["@bla/b.jx"].base_path == folder2
     assert catalog.components["@bla/b.jx"].path == folder2 / "b.jx"
-    assert catalog.components["@bla/b.jx"].mtime > 0
+    assert catalog.components["@bla/b.jx"].mtime == 0  # not compiled yet
 
 
 def test_dot_in_prefix(tmp_path):
@@ -87,7 +87,7 @@ def test_dot_in_prefix(tmp_path):
 
     assert catalog.components["@ui.forms/a.jx"].base_path == folder
     assert catalog.components["@ui.forms/a.jx"].path == folder / "a.jx"
-    assert catalog.components["@ui.forms/a.jx"].mtime > 0
+    assert catalog.components["@ui.forms/a.jx"].mtime == 0  # not compiled yet
 
 
 def test_add_same_folder_many_times(folder):
