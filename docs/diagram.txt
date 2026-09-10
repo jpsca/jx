@@ -32,14 +32,14 @@
   │                                                                         │
   │     INPUT:                          OUTPUT:                             │
   │     ┌─────────────────────┐        ┌──────────────────────────────┐   │
-  │     │ <Card title="Hi">   │   ──▶  │ {% call(_slot="")            │   │
-  │     │   <p>Content</p>    │        │   _render("Card",            │   │
-  │     │ </Card>             │        │     title="Hi") -%}          │   │
-  │     └─────────────────────┘        │   <p>Content</p>             │   │
-  │                                    │ {%- endcall %}               │   │
+  │     │ <Card title="Hi">   │   ──▶  │ {% call _render("Card",      │   │
+  │     │   <p>Content</p>    │        │     **{"title":"Hi"}) -%}    │   │
+  │     │ </Card>             │        │     <p>Content</p>           │   │
+  │     └─────────────────────┘        │ {%- endcall %}               │   │
+  │                                    │                              │   │
   │     ┌─────────────────────┐        └──────────────────────────────┘   │
-  │     │ {% slot header %}   │   ──▶  │ {% if _slots.get('header') %}│   │
-  │     │   Default           │        │   {{ _slots['header'] }}     │   │
+  │     │ {% slot header %}   │   ──▶  │ {% if 'header' in _slots %}  │   │
+  │     │   Default           │        │   {{ _slots['header']() }}   │   │
   │     │ {% endslot %}       │        │ {% else %}Default{% endif %} │   │
   │     └─────────────────────┘        └──────────────────────────────┘   │
   └─────────────────────────────────────────────────────────────────────────┘
@@ -104,7 +104,7 @@
   │        │   title: "Hi",           # declared props                 │    │
   │        │   attrs: Attrs(...),     # extra attributes               │    │
   │        │   content: "...",        # inner HTML                     │    │
-  │        │   _slots: {...},         # named slot content             │    │
+  │        │   _slots: {...},         # fill callables                 │    │
   │        │   _render: <fn>,         # child component renderer       │    │
   │        │   assets: {...},         # asset helpers                  │    │
   │        │ }                                                         │    │

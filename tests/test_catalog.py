@@ -526,3 +526,18 @@ def test_render_string_does_not_share_assets_between_sources(folder):
     assert catalog.render_string(
         '{#css "b.css" #}{#js "b.js" #}\n{{ assets.render() }}'
     ) == '<link rel="stylesheet" href="b.css">\n<script type="module" src="b.js"></script>'
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("{% raw %}Use {% in a sentence{% endraw %}", "Use {% in a sentence"),
+        ('{% raw %}{% "unterminated quote{% endraw %}', '{% "unterminated quote'),
+        ("{% raw %}<Card />{%+ endraw %}", "<Card />"),
+    ],
+)
+def test_raw_blocks_render_exactly_like_jinja(folder, source, expected):
+    """A raw block is text all the way down, so Jx must not lex inside it."""
+    catalog = Catalog(folder)
+    assert catalog.render_string(source) == expected
+    assert jinja2.Environment().from_string(source).render() == expected

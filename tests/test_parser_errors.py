@@ -86,6 +86,21 @@ def test_slot_needs_a_name():
         parse("{% slot %}x{% endslot %}")
 
 
+def test_slot_rejects_anything_after_the_name():
+    """A name is all a slot takes; a typo used to be dropped without a word."""
+    with pytest.raises(TemplateSyntaxError, match="Unexpected `typo`"):
+        parse("{% slot header typo %}x{% endslot %}")
+
+
+def test_fill_rejects_anything_after_the_name():
+    with pytest.raises(TemplateSyntaxError, match="Unexpected `typo`"):
+        parse("<Card>{% fill header typo %}x{% endfill %}</Card>")
+
+
+def test_slot_accepts_whitespace_control_after_the_name():
+    parse("{% slot header -%}x{%- endslot %}")
+
+
 def test_stray_closing_tag_is_an_error():
     with pytest.raises(TemplateSyntaxError, match="no component is open"):
         parse("</Card>")

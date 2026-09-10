@@ -113,6 +113,25 @@ def test_changing_the_environment_invalidates_the_entry(folder):
     assert len(bcc.store) == 2, "both settings ended up in the same bucket"
 
 
+def test_trim_blocks_invalidates_the_entry(folder):
+    """
+    `trim_blocks` changes what the lexer keeps, not the source, so it has to be
+    part of the fingerprint too.
+    """
+    (folder / "card.jx").write_text("<div>{% if True %}\nhi{% endif %}</div>")
+    bcc = DictBytecodeCache()
+
+    keep = Catalog(folder, auto_reload=False, bytecode_cache=bcc)
+    assert keep.render("card.jx") == "<div>\nhi</div>"
+
+    env = jinja2.Environment(
+        trim_blocks=True, autoescape=True, undefined=jinja2.StrictUndefined
+    )
+    trim = Catalog(folder, jinja_env=env, auto_reload=False, bytecode_cache=bcc)
+    assert trim.render("card.jx") == "<div>hi</div>"
+    assert len(bcc.store) == 2, "both settings ended up in the same bucket"
+
+
 def test_an_env_that_already_carries_a_cache_is_used(folder, counted):
     write_card(folder)
     bcc = DictBytecodeCache()

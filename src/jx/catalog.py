@@ -541,6 +541,13 @@ class Catalog:
             env.variable_end_string,
             env.comment_start_string,
             env.comment_end_string,
+            env.line_statement_prefix or "",
+            env.line_comment_prefix or "",
+            str(env.trim_blocks),
+            str(env.lstrip_blocks),
+            str(env.keep_trailing_newline),
+            env.newline_sequence,
+            str(env.is_async),
             ",".join(sorted(env.extensions)),
         )
         return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]

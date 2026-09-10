@@ -29,6 +29,16 @@ def only(source: str):
         ("{% if x %}{% endif %}", ["stmt", "stmt"]),
         ("{# c #}", ["comment"]),
         ("{% raw %}{{ x }}<Card />{% endraw %}", ["raw"]),
+        # Nothing inside a raw block is scanned, so a bare `{%` is just text.
+        ("{% raw %}Use {% in a sentence{% endraw %}", ["raw"]),
+        ("""{% raw %}{% "unterminated quote{% endraw %}""", ["raw"]),
+        # Every spelling of the terminator Jinja accepts.
+        ("{% raw %}a{%endraw%}", ["raw"]),
+        ("{% raw %}a{%- endraw %}", ["raw"]),
+        ("{% raw %}a{%+ endraw %}", ["raw"]),
+        ("{% raw %}a{% endraw -%}", ["raw"]),
+        # The first terminator wins: raw blocks do not nest.
+        ("{% raw %}{% raw %}{% endraw %}x", ["raw", "text"]),
         ("<Card />", ["tag_open"]),
         ("<Card>x</Card>", ["tag_open", "text", "tag_close"]),
         ("a{{ b }}c", ["text", "expr", "text"]),
@@ -122,6 +132,8 @@ def test_positions_after_a_multiline_tag():
         ("<Card a={{ {{ x }} />", "Unmatched braces"),
         ("<Card a=bare />", "must be quoted"),
         ('<Card a="1" a="2" />', "Duplicate attribute"),
+        # `data-id` and `data_id` both reach the template as `data_id`.
+        ('<Card data-id="1" data_id="2" />', "Duplicate attribute"),
     ],
 )
 def test_lexer_errors(source, message):

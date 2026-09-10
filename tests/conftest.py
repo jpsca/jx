@@ -38,6 +38,12 @@ KNOWN_DIVERGENCES = {
         "unclosed one in plain text passed through to fail later inside Jinja; "
         "see test_unclosed_expr_block_raises"
     ),
+    "{% raw %}<Card />{%+ endraw %}": (
+        "the regex parser did not recognize `{%+ endraw %}` as a terminator, so "
+        "it kept scanning and turned the tag inside the raw block into a render "
+        "call; Jinja emits it literally, and so does the lexer now; "
+        "see test_token_kinds"
+    ),
     r'<Foo title="say \"hello\"" />': (
         "the regex parser cut the value at the escaped quote and emitted an "
         "unterminated Python string; see test_escaped_quotes_in_tag_attrs"

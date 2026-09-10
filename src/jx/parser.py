@@ -274,6 +274,20 @@ class JxParser:
         name = text[start:index]
         if not name:
             raise self._error(token.span, f"`{{% {token.name} %}}` needs a name")
+
+        # A name is all these take. Anything else is a typo that would
+        # otherwise be dropped without a word.
+        rest = text[index:].strip()
+        if rest.endswith("-%}"):
+            rest = rest[:-3]
+        else:
+            rest = rest[:-2]
+        rest = rest.strip()
+        if rest:
+            raise self._error(
+                token.span,
+                f"Unexpected `{rest}` after `{{% {token.name} {name} %}}`",
+            )
         return name
 
     def _check_unclosed(self, stack: list) -> None:

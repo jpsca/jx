@@ -111,6 +111,11 @@ what""",
 {% raw %}{{ a + b }}{% endraw %}
 what""",
     ),
+    # A `{%` inside a raw block is text, not the start of a statement.
+    (
+        """{% raw %}Use {% in a sentence{% endraw %}<Foo />""",
+        """{% raw %}Use {% in a sentence{% endraw %}{{ _render("Foo") }}""",
+    ),
     # Raw blocks with HTML content (should not be escaped)
     (
         """<Foo bar="baz">content</Foo>

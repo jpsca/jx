@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import re
 from dataclasses import dataclass
 from enum import Enum
 
@@ -27,6 +28,10 @@ KEYWORD_CHARS = frozenset("abcdefghijklmnopqrstuvwxyz_")
 
 # The `{# … #}` declarations that may appear in a component's header.
 DECLARATION_KEYWORDS = frozenset({"def", "import", "css", "js"})
+
+# The end of a raw block, spelled exactly as Jinja's own lexer spells it. Jx
+# hands the block through verbatim, so the two have to agree on where it ends.
+RAW_END_RE = re.compile(r"\{%[-+]?\s*endraw\s*[-+]?%\}")
 
 OPEN_BRACKETS = frozenset("([{")
 CLOSE_BRACKETS = frozenset(")]")
@@ -275,22 +280,23 @@ class Lexer:
         )
 
     def _scan_raw(self, i: int, body_start: int) -> Token:
-        """A raw block is one opaque token: nothing inside it is a construct."""
-        src = self.source
-        pos = body_start
-        while True:
-            nxt = src.find("{%", pos)
-            if nxt == -1:
-                raise self.error(i, "Unclosed '{% raw %}'")
-            keyword, _, _, after = self._stmt_parts(nxt)
-            if keyword == "endraw":
-                return Token(
-                    type=TokenType.RAW,
-                    value=src[i:after],
-                    span=self.map.span(i, after),
-                    name="raw",
-                )
-            pos = after
+        """
+        A raw block is one opaque token: nothing inside it is a construct.
+
+        So look for the terminator and nothing else. Scanning the `{%` in
+        between as statements would make `{% raw %}Use {% here{% endraw %}`
+        an error, when the whole point of the block is that it is text.
+        """
+        match = RAW_END_RE.search(self.source, body_start)
+        if match is None:
+            raise self.error(i, "Unclosed '{% raw %}'")
+        after = match.end()
+        return Token(
+            type=TokenType.RAW,
+            value=self.source[i:after],
+            span=self.map.span(i, after),
+            name="raw",
+        )
 
     def _scan_close_tag(self, i: int) -> Token | None:
         src = self.source
@@ -338,6 +344,8 @@ class Lexer:
         src = self.source
         end = len(src)
         attrs: list[Attribute] = []
+        # Keyed by the normalized name, because `data-id` and `data_id` both
+        # reach the generated code as the same `data_id` keyword.
         seen: set[str] = set()
 
         def syntax_error() -> TemplateSyntaxError:
@@ -379,7 +387,8 @@ class Lexer:
             else:
                 value, kind, value_span = None, AttrKind.FLAG, None
 
-            if name in seen:
+            key = name.replace("-", "_")
+            if key in seen:
                 span = self.map.span(name_start, j)
                 raise TemplateSyntaxError(
                     error_message(
@@ -388,7 +397,7 @@ class Lexer:
                         f"Duplicate attribute `{name}` on `{tag}`",
                     )
                 )
-            seen.add(name)
+            seen.add(key)
             attrs.append(
                 Attribute(
                     name=name,
