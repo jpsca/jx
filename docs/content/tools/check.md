@@ -1,6 +1,6 @@
 ---
-title: Validator
-description: Command-line tools for validating Jx components
+title: Command line
+description: Command-line tools for validating and inspecting Jx components
 ---
 
 Jx includes a command-line tool for validating your components. This helps catch errors early, and can be especially useful in CI pipelines.
@@ -66,13 +66,16 @@ $ jx check --format json myapp.setup:catalog
     {
       "file": "modal.jx",
       "abs_path": "/path/to/components/modal.jx",
-      "line": null,
+      "line": 2,
       "message": "Unknown import 'dialog.jx'",
       "suggestion": "dialogs/dialog.jx"
     }
   ]
 }
 ```
+
+Every error carries the line it happens on, and a syntax error also carries a
+0-based `col`, so an editor can underline the exact spot.
 
 JSON output is useful for integrating with editors, linters, or custom tooling.
 
@@ -94,3 +97,91 @@ for error in errors:
 # Or run the full check with formatted output (returns exit code)
 exit_code = check(catalog, format="text")
 ```
+
+
+## Inspecting a Catalog
+
+`jx info` reports how a catalog is set up — where its component folders are,
+what prefixes they have, and which file extension it uses:
+
+```sh
+$ jx info myapp.setup:catalog
+```
+
+```sh
+file_ext: .jx
+components: 12
+folders:
+  /srv/myapp/components
+  /srv/myapp/ui (prefix: @ui/) [assets: /srv/myapp/ui/static]
+```
+
+```sh
+$ jx info --format json myapp.setup:catalog
+```
+
+```json
+{
+  "file_ext": ".jx",
+  "folders": [
+    {"path": "/srv/myapp/components", "prefix": "", "assets": null},
+    {"path": "/srv/myapp/ui", "prefix": "ui", "assets": "/srv/myapp/ui/static"}
+  ],
+  "components": ["@ui/modal.jx", "button.jx", "page.jx"]
+}
+```
+
+This exists so a tool does not have to read your Python source to work out
+where components live. However the folders were registered — a literal string,
+a `Path`, `settings.BASE_DIR / "components"`, `add_package` — the catalog that
+actually loaded them is the one answering.
+
+
+## Inspecting a Component
+
+`jx parse` reports a single component's structure: the imports in its header
+and the component tags it uses, each with the offsets they occupy in the file.
+
+```sh
+$ jx parse components/page.jx --format text
+```
+
+```sh
+import button.jx as Button
+4: <Button>
+```
+
+No catalog is involved, so this works on any file, including one that belongs
+to no project. Pass `--stdin` to parse an editor buffer that has not been
+saved, using the path only as a name:
+
+```sh
+$ jx parse components/page.jx --stdin < buffer.txt
+```
+
+The default format is JSON:
+
+```json
+{
+  "name": "components/page.jx",
+  "imports": [
+    {
+      "name": "Button", "path": "button.jx", "start": 0,
+      "path_start": 10, "path_end": 19,
+      "name_start": 24, "name_end": 30
+    }
+  ],
+  "tags": [{"name": "Button", "start": 78, "end": 99, "line": 4}],
+  "errors": []
+}
+```
+
+Two things are worth noting:
+
+- The tags come from the parser, so a `<Button />` written inside a comment or
+  a `{% raw %}` block is not reported — it is not a tag.
+- A file whose body does not parse still reports the imports in its header,
+  along with the error. A broken file is exactly when a tool still wants to
+  know what it was importing.
+
+The exit code is `1` when the file has an error, in either format.

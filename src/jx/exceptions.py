@@ -2,6 +2,14 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import typing as t
+
+from .span import error_message
+
+
+if t.TYPE_CHECKING:
+    from .span import Span
+
 
 class JxException(Exception):
     """Base class for all Jx exceptions."""
@@ -11,7 +19,28 @@ class TemplateSyntaxError(JxException):
     """
     Raised when the template syntax is invalid.
     This is usually caused by a missing or extra closing tag.
+
+    The position is kept as data as well as being formatted into the message,
+    so a tool can put the error on the right line instead of parsing it back
+    out of the text.
     """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        line: int | None = None,
+        col: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.line = line
+        self.col = col
+
+    @classmethod
+    def at(cls, name: str, span: "Span", message: str) -> "TemplateSyntaxError":
+        """Build the error for a span, keeping its line and column."""
+        line, col = span._map.locate(span.start)
+        return cls(error_message(name, span, message), line=line, col=col)
 
 
 class ComponentNotFoundError(JxException):

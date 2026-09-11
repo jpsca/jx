@@ -66,14 +66,32 @@ La extensión provee formateo de documento (<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd
 
 ## Autodetección
 
-La extensión escanea automáticamente tu workspace en busca de archivos Python que usen `Catalog()` o `.add_folder()` para detectar:
+La extensión le pregunta a jx dónde viven tus componentes, en vez de intentar
+deducirlo de tu código Python.
 
-- Rutas de carpetas de componentes (usadas por ir a la definición)
-- Rutas de importación del catálogo (usadas por los diagnósticos)
+Escanea el workspace buscando una asignación `... = Catalog(...)` para
+encontrar catálogos candidatos, ejecuta [`jx info`](check.md#inspeccionar-un-catalogo)
+sobre cada uno y usa lo que el catálogo informa: sus carpetas, sus prefijos y su
+`file_ext`. Así que no importa cómo se registraron las carpetas — una cadena
+literal, un `Path`, `settings.BASE_DIR / "components"`, `add_package` — se
+encuentran igual.
 
-Si no se encuentra ninguna llamada a `Catalog()`, recurre a buscar archivos `.jx` dentro de carpetas con nombres conocidos (`views`, `components`, `templates`).
+Si no se puede cargar ningún catálogo, recurre a buscar archivos de componentes
+dentro de carpetas con nombres conocidos (`views`, `components`, `templates`).
 
-El escaneo se vuelve a ejecutar cada vez que se crea, modifica o elimina un archivo `.py`.
+El escaneo se vuelve a ejecutar cada vez que se crea, modifica o elimina un
+archivo `.py`.
+
+Ir a la definición y la lista de imports vienen de
+[`jx parse`](check.md#inspeccionar-un-componente), ejecutado sobre el búfer del
+editor, así que se analiza lo que estás escribiendo aunque no lo hayas
+guardado. Por eso también un `<Button />` escrito dentro de un comentario o de
+un bloque `{% raw %}` correctamente *no* se trata como una etiqueta de
+componente.
+
+Si jx no está instalado en el intérprete seleccionado, la extensión recurre a
+reconocer los imports por su forma, para que ir a la definición siga
+funcionando.
 
 
 ## Instalación

@@ -358,3 +358,47 @@ def test_format_error_with_suggestion():
         file="card.jx", line=4, message="Unknown component 'Buttn'", suggestion="Button"
     )
     assert format_error(error) == "card.jx:4 - Unknown component 'Buttn' (did you mean 'Button'?)"
+
+
+def test_check_reports_syntax_error_line(folder):
+    """A syntax error is reported on the line it happens, not on line 1."""
+    (folder / "button.jx").write_text("<button />")
+    (folder / "broken.jx").write_text(
+        '{#import "button.jx" as Button #}\n'
+        "<div>\n"
+        '  <Button label="Hi">\n'
+        "</div>\n"
+    )
+
+    errors, _checked = check_all(Catalog(folder))
+    broken = [e for e in errors if e.file == "broken.jx"]
+    assert len(broken) == 1
+    assert broken[0].line == 3
+
+
+def test_check_reports_unknown_import_line(folder):
+    """An unknown import points at its own declaration."""
+    (folder / "page.jx").write_text(
+        '{#css "a.css" #}\n'
+        '{#import "nope.jx" as Nope #}\n'
+        "<div />\n"
+    )
+
+    errors, _checked = check_all(Catalog(folder))
+    assert [(e.line, e.message) for e in errors] == [
+        (2, "Unknown import 'nope.jx'")
+    ]
+
+
+def test_check_unknown_import_line_for_relative_path(folder):
+    """Relative imports are resolved in Meta, so the line is keyed by alias."""
+    sub = folder / "sub"
+    sub.mkdir()
+    (sub / "page.jx").write_text(
+        "\n"
+        '{#import "./nope.jx" as Nope #}\n'
+        "<div />\n"
+    )
+
+    errors, _checked = check_all(Catalog(folder))
+    assert [e.line for e in errors] == [2]

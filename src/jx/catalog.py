@@ -23,6 +23,16 @@ from .utils import logger
 
 
 @dataclass(frozen=True, slots=True)
+class Folder:
+    """A folder registered with `add_folder`, kept so tooling can ask the
+    catalog where its components live instead of guessing from source code."""
+
+    path: Path
+    prefix: str  # normalized, without the `@` or trailing `/`; "" when unprefixed
+    assets: Path | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class CData:
     """
     An immutable snapshot of a compiled component. Never mutated in place:
@@ -150,6 +160,7 @@ class Catalog:
         # that component instead of being rebuilt on each access to a child.
         self._component_cache: dict[str, Component] = {}
         self.assets_folders: dict[str, Path] = {}
+        self.folders: list[Folder] = []
         self.asset_resolver = asset_resolver
         self.jinja_env = self._make_jinja_env(
             jinja_env=jinja_env,
@@ -229,6 +240,9 @@ class Catalog:
         with self._lock:
             if assets_path is not None:
                 self.assets_folders[assets_prefix] = assets_path
+            self.folders.append(
+                Folder(path=base_path, prefix=assets_prefix, assets=assets_path)
+            )
 
             for filepath in base_path.rglob(f"*{self.file_ext}"):
                 relpath = f"{prefix}{filepath.relative_to(base_path).as_posix()}"

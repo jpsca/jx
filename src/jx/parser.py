@@ -18,7 +18,7 @@ from .nodes import (
     Stmt,
     Text,
 )
-from .span import Span, error_message
+from .span import Span
 
 
 SLOT_NAME_CHARS = frozenset(
@@ -113,8 +113,13 @@ class JxParser:
         """
         document = Document(
             declarations=[
-                Declaration(keyword, expr, self.lexer.map.span(offset, offset))
-                for keyword, expr, offset in scan_header(self.source)
+                Declaration(
+                    keyword,
+                    expr,
+                    self.lexer.map.span(offset, offset),
+                    self.lexer.map.span(expr_offset, expr_offset + len(expr)),
+                )
+                for keyword, expr, offset, expr_offset in scan_header(self.source)
             ]
         )
         stack: list = [document]
@@ -143,7 +148,7 @@ class JxParser:
     # Private
 
     def _error(self, span: Span, message: str) -> TemplateSyntaxError:
-        return TemplateSyntaxError(error_message(self.name, span, message))
+        return TemplateSyntaxError.at(self.name, span, message)
 
     @staticmethod
     def _add(stack: list, node) -> None:

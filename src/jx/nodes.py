@@ -101,11 +101,15 @@ class Declaration:
     The comment itself stays in `Document.children` and is emitted verbatim;
     this is the same text, split into keyword and payload, so a tool does not
     have to recognise the header on its own.
+
+    `span` marks the opening `{#`; `expr_span` covers the payload, so an
+    offset within the payload can be mapped back to a place in the file.
     """
 
     keyword: str
     expr: str
     span: Span
+    expr_span: Span | None = None
 
 
 @dataclass(slots=True)

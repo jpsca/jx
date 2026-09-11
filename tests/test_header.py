@@ -12,7 +12,7 @@ from jx.lexer import scan_header, split_declaration, strip_inline_comments
 
 
 def keywords(source: str) -> list[tuple[str, str]]:
-    return [(kw, expr) for kw, expr, _ in scan_header(source)]
+    return [(kw, expr) for kw, expr, *_ in scan_header(source)]
 
 
 # --- what counts as the header ----------------------------------------------
@@ -69,7 +69,8 @@ def test_unclosed_header_comment_yields_nothing():
     ],
 )
 def test_split_declaration(comment, expected):
-    assert split_declaration(comment) == expected
+    found = split_declaration(comment)
+    assert (found[:2] if found else None) == expected
 
 
 # --- inline comments inside a declaration -----------------------------------

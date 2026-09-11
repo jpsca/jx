@@ -21,6 +21,7 @@ from .lexer import (
     scan_header,
     strip_inline_comments,
 )
+from .span import SourceMap
 
 
 ALLOWED_NAMES_IN_EXPRESSION_VALUES = {
@@ -33,6 +34,18 @@ ALLOWED_NAMES_IN_EXPRESSION_VALUES = {
     "false": False,
     "true": True,
 }
+
+
+@dataclass(slots=True)
+class ImportDecl:
+    """One `{# import … #}` declaration, with offsets relative to the payload."""
+
+    path: str
+    name: str
+    path_start: int
+    path_end: int
+    name_start: int
+    name_end: int
 
 
 @dataclass(slots=True)
@@ -63,7 +76,7 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
     meta = Meta()
     def_found = False
 
-    for keyword, expr, _offset in scan_header(source):
+    for keyword, expr, _offset, _expr_offset in scan_header(source):
         if keyword == "def":
             # Not run through `strip_inline_comments`: a `#` here is already a
             # Python comment, and `ast.parse` below knows what to do with it.
@@ -76,7 +89,8 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
         expr = strip_inline_comments(expr).replace("\n", " ")
 
         if keyword == "import":
-            import_path, import_name = parse_import_expr(expr)
+            decl = parse_import_expr(expr)
+            import_path, import_name = decl.path, decl.name
             if import_path.startswith("."):
                 if not fullpath.parts:
                     raise InvalidImport(
@@ -94,6 +108,39 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
             meta.js = (*meta.js, *parse_files_expr(expr))
 
     return meta
+
+
+def scan_import_lines(source: str) -> dict[str, int]:
+    """
+    Map each import's alias to the 1-based line its declaration is on.
+
+    Keyed by the alias rather than the path, because `Meta.imports` has already
+    resolved a relative path against the component's folder and the raw text
+    would no longer match it.
+
+    Only tooling needs this, so it is kept out of `Meta` and off the render
+    path. It reads the same header `scan_header` reads, so a declaration the
+    renderer ignores is ignored here too.
+
+    Returns:
+        `{import_name: line}`. An unparseable declaration is skipped; the
+        caller is reporting on a file it already knows may be broken.
+
+    """
+    lines: dict[str, int] = {}
+    source_map = SourceMap(source)
+
+    for keyword, expr, offset, _expr_offset in scan_header(source):
+        if keyword != "import":
+            continue
+        expr = strip_inline_comments(expr).replace("\n", " ")
+        try:
+            decl = parse_import_expr(expr)
+        except InvalidImport:
+            continue
+        lines.setdefault(decl.name, source_map.locate(offset)[0])
+
+    return lines
 
 
 def annotation_to_type(annotation: ast.expr | None) -> type | None:
@@ -166,8 +213,14 @@ def parse_files_expr(expr: str) -> list[str]:
     return files
 
 
-def parse_import_expr(expr: str) -> tuple[str, str]:
-    """Read a `"path/to/component.jx" as TagName` declaration."""
+def parse_import_expr(expr: str) -> ImportDecl:
+    """
+    Read a `"path/to/component.jx" as TagName` declaration.
+
+    The offsets of both halves are reported along with their text. They are
+    known here anyway, and an editor needs them to make the path and the alias
+    separately clickable.
+    """
     if expr[:1] != '"':
         raise InvalidImport(expr)
     close = expr.find('"', 1)
@@ -177,6 +230,8 @@ def parse_import_expr(expr: str) -> tuple[str, str]:
 
     rest = expr[close + 1:]
     end = len(rest)
+    # Where `rest` begins, so the name offsets can be reported against `expr`.
+    base = close + 1
 
     i = 0
     while i < end and rest[i] in WHITESPACE:
@@ -198,7 +253,14 @@ def parse_import_expr(expr: str) -> tuple[str, str]:
     while i < end and rest[i] in TAG_NAME_CHARS:
         i += 1
 
-    return path, rest[start:i]
+    return ImportDecl(
+        path=path,
+        name=rest[start:i],
+        path_start=1,
+        path_end=close,
+        name_start=base + start,
+        name_end=base + i,
+    )
 
 
 def validate_import_path(path: str, resolved: Path, base_path: Path) -> None:

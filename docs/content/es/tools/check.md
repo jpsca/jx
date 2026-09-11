@@ -1,6 +1,6 @@
 ---
-title: Validador
-description: Herramientas de línea de comandos para validar componentes Jx
+title: Línea de comandos
+description: Herramientas de línea de comandos para validar e inspeccionar componentes Jx
 ---
 
 Jx incluye una herramienta de línea de comandos para validar tus componentes. Esto ayuda a detectar errores temprano y puede ser especialmente útil en pipelines de CI.
@@ -94,3 +94,56 @@ for error in errors:
 # O ejecutar la verificación completa con salida formateada (devuelve el código de salida)
 exit_code = check(catalog, format="text")
 ```
+
+
+## Inspeccionar un catálogo
+
+`jx info` informa cómo está configurado un catálogo: dónde están sus carpetas
+de componentes, qué prefijos tienen y qué extensión de archivo usa.
+
+```sh
+$ jx info miapp.setup:catalog --format json
+```
+
+```json
+{
+  "file_ext": ".jx",
+  "folders": [
+    {"path": "/srv/miapp/components", "prefix": "", "assets": null},
+    {"path": "/srv/miapp/ui", "prefix": "ui", "assets": "/srv/miapp/ui/static"}
+  ],
+  "components": ["@ui/modal.jx", "button.jx", "page.jx"]
+}
+```
+
+Existe para que una herramienta no tenga que leer tu código Python para
+averiguar dónde viven los componentes: responde el catálogo que realmente los
+cargó, sin importar cómo se registraron las carpetas.
+
+
+## Inspeccionar un componente
+
+`jx parse` informa la estructura de un componente: los imports de su cabecera y
+las etiquetas de componente que usa, con las posiciones que ocupan en el
+archivo.
+
+```sh
+$ jx parse components/page.jx --format text
+```
+
+```sh
+import button.jx as Button
+4: <Button>
+```
+
+No involucra un catálogo, así que funciona con cualquier archivo. Usa `--stdin`
+para analizar un búfer del editor que aún no se ha guardado, usando la ruta
+solo como nombre:
+
+```sh
+$ jx parse components/page.jx --stdin < buffer.txt
+```
+
+Las etiquetas vienen del parser, así que un `<Button />` escrito dentro de un
+comentario o de un bloque `{% raw %}` no se informa. Y un archivo cuyo cuerpo
+no analiza igual informa los imports de su cabecera, junto con el error.

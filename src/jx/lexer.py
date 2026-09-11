@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .exceptions import TemplateSyntaxError
-from .span import SourceMap, Span, error_message
+from .span import SourceMap, Span
 
 
 TAG_NAME_START = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -92,7 +92,7 @@ class Lexer:
 
     def error(self, offset: int, message: str) -> TemplateSyntaxError:
         span = self.map.span(offset, offset)
-        return TemplateSyntaxError(error_message(self.name, span, message))
+        return TemplateSyntaxError.at(self.name, span, message)
 
     # Public
 
@@ -365,9 +365,7 @@ class Lexer:
 
         def syntax_error() -> TemplateSyntaxError:
             span = self.map.span(tag_start, tag_start)
-            return TemplateSyntaxError(
-                error_message(self.name, span, f"Syntax error: `{tag}`")
-            )
+            return TemplateSyntaxError.at(self.name, span, f"Syntax error: `{tag}`")
 
         while True:
             while j < end and src[j] in WHITESPACE:
@@ -405,12 +403,8 @@ class Lexer:
             key = name.replace("-", "_")
             if key in seen:
                 span = self.map.span(name_start, j)
-                raise TemplateSyntaxError(
-                    error_message(
-                        self.name,
-                        span,
-                        f"Duplicate attribute `{name}` on `{tag}`",
-                    )
+                raise TemplateSyntaxError.at(
+                    self.name, span, f"Duplicate attribute `{name}` on `{tag}`"
                 )
             seen.add(key)
             attrs.append(
@@ -455,25 +449,31 @@ class Lexer:
         rest = src[k:] if tag_end == -1 else src[k:tag_end]
         if "}}" in rest:
             raise self.error(k, "Unmatched braces")
-        raise TemplateSyntaxError(
-            error_message(
-                self.name,
-                self.map.span(k, k),
-                "Attribute values must be quoted or wrapped in {{ \u2026 }}",
-            )
+        raise TemplateSyntaxError.at(
+            self.name,
+            self.map.span(k, k),
+            "Attribute values must be quoted or wrapped in {{ \u2026 }}",
         )
 
 
-def split_declaration(comment: str) -> tuple[str, str] | None:
+def split_declaration(comment: str) -> tuple[str, str, int] | None:
     """
     Split a `{# def … #}` style comment into its keyword and its payload.
+
+    Returns `(keyword, payload, payload_offset)`, the offset being where the
+    payload starts within `comment` — an editor needs it to point at a piece of
+    a declaration rather than at the whole comment.
 
     Returns `None` for an ordinary comment, and for a declaration keyword that
     is not followed by anything (`{# def #}`), which has always been a no-op.
     """
     inner = comment[2:-2]
+    # How far `inner` sits into `comment`, so payload offsets can be reported
+    # against the comment the caller passed in.
+    base = 2
     if inner[:1] == "-":
         inner = inner[1:]
+        base += 1
     if inner[-1:] == "-":
         inner = inner[:-1]
 
@@ -491,13 +491,14 @@ def split_declaration(comment: str) -> tuple[str, str] | None:
     # The keyword has to be separated from its payload.
     if i >= end or inner[i] not in WHITESPACE:
         return None
-    payload = inner[i:].strip()
+    rest = inner[i:]
+    payload = rest.strip()
     if not payload:
         return None
-    return keyword, payload
+    return keyword, payload, base + i + (len(rest) - len(rest.lstrip()))
 
 
-def scan_header(source: str) -> list[tuple[str, str, int]]:
+def scan_header(source: str) -> list[tuple[str, str, int, int]]:
     """
     Read the run of `{# … #}` comments a component starts with.
 
@@ -506,10 +507,11 @@ def scan_header(source: str) -> list[tuple[str, str, int]]:
     tool wants to say which component the error is in.
 
     Returns:
-        `(keyword, payload, offset)` for each declaration found.
+        `(keyword, payload, offset, payload_offset)` for each declaration
+        found, both offsets absolute within `source`.
 
     """
-    out: list[tuple[str, str, int]] = []
+    out: list[tuple[str, str, int, int]] = []
     pos = 0
     end = len(source)
 
@@ -524,7 +526,7 @@ def scan_header(source: str) -> list[tuple[str, str, int]]:
         close += 2
         found = split_declaration(source[pos:close])
         if found:
-            out.append((found[0], found[1], pos))
+            out.append((found[0], found[1], pos, pos + found[2]))
         pos = close
 
     return out

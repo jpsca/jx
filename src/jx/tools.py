@@ -9,8 +9,9 @@ from difflib import get_close_matches
 from pathlib import Path
 
 from .catalog import Catalog
-from .exceptions import JxException
-from .meta import extract_metadata
+from .exceptions import InvalidImport, JxException
+from .lexer import scan_header
+from .meta import extract_metadata, parse_import_expr, scan_import_lines
 from .nodes import Component, walk
 from .parser import JxParser
 
@@ -22,6 +23,8 @@ class CheckError:
     message: str
     suggestion: str | None = None
     abs_path: str | None = None
+    # 0-based, and only set for errors that know where they are.
+    col: int | None = None
 
 
 def find_component_tags(source: str) -> list[tuple[str, int]]:
@@ -48,6 +51,11 @@ def find_component_tags(source: str) -> list[tuple[str, int]]:
     ]
 
 
+def error_position(err: JxException) -> tuple[int | None, int | None]:
+    """The (1-based line, 0-based column) a syntax error points at, if known."""
+    return getattr(err, "line", None), getattr(err, "col", None)
+
+
 def check_component(
     catalog: Catalog,
     relpath: str,
@@ -71,15 +79,22 @@ def check_component(
     try:
         meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
     except JxException as err:
-        return [CheckError(file=relpath, line=None, message=str(err), abs_path=abs_path)]
+        line, col = error_position(err)
+        return [
+            CheckError(
+                file=relpath, line=line, message=str(err), abs_path=abs_path, col=col
+            )
+        ]
+
+    import_lines = scan_import_lines(source)
 
     # Check that all imports exist
-    for _import_name, import_path in meta.imports.items():
+    for import_name, import_path in meta.imports.items():
         if import_path not in all_components:
             suggestion = suggest_component(import_path, all_components)
             errors.append(CheckError(
                 file=relpath,
-                line=None,
+                line=import_lines.get(import_name),
                 message=f"Unknown import '{import_path}'",
                 suggestion=suggestion,
                 abs_path=abs_path,
@@ -116,7 +131,12 @@ def check_component(
         parser = JxParser(name=relpath, source=source, components=components)
         parser.parse(validate_tags=False)
     except JxException as err:
-        errors.append(CheckError(file=relpath, line=None, message=str(err), abs_path=abs_path))
+        line, col = error_position(err)
+        errors.append(
+            CheckError(
+                file=relpath, line=line, message=str(err), abs_path=abs_path, col=col
+            )
+        )
 
     return errors
 
@@ -222,3 +242,108 @@ def check(catalog: Catalog, *, format: str = "text") -> int:
     print(f"{checked} component{'s' if checked != 1 else ''} checked, {total_errors} error{'s' if total_errors != 1 else ''}")
 
     return 1 if total_errors > 0 else 0
+
+
+# -- Catalog introspection ---------------------------------------------------
+
+
+def catalog_info(catalog: Catalog) -> dict:
+    """
+    Describe how the catalog is set up.
+
+    Exists so a tool does not have to read the user's Python source to find
+    out where components live: it asks the catalog that actually loaded them.
+    """
+    return {
+        "file_ext": catalog.file_ext,
+        "folders": [
+            {
+                "path": str(folder.path),
+                "prefix": folder.prefix,
+                "assets": str(folder.assets) if folder.assets else None,
+            }
+            for folder in catalog.folders
+        ],
+        "components": sorted(catalog.components),
+    }
+
+
+def info(catalog: Catalog, *, format: str = "text") -> int:
+    """Print the catalog's setup. Returns an exit code."""
+    data = catalog_info(catalog)
+
+    if format == "json":
+        print(json.dumps(data))
+        return 0
+
+    print(f"file_ext: {data['file_ext']}")
+    print(f"components: {len(data['components'])}")
+    if not data["folders"]:
+        print("folders: none registered")
+        return 0
+
+    print("folders:")
+    for folder in data["folders"]:
+        prefix = f" (prefix: @{folder['prefix']}/)" if folder["prefix"] else ""
+        assets = f" [assets: {folder['assets']}]" if folder["assets"] else ""
+        print(f"  {folder['path']}{prefix}{assets}")
+
+    return 0
+
+
+# -- Single-file structure ---------------------------------------------------
+
+
+def parse_source(name: str, source: str) -> dict:
+    """
+    Report one component's structure: its header imports and the component
+    tags it uses, each with absolute source offsets.
+
+    No catalog is needed, so this works on an unsaved buffer and on a file
+    that belongs to no project. The header is scanned even when the body does
+    not parse, because a broken file is exactly when an editor still wants to
+    resolve the imports at the top of it.
+
+    Returns:
+        `{"name", "imports", "tags", "errors"}`.
+
+    """
+    imports: list[dict] = []
+    for keyword, expr, offset, expr_offset in scan_header(source):
+        if keyword != "import":
+            continue
+        try:
+            decl = parse_import_expr(expr)
+        except InvalidImport:
+            continue
+        imports.append({
+            "name": decl.name,
+            "path": decl.path,
+            "start": offset,
+            "path_start": expr_offset + decl.path_start,
+            "path_end": expr_offset + decl.path_end,
+            "name_start": expr_offset + decl.name_start,
+            "name_end": expr_offset + decl.name_end,
+        })
+
+    tags: list[dict] = []
+    errors: list[dict] = []
+    parser = JxParser(name=name, source=source, components=[])
+    try:
+        document = parser.parse_ast(validate_tags=False)
+    except JxException as err:
+        line, col = error_position(err)
+        errors.append({"message": str(err), "line": line, "col": col})
+    else:
+        tags = [
+            {
+                "name": node.name,
+                "start": node.span.start,
+                "end": node.span.end,
+                "line": node.span.line,
+            }
+            for node in walk(document)
+            if isinstance(node, Component)
+        ]
+
+    return {"name": name, "imports": imports, "tags": tags, "errors": errors}

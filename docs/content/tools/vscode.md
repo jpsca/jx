@@ -66,14 +66,28 @@ The extension provides document formatting (<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd
 
 ## Auto-Detection
 
-The extension automatically scans your workspace for Python files that use `Catalog()` or `.add_folder()` to detect:
+The extension asks jx itself where your components live, rather than trying to
+work it out from your Python source.
 
-- Component folder paths (used by go-to-definition)
-- Catalog import paths (used by diagnostics)
+It scans the workspace for a `... = Catalog(...)` assignment to find candidate
+catalogs, then runs [`jx info`](check.md#inspecting-a-catalog) on each one and
+uses what the catalog reports: its folders, their prefixes, and its
+`file_ext`. So however the folders were registered — a literal string, a
+`Path`, `settings.BASE_DIR / "components"`, `add_package` — they are found.
 
-If no `Catalog()` call is found, it falls back to looking for `.jx` files inside well-known folder names (`views`, `components`, `templates`).
+If no catalog can be loaded, it falls back to looking for component files
+inside well-known folder names (`views`, `components`, `templates`).
 
-The scan re-runs whenever a `.py` file is created, changed, or deleted.
+The scan re-runs when a `.py` file is created, changed, or deleted.
+
+Go-to-definition and the import list come from
+[`jx parse`](check.md#inspecting-a-component), run over the editor's buffer, so
+unsaved edits are what gets parsed. This is also why a `<Button />` written
+inside a comment or a `{% raw %}` block is correctly *not* treated as a
+component tag.
+
+If jx is not installed in the selected interpreter, the extension falls back to
+recognising imports by their shape, so go-to-definition keeps working.
 
 
 ## Installation
