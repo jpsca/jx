@@ -97,8 +97,40 @@ def test_fill_rejects_anything_after_the_name():
         parse("<Card>{% fill header typo %}x{% endfill %}</Card>")
 
 
-def test_slot_accepts_whitespace_control_after_the_name():
-    parse("{% slot header -%}x{%- endslot %}")
+@pytest.mark.parametrize(
+    "source, message",
+    [
+        # The end tags take nothing at all.
+        ("{% slot a %}x{% endslot typo %}", "Unexpected `typo`"),
+        ("<Card>{% fill a %}x{% endfill typo %}</Card>", "Unexpected `typo`"),
+        # The keyword has to be separated from the name, or this reads as a
+        # slot named `-header` instead of the typo it is.
+        ("{% slot-header %}x{% endslot %}", "needs a name"),
+        ("<Card>{% fill.header %}x{% endfill %}</Card>", "needs a name"),
+    ],
+)
+def test_malformed_slot_constructs_are_rejected(source, message):
+    with pytest.raises(TemplateSyntaxError, match=message):
+        parse(source, components=["Card"])
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "{% slot header %}x{% endslot %}",
+        "{% slot header %}x{% endslot -%}",
+        "{% slot header %}x{% endslot +%}",
+        "<Card>{% fill header %}x{% endfill -%}</Card>",
+        "{% slot header -%}x{%- endslot %}",
+        # `+` is a marker too, not trailing text.
+        "{% slot header +%}x{%+ endslot %}",
+        "{%+ slot header +%}x{%- endslot -%}",
+        "<Card>{% fill header +%}x{% endfill %}</Card>",
+        "<Card>{% fill header -%}x{%- endfill %}</Card>",
+    ],
+)
+def test_whitespace_control_after_the_name_is_not_trailing_text(source):
+    parse(source)
 
 
 def test_stray_closing_tag_is_an_error():

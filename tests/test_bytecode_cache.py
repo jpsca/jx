@@ -4,6 +4,7 @@ Jx | Copyright (c) Juan-Pablo Scaletti
 
 import jinja2
 import pytest
+from jinja2.sandbox import SandboxedEnvironment
 
 from jx import Catalog
 
@@ -180,3 +181,42 @@ def test_children_are_cached_too(folder, counted):
         "card.jx", t="b"
     ) == "<div><i>x</i>b</div>"
     assert counted["n"] == 2
+
+
+def test_a_sandboxed_env_does_not_share_a_bucket(folder):
+    """
+    Sandboxing is a codegen decision: an intercepted operator compiles to a
+    `call_binop` the plain compiler never emits. Sharing a bucket would hand
+    sandboxed rendering code that skips the sandbox's own hooks.
+    """
+    plain = Catalog(folder, jinja_env=jinja2.Environment(autoescape=True))
+    sandboxed = Catalog(
+        folder, jinja_env=SandboxedEnvironment(autoescape=True)
+    )
+    assert plain._fingerprint_env() != sandboxed._fingerprint_env()
+
+
+def test_the_fingerprint_does_not_depend_on_object_identity(folder):
+    """
+    `str()` on a callable includes its memory address. A fingerprint built on
+    that differs in every worker process, so a shared filesystem or memcached
+    cache would never hit — the exact case `select_autoescape` puts users in.
+    """
+    one = Catalog(folder, jinja_env=jinja2.Environment(
+        autoescape=jinja2.select_autoescape()
+    ))
+    two = Catalog(folder, jinja_env=jinja2.Environment(
+        autoescape=jinja2.select_autoescape()
+    ))
+    assert one._fingerprint_env() == two._fingerprint_env()
+
+
+def test_differently_configured_autoescape_still_differs(folder):
+    """Stable is not enough; it still has to tell the two apart."""
+    html = Catalog(folder, jinja_env=jinja2.Environment(
+        autoescape=jinja2.select_autoescape(enabled_extensions=("html",))
+    ))
+    xml = Catalog(folder, jinja_env=jinja2.Environment(
+        autoescape=jinja2.select_autoescape(enabled_extensions=("xml",))
+    ))
+    assert html._fingerprint_env() != xml._fingerprint_env()

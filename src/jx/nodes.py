@@ -48,8 +48,14 @@ class Slot:
     name: str
     span: Span
     default: list["Node"] = field(default_factory=list)
+    # `{% slot a -%}` … `{%- endslot %}`: trim the default content.
     lstrip: bool = False
     rstrip: bool = False
+    # `{%- slot a %}` … `{% endslot -%}`: trim the source around the whole
+    # construct. The tags are replaced by generated ones, so these have to be
+    # carried over by hand or Jinja never sees them.
+    strip_before: bool = False
+    strip_after: bool = False
 
 
 @dataclass(slots=True)

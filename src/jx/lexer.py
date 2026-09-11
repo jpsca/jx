@@ -103,9 +103,14 @@ class Lexer:
         pos = 0
         text_start = 0
 
+        # Two cursors, refreshed only once the position passes them. Searching
+        # for both delimiters on every iteration would rescan the whole rest of
+        # the source for `{` at each of the `<` in a plain HTML template, which
+        # is quadratic in the number of candidates.
+        brace = src.find("{", pos)
+        angle = src.find("<", pos)
+
         while pos < end:
-            brace = src.find("{", pos)
-            angle = src.find("<", pos)
             if brace == -1:
                 nxt = angle
             elif angle == -1:
@@ -119,12 +124,18 @@ class Lexer:
             if token is None:
                 # Not a construct after all: an ordinary `{` or `<` in the text.
                 pos = nxt + 1
-                continue
+            else:
+                if nxt > text_start:
+                    out.append(self._text(text_start, nxt))
+                out.append(token)
+                pos = text_start = token.span.end
 
-            if nxt > text_start:
-                out.append(self._text(text_start, nxt))
-            out.append(token)
-            pos = text_start = token.span.end
+            # Each of these resumes where it left off, so across the whole loop
+            # the two searches cover the source once each.
+            if brace != -1 and brace < pos:
+                brace = src.find("{", pos)
+            if angle != -1 and angle < pos:
+                angle = src.find("<", pos)
 
         if text_start < end:
             out.append(self._text(text_start, end))

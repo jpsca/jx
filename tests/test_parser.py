@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import jinja2
 import pytest
 
 from jx import TemplateSyntaxError
@@ -463,3 +464,41 @@ def test_escaped_quotes_in_tag_attrs():
     result, _ = parser.parse()
     assert result == r"""{{ _render("Foo", **{"title":"say \"hello\""}) }}"""
     assert r"\"hello\"" in result
+
+
+@pytest.mark.parametrize(
+    "source, default",
+    [
+        ("{% slot a %}  d  {% endslot %}", "  d  "),
+        ("{% slot a -%}  d  {%- endslot %}", "d"),
+        # `+` is the explicit "keep it" marker, so it must not strip.
+        ("{% slot a +%}  d  {%+ endslot %}", "  d  "),
+        ("{% slot a -%}  d  {%+ endslot %}", "d  "),
+        ("{% slot a +%}  d  {%- endslot %}", "  d"),
+    ],
+)
+def test_slot_strips_only_on_the_dash_marker(source, default):
+    result, _ = JxParser(name="test", source=source, components=[]).parse()
+    assert result == (
+        "{% if 'a' in _slots %}{{ _slots['a']() }}" f"{{% else %}}{default}{{% endif %}}"
+    )
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("A  {% slot h %}d{% endslot %}  B", "A  d  B"),
+        # The generated `{% if %}` replaces the `{% slot %}` tag, so a marker
+        # on the tag has to be carried over or Jinja never sees it.
+        ("A  {%- slot h %}d{% endslot %}  B", "Ad  B"),
+        ("A  {% slot h %}d{% endslot -%}  B", "A  dB"),
+        ("A  {%- slot h %}d{% endslot -%}  B", "AdB"),
+        # `+` is the explicit "keep it" marker.
+        ("A  {%+ slot h %}d{% endslot +%}  B", "A  d  B"),
+    ],
+)
+def test_slot_outer_whitespace_markers(source, expected):
+    result, _ = JxParser(name="test", source=source, components=[]).parse()
+    env = jinja2.Environment()
+    env.globals["_slots"] = {}
+    assert env.from_string(result).render() == expected

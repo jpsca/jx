@@ -105,3 +105,28 @@ def test_reused_instance_does_not_accumulate_depth(folder):
     catalog = Catalog(folder, auto_reload=False)
     for _ in range(200):
         assert catalog.render("page.jx") == "xx"
+
+
+def test_editing_a_child_invalidates_the_parent_asset_list(folder):
+    """
+    The cached list covers the whole subtree, so the parent being unchanged
+    says nothing about whether it is still right. Once everything is warm,
+    nothing would otherwise look at the child again.
+    """
+    (folder / "child.jx").write_text('{#css "old.css" #}<p>c</p>')
+    (folder / "parent.jx").write_text(
+        '{#import "child.jx" as Child #}{{ assets.render_css() }}<Child />'
+    )
+    catalog = Catalog(folder)
+
+    def css():
+        return catalog.render("parent.jx").split("<p>")[0].strip()
+
+    assert css() == '<link rel="stylesheet" href="old.css">'
+    # Again, so every component is warm and the parent's entry survives.
+    assert css() == '<link rel="stylesheet" href="old.css">'
+
+    time.sleep(0.05)  # the mtime has to actually differ
+    (folder / "child.jx").write_text('{#css "new.css" #}<p>c</p>')
+
+    assert css() == '<link rel="stylesheet" href="new.css">'

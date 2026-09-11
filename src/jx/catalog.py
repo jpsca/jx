@@ -15,7 +15,7 @@ from types import CodeType
 import jinja2
 
 from . import utils
-from .component import Component
+from .component import AssetCache, Component
 from .exceptions import ComponentNotFoundError, FileEncodingError
 from .meta import extract_metadata
 from .parser import JxParser
@@ -43,6 +43,33 @@ class CData:
     css: tuple[str, ...] = ()
     js: tuple[str, ...] = ()
     slots: tuple[str, ...] = ()
+
+
+def _qualified(obj) -> str:
+    """A name for a class or function that is the same in every process."""
+    return f"{getattr(obj, '__module__', '')}.{getattr(obj, '__qualname__', obj)}"
+
+
+def _stable(value) -> str:
+    """
+    Describe a setting that may be a callable, without using its identity.
+
+    `str()` on a function includes its memory address, which changes on every
+    interpreter start. `autoescape=select_autoescape(...)` is the common case —
+    it is what Flask sets up — so a digest built on `str()` would give every
+    worker process a different one and a shared bytecode cache would never hit.
+
+    The closure is read because that is where `select_autoescape` keeps the
+    extension lists; two differently configured callables must not collide.
+    """
+    if not callable(value):
+        return str(value)
+    parts = [_qualified(value)]
+    try:
+        parts.extend(sorted(repr(cell.cell_contents) for cell in value.__closure__ or ()))
+    except (AttributeError, ValueError):  # pragma: no cover - empty/odd cells
+        pass
+    return "|".join(parts)
 
 
 class Catalog:
@@ -118,7 +145,7 @@ class Catalog:
         """
         self._lock = threading.RLock()  # Serializes recompilation and folder registration
         self.components = {}
-        self._asset_cache: dict[str, list[str]] = {}
+        self._asset_cache: AssetCache = {}
         # Components are immutable, so one instance can serve every render of
         # that component instead of being rebuilt on each access to a child.
         self._component_cache: dict[str, Component] = {}
@@ -458,7 +485,7 @@ class Catalog:
 
     # Private
 
-    def _get_asset_cache(self) -> dict[str, list[str]]:
+    def _get_asset_cache(self) -> AssetCache:
         """The live asset cache. Components ask for it, they do not hold it."""
         return self._asset_cache
 
@@ -529,11 +556,15 @@ class Catalog:
         Jinja keys a bytecode bucket by template name and source checksum only,
         so flipping `autoescape` or adding an extension would otherwise keep
         serving the bytecode compiled under the old settings.
+
+        Every part has to be stable across processes, or a shared filesystem or
+        memcached cache never hits: a digest that changes each time the process
+        starts is the same as having no cache at all.
         """
         env = self.jinja_env
         parts = (
             jinja2.__version__,
-            str(env.autoescape),
+            _stable(env.autoescape),
             str(env.optimized),
             env.block_start_string,
             env.block_end_string,
@@ -549,6 +580,14 @@ class Catalog:
             env.newline_sequence,
             str(env.is_async),
             ",".join(sorted(env.extensions)),
+            # Sandboxing is a codegen decision, not only a runtime one: an
+            # intercepted operator compiles to `environment.call_binop(...)`.
+            # Sharing a bucket with a plain environment would hand sandboxed
+            # rendering code that never calls the sandbox's hooks.
+            str(env.sandboxed),
+            ",".join(sorted(getattr(env, "intercepted_binops", ()))),
+            ",".join(sorted(getattr(env, "intercepted_unops", ()))),
+            _qualified(env.code_generator_class),
         )
         return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:12]
 

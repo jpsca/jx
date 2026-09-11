@@ -29,6 +29,12 @@ MUTABLE_DEFAULTS = (list, dict, set)
 # `filter_attrs` runs once per component render and this never varies.
 _MISSING = object()
 
+# What the catalog's asset cache holds: the list of assets for a whole subtree,
+# and the set of components it was built from. The list alone is not enough to
+# know whether it is still good — see `Component._cached_assets`.
+AssetEntry = tuple[set[str], list[str]]
+AssetCache = dict[str, AssetEntry]
+
 
 class Component:
     __slots__ = (
@@ -61,7 +67,7 @@ class Component:
         js: tuple[str, ...] = (),
         slots: tuple[str, ...] = (),
         asset_resolver: Callable[[str, str], str] | None = None,
-        asset_cache: "Callable[[], dict[str, list[str]]] | None" = None,
+        asset_cache: "Callable[[], AssetCache] | None" = None,
     ) -> None:
         """
         Internal object that represents a Jx component.
@@ -226,14 +232,7 @@ class Component:
         Returns a list of CSS files for the component and its children.
         """
         if _visited is None and self._asset_cache is not None:
-            cache = self._asset_cache()
-            cache_key = f"{self.relpath}:css"
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return cached
-            result = self._collect_assets("css", None)
-            cache[cache_key] = result
-            return result
+            return self._cached_assets("css")
         return self._collect_assets("css", _visited)
 
     def collect_js(self, _visited: set[str] | None = None) -> list[str]:
@@ -241,22 +240,43 @@ class Component:
         Returns a list of JS files for the component and its children.
         """
         if _visited is None and self._asset_cache is not None:
-            cache = self._asset_cache()
-            cache_key = f"{self.relpath}:js"
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return cached
-            result = self._collect_assets("js", None)
-            cache[cache_key] = result
-            return result
+            return self._cached_assets("js")
         return self._collect_assets("js", _visited)
+
+    def _cached_assets(self, attr: str) -> list[str]:
+        """
+        The asset list for this component, remembered between renders.
+
+        The list covers the whole subtree, so this component being unchanged
+        says nothing about whether the list is still right. Every component it
+        was built from is touched before the entry is trusted: a stale one
+        recompiles right here, and recompiling is what drops the catalog's
+        asset cache — which is how we find out the entry is no longer good.
+        """
+        assert self._asset_cache is not None
+        key = f"{self.relpath}:{attr}"
+        entry = self._asset_cache().get(key)
+        if entry is not None:
+            deps, result = entry
+            for relpath in deps:
+                self.get_component(relpath)
+            if self._asset_cache().get(key) is entry:
+                return result
+
+        deps: set[str] = set()
+        result = self._collect_assets(attr, deps)
+        self._asset_cache()[key] = (deps, result)
+        return result
 
     def _collect_assets(
         self, attr: str, _visited: set[str] | None = None
     ) -> list[str]:
         resolved = [self.resolve_url(url) for url in getattr(self, attr)]
         urls = dict.fromkeys(resolved)  # ordered dedup
-        _visited = _visited or set()
+        # Not `or set()`: an empty set is falsy, and the caller needs the set
+        # it passed in to come back filled.
+        if _visited is None:
+            _visited = set()
         _visited.add(self.relpath)
 
         for name, relpath in self.imports.items():

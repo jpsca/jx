@@ -58,10 +58,12 @@ class JinjaEmitter:
         default = self._strip(self._nodes(node.default), node.lstrip, node.rstrip)
         # `in` and not `.get()`: a fill that renders empty is still a fill, and
         # must win over the default.
+        open_tag = "{%- if" if node.strip_before else "{% if"
+        end_tag = "endif -%}" if node.strip_after else "endif %}"
         return (
-            f"{{% if '{node.name}' in _slots %}}"
+            f"{open_tag} '{node.name}' in _slots %}}"
             f"{{{{ _slots['{node.name}']() }}}}"
-            f"{{% else %}}{default}{{% endif %}}"
+            f"{{% else %}}{default}{{% {end_tag}"
         )
 
     def _component(self, node: Component) -> str:

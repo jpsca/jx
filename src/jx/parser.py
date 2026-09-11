@@ -207,6 +207,7 @@ class JxParser:
                 name=self._construct_name(token),
                 span=token.span,
                 lstrip=token.rstrip,
+                strip_before=token.lstrip,
             )
             self._add(stack, node)
             stack.append(node)
@@ -235,7 +236,10 @@ class JxParser:
             top = stack[-1]
             if not isinstance(top, expected):
                 raise self._error(token.span, f"Unexpected `{{% {keyword} %}}`")
+            self._check_tail(token, self._after_keyword(token), keyword)
             top.rstrip = token.lstrip
+            if isinstance(top, Slot):
+                top.strip_after = token.rstrip
             stack.pop()
             return
 
@@ -262,10 +266,39 @@ class JxParser:
 
         self._add(stack, stmt)
 
+    @staticmethod
+    def _after_keyword(token: Token) -> int:
+        return token.value.index(token.name) + len(token.name)
+
+    @staticmethod
+    def _tail(token: Token, index: int) -> str:
+        """
+        Whatever a `{% … %}` still says after `index`, minus its closing `%}`.
+
+        Both whitespace-control markers may sit in front of that `%}`, and
+        neither of them is trailing text.
+        """
+        rest = token.value[index:].strip()
+        rest = rest[:-3] if rest[-3:] in ("-%}", "+%}") else rest[:-2]
+        return rest.strip()
+
+    def _check_tail(self, token: Token, index: int, wrote: str) -> None:
+        """These tags take what they take. Anything more is a typo, and a typo
+        that is silently dropped from the output is worse than an error."""
+        tail = self._tail(token, index)
+        if tail:
+            raise self._error(
+                token.span, f"Unexpected `{tail}` after `{{% {wrote} %}}`"
+            )
+
     def _construct_name(self, token: Token) -> str:
         """Read the name out of a `{% slot x %}` or `{% fill x %}`."""
         text = token.value
-        index = text.index(token.name) + len(token.name)
+        index = self._after_keyword(token)
+        # The keyword has to be separated from the name, or `{% slot-header %}`
+        # reads as a slot named `-header` instead of the typo it is.
+        if index < len(text) and text[index] not in " \t\r\n":
+            raise self._error(token.span, f"`{{% {token.name} %}}` needs a name")
         while index < len(text) and text[index] in " \t\r\n":
             index += 1
         start = index
@@ -275,19 +308,7 @@ class JxParser:
         if not name:
             raise self._error(token.span, f"`{{% {token.name} %}}` needs a name")
 
-        # A name is all these take. Anything else is a typo that would
-        # otherwise be dropped without a word.
-        rest = text[index:].strip()
-        if rest.endswith("-%}"):
-            rest = rest[:-3]
-        else:
-            rest = rest[:-2]
-        rest = rest.strip()
-        if rest:
-            raise self._error(
-                token.span,
-                f"Unexpected `{rest}` after `{{% {token.name} {name} %}}`",
-            )
+        self._check_tail(token, index, f"{token.name} {name}")
         return name
 
     def _check_unclosed(self, stack: list) -> None:
