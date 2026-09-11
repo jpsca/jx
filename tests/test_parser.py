@@ -18,7 +18,7 @@ VALID_DATA = (
     # Self-closing tag
     (
         """<Alert type="success" message="Success!" />""",
-        """{{ _render("Alert", **{"type":"success", "message":"Success!"}) }}""",
+        """{{ _render("Alert", **{"type":"success", "message":"Success!"})|_jx_safe }}""",
     ),
     # No attributes
     (
@@ -28,7 +28,7 @@ VALID_DATA = (
     # No attributes, self-closing tag
     (
         """<Foo />""",
-        """{{ _render("Foo") }}""",
+        """{{ _render("Foo")|_jx_safe }}""",
     ),
     # Strings vs expressions
     (
@@ -64,7 +64,7 @@ VALID_DATA = (
           lorem="ipsum"
           green
         />""",
-        """{{ _render("Foo", **{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
+        """{{ _render("Foo", **{"bar":"baz", "lorem":"ipsum", "green":True})|_jx_safe }}""",
     ),
     # Python expression in attribute and boolean attributes
     (
@@ -74,34 +74,34 @@ VALID_DATA = (
     # `>` in expression
     (
         """<CloseBtn disabled={{ num > 4 }} />""",
-        """{{ _render("CloseBtn", **{"disabled":num > 4}) }}""",
+        """{{ _render("CloseBtn", **{"disabled":num > 4})|_jx_safe }}""",
     ),
     # `>` in attribute value
     (
         """<CloseBtn data-closer-action="click->closer#close" />""",
-        """{{ _render("CloseBtn", **{"data_closer_action":"click->closer#close"}) }}""",
+        """{{ _render("CloseBtn", **{"data_closer_action":"click->closer#close"})|_jx_safe }}""",
     ),
     # Quotes inside expressions (should not break parsing)
     (
         """<Card title={{ items['key'] }} class="foo" />""",
-        """{{ _render("Card", **{"title":items['key'], "class":"foo"}) }}""",
+        """{{ _render("Card", **{"title":items['key'], "class":"foo"})|_jx_safe }}""",
     ),
     (
         """<Card title={{ data["name"] }} />""",
-        """{{ _render("Card", **{"title":data["name"]}) }}""",
+        """{{ _render("Card", **{"title":data["name"]})|_jx_safe }}""",
     ),
     # Closing braces inside string literals within expressions
     (
         """<Card title={{ foo("}}") }} />""",
-        """{{ _render("Card", **{"title":foo("}}")}) }}""",
+        """{{ _render("Card", **{"title":foo("}}")})|_jx_safe }}""",
     ),
     (
         """<Card title={{ foo('}}') }} />""",
-        """{{ _render("Card", **{"title":foo('}}')}) }}""",
+        """{{ _render("Card", **{"title":foo('}}')})|_jx_safe }}""",
     ),
     (
         """<Card title={{ "it's }}" }} />""",
-        """{{ _render("Card", **{"title":"it's }}"}) }}""",
+        """{{ _render("Card", **{"title":"it's }}"})|_jx_safe }}""",
     ),
     # Raw blocks
     (
@@ -115,7 +115,7 @@ what""",
     # A `{%` inside a raw block is text, not the start of a statement.
     (
         """{% raw %}Use {% in a sentence{% endraw %}<Foo />""",
-        """{% raw %}Use {% in a sentence{% endraw %}{{ _render("Foo") }}""",
+        """{% raw %}Use {% in a sentence{% endraw %}{{ _render("Foo")|_jx_safe }}""",
     ),
     # Raw blocks with HTML content (should not be escaped)
     (
@@ -218,7 +218,7 @@ def test_nested_same_tag_self_closing_does_not_increase_depth():
     source = """<Card>a<Card />b</Card>"""
     expected = (
         '{% call _render("Card") -%}'
-        'a{{ _render("Card") }}b'
+        'a{{ _render("Card")|_jx_safe }}b'
         '{%- endcall %}'
     )
     parser = JxParser(name="test", source=source, components=[])
@@ -293,7 +293,7 @@ def test_slots():
     assert slots == ("header", "footer")
     assert result.strip() == """
 <html>
-  {% if 'header' in _slots %}{{ _slots['header']() }}{% else %}
+  {% if 'header' in _slots %}{{ _slots['header']()|_jx_safe }}{% else %}
   <h1>Header</h1>
   {% endif %}
 
@@ -302,7 +302,7 @@ def test_slots():
     <p>Hi, {{ user }}!</p>
   {% endif %}
 
-  {% if 'footer' in _slots %}{{ _slots['footer']() }}{% else %}
+  {% if 'footer' in _slots %}{{ _slots['footer']()|_jx_safe }}{% else %}
     <footer>Footer content</footer>
   {% endif %}
 </html>
@@ -333,7 +333,7 @@ def test_slots_strip():
 
     assert result.strip() == """
 <html>
-  {% if 'header' in _slots %}{{ _slots['header']() }}{% else %}
+  {% if 'header' in _slots %}{{ _slots['header']()|_jx_safe }}{% else %}
   <h1>Header</h1>
   {% endif %}
 
@@ -342,7 +342,7 @@ def test_slots_strip():
     <p>Hi, {{ user }}!</p>
   {% endif %}
 
-  {% if 'footer' in _slots %}{{ _slots['footer']() }}{% else %}<footer>Footer content</footer>{% endif %}
+  {% if 'footer' in _slots %}{{ _slots['footer']()|_jx_safe }}{% else %}<footer>Footer content</footer>{% endif %}
 </html>
 """.strip()
 
@@ -462,7 +462,7 @@ def test_escaped_quotes_in_tag_attrs():
     source = r"""<Foo title="say \"hello\"" />"""
     parser = JxParser(name="test", source=source, components=["Foo"])
     result, _ = parser.parse()
-    assert result == r"""{{ _render("Foo", **{"title":"say \"hello\""}) }}"""
+    assert result == r"""{{ _render("Foo", **{"title":"say \"hello\""})|_jx_safe }}"""
     assert r"\"hello\"" in result
 
 
@@ -480,7 +480,7 @@ def test_escaped_quotes_in_tag_attrs():
 def test_slot_strips_only_on_the_dash_marker(source, default):
     result, _ = JxParser(name="test", source=source, components=[]).parse()
     assert result == (
-        "{% if 'a' in _slots %}{{ _slots['a']() }}" f"{{% else %}}{default}{{% endif %}}"
+        "{% if 'a' in _slots %}{{ _slots['a']()|_jx_safe }}" f"{{% else %}}{default}{{% endif %}}"
     )
 
 

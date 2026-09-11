@@ -2,6 +2,8 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import time
+
 import jinja2
 import pytest
 
@@ -503,7 +505,6 @@ def test_auto_reload_recompiles_on_change(folder):
     assert "v1" in html1
 
     # Modify the file (ensure mtime changes)
-    import time
     time.sleep(0.05)
     comp.write_text("<p>v2</p>")
 
@@ -541,3 +542,70 @@ def test_raw_blocks_render_exactly_like_jinja(folder, source, expected):
     catalog = Catalog(folder)
     assert catalog.render_string(source) == expected
     assert jinja2.Environment().from_string(source).render() == expected
+
+
+def test_auto_reload_recompiles_child_on_change(folder):
+    """
+    A child component is resolved through `get_component_data`, which is what
+    stats its file. Remembering the resolved child on the parent skips that
+    stat, so with auto-reload on it must not be remembered.
+    """
+    (folder / "child.jx").write_text("<p>v1</p>")
+    (folder / "parent.jx").write_text(
+        '{# import "child.jx" as Child #}\n<div><Child /></div>'
+    )
+
+    catalog = Catalog(folder, auto_reload=True)
+    assert "v1" in catalog.render("parent.jx")
+
+    time.sleep(0.05)  # ensure the mtime actually changes
+    (folder / "child.jx").write_text("<p>v2</p>")
+
+    assert "v2" in catalog.render("parent.jx")
+
+
+def test_auto_reload_false_caches_children(folder):
+    (folder / "child.jx").write_text("<p>hi</p>")
+    (folder / "parent.jx").write_text(
+        '{# import "child.jx" as Child #}\n<div><Child /></div>'
+    )
+
+    catalog = Catalog(folder, auto_reload=False)
+    # Twice: compiling the child drops the catalog's component cache, so after
+    # the first render the parent instance held here is already superseded.
+    catalog.render("parent.jx")
+    catalog.render("parent.jx")
+    parent = catalog.get_component("parent.jx")
+
+    assert parent._child_cache == {"Child": catalog.get_component("child.jx")}
+
+
+def test_enabling_auto_reload_invalidates_cached_children(folder):
+    """
+    Components built while auto-reload was off remember their children. Turning
+    it back on has to discard them, or those instances go on ignoring edits.
+    """
+    (folder / "child.jx").write_text("<p>v1</p>")
+    (folder / "parent.jx").write_text(
+        '{# import "child.jx" as Child #}\n<div><Child /></div>'
+    )
+
+    catalog = Catalog(folder, auto_reload=False)
+    assert "v1" in catalog.render("parent.jx")
+
+    catalog.auto_reload = True
+    time.sleep(0.05)
+    (folder / "child.jx").write_text("<p>v2</p>")
+
+    assert "v2" in catalog.render("parent.jx")
+
+
+def test_auto_reload_setter_is_a_noop_when_unchanged(folder):
+    (folder / "a.jx").write_text("<p>hi</p>")
+    catalog = Catalog(folder, auto_reload=False)
+    catalog.render("a.jx")
+    before = catalog.get_component("a.jx")
+
+    catalog.auto_reload = False
+
+    assert catalog.get_component("a.jx") is before
