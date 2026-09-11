@@ -233,8 +233,12 @@ class Lexer:
         src = self.source
         end = len(src)
         j = i + 2
-        lstrip = src[j : j + 1] == "-"
-        if lstrip:
+        # `-` strips the whitespace before the tag, `+` explicitly keeps it.
+        # Both have to be stepped over, or the keyword comes out empty and the
+        # tag stops being recognized at all.
+        marker = src[j : j + 1]
+        lstrip = marker == "-"
+        if marker in ("-", "+"):
             j += 1
 
         while j < end and src[j] in WHITESPACE:

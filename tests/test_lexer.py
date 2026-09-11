@@ -27,6 +27,10 @@ def only(source: str):
         ("<div>x</div>", ["text"]),
         ("{{ x }}", ["expr"]),
         ("{% if x %}{% endif %}", ["stmt", "stmt"]),
+        # `+` means "keep the whitespace", and has to be stepped over just like
+        # `-`, or the keyword comes out empty and the tag is not recognized.
+        ("{%+ if x %}{%+ endif %}", ["stmt", "stmt"]),
+        ("{%- if x -%}{%- endif -%}", ["stmt", "stmt"]),
         ("{# c #}", ["comment"]),
         ("{% raw %}{{ x }}<Card />{% endraw %}", ["raw"]),
         # Nothing inside a raw block is scanned, so a bare `{%` is just text.
@@ -103,6 +107,21 @@ def test_a_gt_inside_a_value_does_not_end_the_tag(source):
     token = only(source)
     assert token.self_closing is True
     assert len(token.attrs) == 1
+
+
+@pytest.mark.parametrize(
+    "source, keyword, lstrip, rstrip",
+    [
+        ("{% if x %}", "if", False, False),
+        ("{%- if x -%}", "if", True, True),
+        ("{%+ if x +%}", "if", False, False),
+        ("{%- if x +%}", "if", True, False),
+        ("{%+ if x -%}", "if", False, True),
+    ],
+)
+def test_whitespace_control_markers(source, keyword, lstrip, rstrip):
+    token = only(source)
+    assert (token.name, token.lstrip, token.rstrip) == (keyword, lstrip, rstrip)
 
 
 def test_positions_are_tracked():

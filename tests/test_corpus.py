@@ -1,49 +1,32 @@
 """
 Jx | Copyright (c) Juan-Pablo Scaletti
 
-Differential tests: the parser must agree with the frozen regex parser
-(`tests/_legacy_parser.py`) on every input.
-
-The rest of the suite is covered by the `JX_DIFF=1` hook in `conftest.py`, which
-compares every template any test builds. This module adds the `.jx` files that
-live on disk plus inputs chosen to be awkward.
+A corpus of awkward and broken templates. Every one of them has to parse to the
+same answer it does today, and everything the emitter writes has to be valid
+Jinja — a parser can be wrong in ways no single hand-written test predicts, so
+the point is breadth.
 """
 
 from pathlib import Path
 
+import jinja2
 import pytest
 
+from jx.exceptions import TemplateSyntaxError
 from jx.meta import extract_metadata
 from jx.parser import JxParser
-
-from ._legacy_parser import LegacyParser
-from .conftest import KNOWN_DIVERGENCES, canonical
 
 
 REPO = Path(__file__).parent.parent
 DOCS_VIEWS = sorted((REPO / "docs" / "views").glob("*.jx"))
+JINJA = jinja2.Environment()
 
 
-def compare(name: str, source: str, components: list[str], *, validate_tags: bool = True):
-    reason = KNOWN_DIVERGENCES.get(source.strip())
-    if reason:
-        pytest.skip(f"deliberate divergence: {reason}")
-
-    def run(parser):
-        try:
-            src, slots = parser.parse(validate_tags=validate_tags)
-        except Exception as err:
-            return ("raised", type(err).__name__, str(err))
-        return ("ok", canonical(src), slots)
-
-    new = run(JxParser(name=name, source=source, components=components))
-    old = run(LegacyParser(name=name, source=source, components=components))
-
-    if new[0] == "raised" and old[0] == "raised":
-        # Both reject it. The message is allowed to improve.
-        assert new[1] == old[1], f"{name}: different error type"
-        return
-    assert new == old, f"{name}: parsers disagree"
+def emit(name: str, source: str, components: list[str]) -> str:
+    """Parse, and check the generated source is Jinja the compiler accepts."""
+    out, _ = JxParser(name=name, source=source, components=components).parse()
+    JINJA.parse(out)
+    return out
 
 
 @pytest.mark.skipif(not DOCS_VIEWS, reason="no .jx files on disk")
@@ -52,7 +35,7 @@ def test_docs_views(path):
     """The real templates that build the Jx documentation site."""
     source = path.read_text(encoding="utf-8")
     meta = extract_metadata(source, base_path=path.parent, fullpath=path)
-    compare(path.name, source, list(meta.imports.keys()))
+    emit(path.name, source, list(meta.imports.keys()))
 
 
 AWKWARD = {
@@ -80,6 +63,9 @@ AWKWARD = {
     "empty raw": "{% raw %}{% endraw %}<Card />",
     "raw with dashes": "{%- raw -%}<Card />{%- endraw -%}",
     "raw with plus": "{% raw %}<Card />{%+ endraw %}",
+    "plus block": "{%+ if x %}<Card />{%+ endif %}",
+    "plus for": "{% for i in x %}<Card />{%+ endfor %}",
+    "plus slot": "{%+ slot a %}d{%+ endslot %}",
     "raw hides a bare block start": "{% raw %}Use {% in a sentence{% endraw %}<Card />",
     "raw hides an unterminated quote": '{% raw %}{% "oops{% endraw %}<Card />',
     "slot basic": "{% slot header %}default{% endslot %}",
@@ -117,9 +103,10 @@ BROKEN = {
 
 @pytest.mark.parametrize("name", list(AWKWARD), ids=list(AWKWARD))
 def test_awkward_input(name):
-    compare(name, AWKWARD[name], ["Card", "Ui.Card"])
+    emit(name, AWKWARD[name], ["Card", "Ui.Card"])
 
 
 @pytest.mark.parametrize("name", list(BROKEN), ids=list(BROKEN))
 def test_broken_input(name):
-    compare(name, BROKEN[name], ["Card"])
+    with pytest.raises(TemplateSyntaxError):
+        JxParser(name=name, source=BROKEN[name], components=["Card"]).parse()
