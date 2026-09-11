@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+from .codegen import SAFE_FILTER
 from .lexer import Attribute, AttrKind
 from .nodes import (
     Block,
@@ -62,7 +63,7 @@ class JinjaEmitter:
         end_tag = "endif -%}" if node.strip_after else "endif %}"
         return (
             f"{open_tag} '{node.name}' in _slots %}}"
-            f"{{{{ _slots['{node.name}']() }}}}"
+            f"{{{{ _slots['{node.name}']()|{SAFE_FILTER} }}}}"
             f"{{% else %}}{default}{{% {end_tag}"
         )
 
@@ -103,7 +104,9 @@ class JinjaEmitter:
             )
         else:
             # No default content, so the component needs no `caller` at all.
-            call = f"{{{{ _render({str_args}) }}}}"
+            # `{% call %}` above yields its result directly, but a plain output
+            # expression is wrapped in `escape()`, so this one says it is safe.
+            call = f"{{{{ _render({str_args})|{SAFE_FILTER} }}}}"
 
         return f"{''.join(macros)}{call}"
 

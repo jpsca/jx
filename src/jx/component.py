@@ -49,6 +49,7 @@ class Component:
         "slots",
         "asset_resolver",
         "_asset_cache",
+        "_child_cache",
         "_required_spec",
         "_optional_plain",
         "_optional_spec",
@@ -68,6 +69,7 @@ class Component:
         slots: tuple[str, ...] = (),
         asset_resolver: Callable[[str, str], str] | None = None,
         asset_cache: "Callable[[], AssetCache] | None" = None,
+        cache_children: bool = False,
     ) -> None:
         """
         Internal object that represents a Jx component.
@@ -98,6 +100,12 @@ class Component:
                 A callable returning the catalog's current asset cache. Read on
                 use, not captured on construction: a component outlives any one
                 of those dicts, since a recompile replaces it.
+            cache_children:
+                Whether resolved child components can be remembered on this
+                instance. Only true when the catalog does not auto-reload:
+                resolving a child goes through `get_component_data`, and with
+                auto-reload on that call is what stats the child's file. Caching
+                past it would keep serving a child whose source has changed.
 
         """
         self.relpath = relpath
@@ -112,6 +120,9 @@ class Component:
         self.slots = slots
         self.asset_resolver = asset_resolver
         self._asset_cache = asset_cache
+        # `None` means "do not cache", which is one check on the hot path
+        # instead of a flag plus a dict lookup.
+        self._child_cache: dict[str, Component] | None = {} if cache_children else None
 
         # The prop signature is fixed for the life of the component, so
         # everything `filter_attrs` can answer from it alone is answered here,
@@ -208,16 +219,35 @@ class Component:
         Both leading arguments are positional-only: every attribute written on
         the tag arrives in `**params`, and a component is free to declare a
         prop called `name` or `globals`.
+
+        The cache is read here rather than in `get_child` so that a hit costs
+        one dict lookup instead of a call: this runs once per child component
+        per render, which is the single hottest path in the library.
         """
+        cache = self._child_cache
+        if cache is not None:
+            child = cache.get(name)
+            if child is not None:
+                return child.render(_globals=globals, **params)
         return self.get_child(name).render(_globals=globals, **params)
 
     def get_child(self, name: str) -> "Component":
+        cache = self._child_cache
+        if cache is not None:
+            child = cache.get(name)
+            if child is not None:
+                return child
+
         relpath = self.imports.get(name)
         if relpath is None:
             raise ComponentNotFoundError(
                 f"{name} (imported in {self.relpath})"
             )
-        return self.get_component(relpath)
+        child = self.get_component(relpath)
+
+        if cache is not None:
+            cache[name] = child
+        return child
 
     def resolve_url(self, url: str) -> str:
         if not self.asset_resolver:

@@ -13,8 +13,10 @@ from pathlib import Path
 from types import CodeType
 
 import jinja2
+from jinja2.compiler import CodeGenerator
 
 from . import utils
+from .codegen import SAFE_FILTER, JxCodeGenerator, jx_safe
 from .component import AssetCache, Component
 from .exceptions import ComponentNotFoundError, FileEncodingError
 from .meta import extract_metadata
@@ -172,7 +174,7 @@ class Catalog:
         if bytecode_cache is not None:
             self.jinja_env.bytecode_cache = bytecode_cache
         self._env_fingerprint = self._fingerprint_env()
-        self.auto_reload = auto_reload
+        self._auto_reload = auto_reload
         self.file_ext = file_ext
         if folder:
             self.add_folder(folder)
@@ -455,6 +457,7 @@ class Catalog:
             slots=cdata.slots,
             asset_resolver=self._resolve_asset_url if self.asset_resolver else None,
             asset_cache=self._get_asset_cache,
+            cache_children=not self.auto_reload,
         )
         component_cache[relpath] = component
         return component
@@ -497,6 +500,26 @@ class Catalog:
             "js": cdata.js,
         }
 
+    @property
+    def auto_reload(self) -> bool:
+        return self._auto_reload
+
+    @auto_reload.setter
+    def auto_reload(self, value: bool) -> None:
+        """
+        Turning auto-reload on has to invalidate the component cache.
+
+        A component built while it was off carries `cache_children=True`, and
+        remembers its children without ever stat'ing them again. Left in place,
+        those instances would go on ignoring edits after the setting says they
+        should not.
+        """
+        if value == self._auto_reload:
+            return
+        self._auto_reload = value
+        with self._lock:
+            self._component_cache = {}
+
     # Private
 
     def _get_asset_cache(self) -> AssetCache:
@@ -509,7 +532,9 @@ class Catalog:
         """
         if cdata.code is None:
             return False
-        if not self.auto_reload:
+        # The attribute, not the property: this runs once per component access,
+        # and a property read is a Python call.
+        if not self._auto_reload:
             return True
         return cdata.path.stat().st_mtime == cdata.mtime
 
@@ -704,6 +729,15 @@ class Catalog:
 
         filters = filters or {}
         env.filters.update(filters)
+        # Registered unconditionally: the marker has to resolve even when the
+        # environment keeps its own code generator, see `jx.codegen`.
+        env.filters[SAFE_FILTER] = jx_safe
+
+        # Only claim the seat if nobody else is using it. An environment that
+        # arrives with its own generator keeps it, and the marker degrades to
+        # the identity filter registered above.
+        if env.code_generator_class is CodeGenerator:
+            env.code_generator_class = JxCodeGenerator
 
         tests = tests or {}
         env.tests.update(tests)
