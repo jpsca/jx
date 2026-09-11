@@ -2,6 +2,7 @@
 Jx | Copyright (c) Juan-Pablo Scaletti
 """
 
+import jinja2
 import pytest
 
 from jx import TemplateSyntaxError
@@ -12,41 +13,41 @@ VALID_DATA = (
     # Simple case
     (
         """<Foo bar="baz">content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":"baz"}) -%}content{%- endcall %}""",
     ),
     # Self-closing tag
     (
         """<Alert type="success" message="Success!" />""",
-        """{{ _get("Alert").render(**{"type":"success", "message":"Success!"}) }}""",
+        """{{ _render("Alert", **{"type":"success", "message":"Success!"}) }}""",
     ),
     # No attributes
     (
         """<Foo>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render() -%}content{%- endcall %}""",
+        """{% call _render("Foo") -%}content{%- endcall %}""",
     ),
     # No attributes, self-closing tag
     (
         """<Foo />""",
-        """{{ _get("Foo").render() }}""",
+        """{{ _render("Foo") }}""",
     ),
     # Strings vs expressions
     (
         """<Foo bar="baz" lorem={{ ipsum }}>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":"baz", "lorem":ipsum}) -%}content{%- endcall %}""",
     ),
     # Single quotes
     (
         """<Foo bar='say "hello world"'>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":'say "hello world"'}) -%}content{%- endcall %}""",
     ),
     (
         """<Foo bar="say 'hello world'">content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":"say 'hello world'"}) -%}content{%- endcall %}""",
     ),
     # Braces inside quotes
     (
         """<Foo bar="say 'hello {{world}}'">content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":"say 'hello {{world}}'"}) -%}content{%- endcall %}""",
     ),
     # Line breaks
     (
@@ -54,7 +55,7 @@ VALID_DATA = (
           bar="baz"
           lorem="ipsum"
         >content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":"baz", "lorem":"ipsum"}) -%}content{%- endcall %}""",
     ),
     # Line breaks, self-closing tag
     (
@@ -63,59 +64,64 @@ VALID_DATA = (
           lorem="ipsum"
           green
         />""",
-        """{{ _get("Foo").render(**{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
+        """{{ _render("Foo", **{"bar":"baz", "lorem":"ipsum", "green":True}) }}""",
     ),
     # Python expression in attribute and boolean attributes
     (
         """<Foo bar={{ 42 + 4 }} green large>content</Foo>""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
+        """{% call _render("Foo", **{"bar":42 + 4, "green":True, "large":True}) -%}content{%- endcall %}""",
     ),
     # `>` in expression
     (
         """<CloseBtn disabled={{ num > 4 }} />""",
-        """{{ _get("CloseBtn").render(**{"disabled":num > 4}) }}""",
+        """{{ _render("CloseBtn", **{"disabled":num > 4}) }}""",
     ),
     # `>` in attribute value
     (
         """<CloseBtn data-closer-action="click->closer#close" />""",
-        """{{ _get("CloseBtn").render(**{"data_closer_action":"click->closer#close"}) }}""",
+        """{{ _render("CloseBtn", **{"data_closer_action":"click->closer#close"}) }}""",
     ),
     # Quotes inside expressions (should not break parsing)
     (
         """<Card title={{ items['key'] }} class="foo" />""",
-        """{{ _get("Card").render(**{"title":items['key'], "class":"foo"}) }}""",
+        """{{ _render("Card", **{"title":items['key'], "class":"foo"}) }}""",
     ),
     (
         """<Card title={{ data["name"] }} />""",
-        """{{ _get("Card").render(**{"title":data["name"]}) }}""",
+        """{{ _render("Card", **{"title":data["name"]}) }}""",
     ),
     # Closing braces inside string literals within expressions
     (
         """<Card title={{ foo("}}") }} />""",
-        """{{ _get("Card").render(**{"title":foo("}}")}) }}""",
+        """{{ _render("Card", **{"title":foo("}}")}) }}""",
     ),
     (
         """<Card title={{ foo('}}') }} />""",
-        """{{ _get("Card").render(**{"title":foo('}}')}) }}""",
+        """{{ _render("Card", **{"title":foo('}}')}) }}""",
     ),
     (
         """<Card title={{ "it's }}" }} />""",
-        """{{ _get("Card").render(**{"title":"it's }}"}) }}""",
+        """{{ _render("Card", **{"title":"it's }}"}) }}""",
     ),
     # Raw blocks
     (
         """<Foo bar="baz">content</Foo>
 {% raw %}{{ a + b }}{% endraw %}
 what""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call _render("Foo", **{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}{{ a + b }}{% endraw %}
 what""",
+    ),
+    # A `{%` inside a raw block is text, not the start of a statement.
+    (
+        """{% raw %}Use {% in a sentence{% endraw %}<Foo />""",
+        """{% raw %}Use {% in a sentence{% endraw %}{{ _render("Foo") }}""",
     ),
     # Raw blocks with HTML content (should not be escaped)
     (
         """<Foo bar="baz">content</Foo>
 {% raw %}<div class="test">&amp;</div>{% endraw %}""",
-        """{% call(_slot="") _get("Foo").render(**{"bar":"baz"}) -%}content{%- endcall %}
+        """{% call _render("Foo", **{"bar":"baz"}) -%}content{%- endcall %}
 {% raw %}<div class="test">&amp;</div>{% endraw %}""",
     ),
 )
@@ -180,11 +186,11 @@ def test_process_nested_same_tag():
 </Card>
     """
     expected = """
-{% call(_slot="") _get("Card").render(**{"class":"card"}) -%}
+{% call _render("Card", **{"class":"card"}) -%}
   WTF
-  {% call(_slot="") _get("Card").render(**{"class":"card-header"}) -%}abc{%- endcall %}
-  {% call(_slot="") _get("Card").render(**{"class":"card-body"}) -%}
-    <div>{% call(_slot="") _get("Card").render() -%}Text{%- endcall %}</div>
+  {% call _render("Card", **{"class":"card-header"}) -%}abc{%- endcall %}
+  {% call _render("Card", **{"class":"card-body"}) -%}
+    <div>{% call _render("Card") -%}Text{%- endcall %}</div>
   {%- endcall %}
 {%- endcall %}
 """
@@ -198,8 +204,8 @@ def test_nested_same_tag_with_content_between():
     """Content between nested same-name closing tags is preserved."""
     source = """<Card>a<Card>b</Card>c</Card>"""
     expected = (
-        '{% call(_slot="") _get("Card").render() -%}'
-        'a{% call(_slot="") _get("Card").render() -%}b{%- endcall %}c'
+        '{% call _render("Card") -%}'
+        'a{% call _render("Card") -%}b{%- endcall %}c'
         '{%- endcall %}'
     )
     parser = JxParser(name="test", source=source, components=[])
@@ -211,8 +217,8 @@ def test_nested_same_tag_self_closing_does_not_increase_depth():
     """Self-closing same-name tags inside a block don't affect nesting."""
     source = """<Card>a<Card />b</Card>"""
     expected = (
-        '{% call(_slot="") _get("Card").render() -%}'
-        'a{{ _get("Card").render() }}b'
+        '{% call _render("Card") -%}'
+        'a{{ _render("Card") }}b'
         '{%- endcall %}'
     )
     parser = JxParser(name="test", source=source, components=[])
@@ -224,9 +230,9 @@ def test_nested_same_tag_siblings():
     """Multiple same-name siblings inside a parent of the same name."""
     source = """<Card><Card>a</Card><Card>b</Card></Card>"""
     expected = (
-        '{% call(_slot="") _get("Card").render() -%}'
-        '{% call(_slot="") _get("Card").render() -%}a{%- endcall %}'
-        '{% call(_slot="") _get("Card").render() -%}b{%- endcall %}'
+        '{% call _render("Card") -%}'
+        '{% call _render("Card") -%}a{%- endcall %}'
+        '{% call _render("Card") -%}b{%- endcall %}'
         '{%- endcall %}'
     )
     parser = JxParser(name="test", source=source, components=[])
@@ -287,7 +293,7 @@ def test_slots():
     assert slots == ("header", "footer")
     assert result.strip() == """
 <html>
-  {% if _slots.get('header') %}{{ _slots['header'] }}{% else %}
+  {% if 'header' in _slots %}{{ _slots['header']() }}{% else %}
   <h1>Header</h1>
   {% endif %}
 
@@ -296,7 +302,7 @@ def test_slots():
     <p>Hi, {{ user }}!</p>
   {% endif %}
 
-  {% if _slots.get('footer') %}{{ _slots['footer'] }}{% else %}
+  {% if 'footer' in _slots %}{{ _slots['footer']() }}{% else %}
     <footer>Footer content</footer>
   {% endif %}
 </html>
@@ -327,7 +333,7 @@ def test_slots_strip():
 
     assert result.strip() == """
 <html>
-  {% if _slots.get('header') %}{{ _slots['header'] }}{% else %}
+  {% if 'header' in _slots %}{{ _slots['header']() }}{% else %}
   <h1>Header</h1>
   {% endif %}
 
@@ -336,7 +342,7 @@ def test_slots_strip():
     <p>Hi, {{ user }}!</p>
   {% endif %}
 
-  {% if _slots.get('footer') %}{{ _slots['footer'] }}{% else %}<footer>Footer content</footer>{% endif %}
+  {% if 'footer' in _slots %}{{ _slots['footer']() }}{% else %}<footer>Footer content</footer>{% endif %}
 </html>
 """.strip()
 
@@ -361,16 +367,12 @@ def test_fills():
     print(result)
 
     assert result.strip() == """
-{% call(_slot="") _get("Layout").render() -%}
-{% if _slot == 'header' %}
+{% macro _jx_fill_1() %}
 <h1>Header</h1>
-{% elif _slot == 'footer' %}
+{% endmacro %}{% macro _jx_fill_2() %}
 <footer>Footer content</footer>
-{% else -%}
-<p>Main content</p>
-<p>Hi, {{ user }}!</p>
-{%- endif %}
-{%- endcall %}
+{% endmacro %}{% call _render("Layout", _fills={"header": _jx_fill_1, "footer": _jx_fill_2}) -%}<p>Main content</p>
+<p>Hi, {{ user }}!</p>{%- endcall %}
 """.strip()
 
 
@@ -394,13 +396,9 @@ def test_fills_strip():
     print(result)
 
     assert result.strip() == """
-{% call(_slot="") _get("Layout").render() -%}
-{% if _slot == 'header' %}<h1>Header</h1>{% elif _slot == 'footer' %}
-<footer>Footer content</footer>{% else -%}
-<p>Main content</p>
-<p>Hi, {{ user }}!</p>
-{%- endif %}
-{%- endcall %}
+{% macro _jx_fill_1() %}<h1>Header</h1>{% endmacro %}{% macro _jx_fill_2() %}
+<footer>Footer content</footer>{% endmacro %}{% call _render("Layout", _fills={"header": _jx_fill_1, "footer": _jx_fill_2}) -%}<p>Main content</p>
+<p>Hi, {{ user }}!</p>{%- endcall %}
 """.strip()
 
 
@@ -410,7 +408,7 @@ def test_comment_blocks_are_protected():
     parser = JxParser(name="test", source=source, components=["Foo"])
     result, _ = parser.parse(validate_tags=True)
     assert "{# TODO: Use <Card /> here #}" in result
-    assert '_get("Foo")' in result
+    assert '_render("Foo")' in result
 
 
 def test_multiline_comment_blocks_are_protected():
@@ -420,7 +418,7 @@ def test_multiline_comment_blocks_are_protected():
     result, _ = parser.parse(validate_tags=True)
     assert "<Card" in result
     assert "<Button" in result
-    assert '_get("Foo")' in result
+    assert '_render("Foo")' in result
 
 
 def test_malformed_nested_opening_tag():
@@ -441,19 +439,66 @@ def test_expr_with_nested_quotes_in_attrs():
     source = """<Foo bar={{ "hello" + 'world' }}>content</Foo>"""
     parser = JxParser(name="test", source=source, components=["Foo"])
     result, _ = parser.parse()
-    assert "_get" in result
+    assert "_render" in result
 
 
 def test_unclosed_expr_block_raises():
-    """An unclosed {{ in _replace_expr_blocks raises TemplateSyntaxError."""
-    parser = JxParser(name="test", source="", components=[])
-    with pytest.raises(TemplateSyntaxError, match="Unclosed expression"):
-        parser._replace_expr_blocks("bar={{ oops")
+    """An unclosed {{ is reported, with the position of the opening braces."""
+    parser = JxParser(name="test", source="bar={{ oops", components=[])
+    with pytest.raises(
+        TemplateSyntaxError, match=r"\[test:1:4\] Unclosed expression"
+    ):
+        parser.parse()
 
 
 def test_escaped_quotes_in_tag_attrs():
-    r"""Escaped quotes inside attribute values don't break tag parsing."""
+    r"""
+    An escaped quote does not end an attribute value.
+
+    The regex parser cut the value at the first `"`, escaped or not, and emitted
+    an unterminated Python string literal. Nothing caught it because the
+    generated source was never checked, only searched for `_render`.
+    """
     source = r"""<Foo title="say \"hello\"" />"""
     parser = JxParser(name="test", source=source, components=["Foo"])
     result, _ = parser.parse()
+    assert result == r"""{{ _render("Foo", **{"title":"say \"hello\""}) }}"""
     assert r"\"hello\"" in result
+
+
+@pytest.mark.parametrize(
+    "source, default",
+    [
+        ("{% slot a %}  d  {% endslot %}", "  d  "),
+        ("{% slot a -%}  d  {%- endslot %}", "d"),
+        # `+` is the explicit "keep it" marker, so it must not strip.
+        ("{% slot a +%}  d  {%+ endslot %}", "  d  "),
+        ("{% slot a -%}  d  {%+ endslot %}", "d  "),
+        ("{% slot a +%}  d  {%- endslot %}", "  d"),
+    ],
+)
+def test_slot_strips_only_on_the_dash_marker(source, default):
+    result, _ = JxParser(name="test", source=source, components=[]).parse()
+    assert result == (
+        "{% if 'a' in _slots %}{{ _slots['a']() }}" f"{{% else %}}{default}{{% endif %}}"
+    )
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("A  {% slot h %}d{% endslot %}  B", "A  d  B"),
+        # The generated `{% if %}` replaces the `{% slot %}` tag, so a marker
+        # on the tag has to be carried over or Jinja never sees it.
+        ("A  {%- slot h %}d{% endslot %}  B", "Ad  B"),
+        ("A  {% slot h %}d{% endslot -%}  B", "A  dB"),
+        ("A  {%- slot h %}d{% endslot -%}  B", "AdB"),
+        # `+` is the explicit "keep it" marker.
+        ("A  {%+ slot h %}d{% endslot +%}  B", "A  d  B"),
+    ],
+)
+def test_slot_outer_whitespace_markers(source, expected):
+    result, _ = JxParser(name="test", source=source, components=[]).parse()
+    env = jinja2.Environment()
+    env.globals["_slots"] = {}
+    assert env.from_string(result).render() == expected

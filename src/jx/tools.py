@@ -11,7 +11,8 @@ from pathlib import Path
 from .catalog import Catalog
 from .exceptions import JxException
 from .meta import extract_metadata
-from .parser import RX_COMMENT, RX_RAW, RX_TAG_NAME, JxParser
+from .nodes import Component, walk
+from .parser import JxParser
 
 
 @dataclass
@@ -26,24 +27,25 @@ class CheckError:
 def find_component_tags(source: str) -> list[tuple[str, int]]:
     """
     Find all component tags in the source and their line numbers.
-    Strips Jinja comments and raw blocks first to avoid false positives.
+
+    Walks the parsed tree, so tags inside comments or `{% raw %}` blocks are
+    not reported and there is only one definition of what a tag is.
 
     Returns:
         List of (tag_name, line_number) tuples.
     """
-    # Replace comments/raw blocks with same-length whitespace to preserve line numbers
-    def _blank(m: re.Match) -> str:
-        text = m.group(0)
-        return "".join("\n" if c == "\n" else " " for c in text)
-
-    cleaned = RX_RAW.sub(_blank, source)
-    cleaned = RX_COMMENT.sub(_blank, cleaned)
-
-    tags = []
-    for match in RX_TAG_NAME.finditer(cleaned):
-        line_num = cleaned[:match.start()].count("\n") + 1
-        tags.append((match.group("tag"), line_num))
-    return tags
+    parser = JxParser(name="<check>", source=source, components=[])
+    try:
+        document = parser.parse_ast(validate_tags=False)
+    except JxException:
+        # A broken template has no reliable tag list; `check_component` reports
+        # the syntax error itself.
+        return []
+    return [
+        (node.name, node.span.line)
+        for node in walk(document)
+        if isinstance(node, Component)
+    ]
 
 
 def check_component(

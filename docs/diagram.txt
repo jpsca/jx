@@ -32,14 +32,14 @@
   │                                                                         │
   │     INPUT:                          OUTPUT:                             │
   │     ┌─────────────────────┐        ┌──────────────────────────────┐   │
-  │     │ <Card title="Hi">   │   ──▶  │ {% call(_slot="")            │   │
-  │     │   <p>Content</p>    │        │   _get("Card").render(       │   │
-  │     │ </Card>             │        │     title="Hi") -%}          │   │
-  │     └─────────────────────┘        │   <p>Content</p>             │   │
-  │                                    │ {%- endcall %}               │   │
+  │     │ <Card title="Hi">   │   ──▶  │ {% call _render("Card",      │   │
+  │     │   <p>Content</p>    │        │     **{"title":"Hi"}) -%}    │   │
+  │     │ </Card>             │        │     <p>Content</p>           │   │
+  │     └─────────────────────┘        │ {%- endcall %}               │   │
+  │                                    │                              │   │
   │     ┌─────────────────────┐        └──────────────────────────────┘   │
-  │     │ {% slot header %}   │   ──▶  │ {% if _slots.get('header') %}│   │
-  │     │   Default           │        │   {{ _slots['header'] }}     │   │
+  │     │ {% slot header %}   │   ──▶  │ {% if 'header' in _slots %}  │   │
+  │     │   Default           │        │   {{ _slots['header']() }}   │   │
   │     │ {% endslot %}       │        │ {% else %}Default{% endif %} │   │
   │     └─────────────────────┘        └──────────────────────────────┘   │
   └─────────────────────────────────────────────────────────────────────────┘
@@ -104,8 +104,8 @@
   │        │   title: "Hi",           # declared props                 │    │
   │        │   attrs: Attrs(...),     # extra attributes               │    │
   │        │   content: "...",        # inner HTML                     │    │
-  │        │   _slots: {...},         # named slot content             │    │
-  │        │   _get: <fn>,            # child component loader         │    │
+  │        │   _slots: {...},         # fill callables                 │    │
+  │        │   _render: <fn>,         # child component renderer       │    │
   │        │   assets: {...},         # asset helpers                  │    │
   │        │ }                                                         │    │
   │        └──────────────────────────────────────────────────────────┘    │
@@ -121,7 +121,7 @@
   │     │   ├─▶ {{ title }}           → "Hi"                          │    │
   │     │   ├─▶ {{ attrs.render() }}  → 'class="card" data-id="1"'    │    │
   │     │   ├─▶ {{ content }}         → inner HTML                    │    │
-  │     │   ├─▶ _get("Card").render() → RECURSIVE (back to step 7)    │    │
+  │     │   ├─▶ _render("Card")         → RECURSIVE (back to step 7)  │    │
   │     │   └─▶ {{ assets.render() }} → <link>/<script> tags          │    │
   │     └─────────────────────────────────────────────────────────────┘    │
   └─────────────────────────────────────────────────────────────────────────┘
@@ -148,7 +148,7 @@
   └─────────────────────┴───────────────────────────────────────────────────┘
   Child Component Resolution
 
-  _get("Card").render(title="Hi")
+  _render("Card", title="Hi")
           │
           ▼
   ┌─────────────────────────────────────┐

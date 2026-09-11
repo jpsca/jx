@@ -12,9 +12,10 @@ import time
 import typing as t
 from pathlib import Path
 
+import jinjax
+
 from jx import Catalog as JxCatalog
 
-import jinjax
 
 # ---------------------------------------------------------------------------
 # Jx templates (use {# import #} for child components)
@@ -268,7 +269,7 @@ def main():
 
         # ---- Setup ----
         jx_cat = JxCatalog(jx_folder, auto_reload=False)
-        jinjax_cat = jinjax.Catalog(use_cache=True, auto_reload=False)
+        jinjax_cat = jinjax.Catalog(use_cache=True, auto_reload=False, file_ext=".jx")
         jinjax_cat.add_folder(jinjax_folder)
 
         # Verify both produce similar output

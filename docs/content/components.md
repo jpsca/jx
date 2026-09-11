@@ -311,7 +311,13 @@ For multiple content areas, use named slots.
 </Modal>
 ```
 
-Unfilled slots use their default content.
+Unfilled slots use their default content. An *empty* fill is not the same as an
+unfilled slot: `{% fill header %}{% endfill %}` renders nothing and overrides the
+default.
+
+Fill bodies are rendered lazily, only when the component actually reaches the
+matching `{% slot %}`. A slot inside a conditional that is never taken costs
+nothing, and its fill never runs.
 
 ### When to Use Slots vs Props
 

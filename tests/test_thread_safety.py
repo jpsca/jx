@@ -162,7 +162,6 @@ def test_asset_cache_not_poisoned_by_concurrent_reload(folder):
                 slots=co.slots,
                 asset_cache=co._asset_cache,
             )
-            gated.globals = co.globals
             return gated
 
     catalog = GatedCatalog(folder, auto_reload=True)

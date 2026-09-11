@@ -20,12 +20,12 @@ def test_add_folder(folder):
 
     assert catalog.components["a.jx"].base_path == folder
     assert catalog.components["a.jx"].path == folder / "a.jx"
-    assert catalog.components["a.jx"].mtime > 0
+    assert catalog.components["a.jx"].mtime == 0  # not compiled yet
     assert catalog.components["a.jx"].code is None
 
     assert catalog.components["b.jx"].base_path == folder
     assert catalog.components["b.jx"].path == folder / "b.jx"
-    assert catalog.components["b.jx"].mtime > 0
+    assert catalog.components["b.jx"].mtime == 0  # not compiled yet
     assert catalog.components["b.jx"].code is None
 
 
@@ -68,11 +68,11 @@ def test_add_folder_with_prefix(tmp_path):
 
     assert catalog.components["a.jx"].base_path == folder1
     assert catalog.components["a.jx"].path == folder1 / "a.jx"
-    assert catalog.components["a.jx"].mtime > 0
+    assert catalog.components["a.jx"].mtime == 0  # not compiled yet
 
     assert catalog.components["@bla/b.jx"].base_path == folder2
     assert catalog.components["@bla/b.jx"].path == folder2 / "b.jx"
-    assert catalog.components["@bla/b.jx"].mtime > 0
+    assert catalog.components["@bla/b.jx"].mtime == 0  # not compiled yet
 
 
 def test_dot_in_prefix(tmp_path):
@@ -87,7 +87,7 @@ def test_dot_in_prefix(tmp_path):
 
     assert catalog.components["@ui.forms/a.jx"].base_path == folder
     assert catalog.components["@ui.forms/a.jx"].path == folder / "a.jx"
-    assert catalog.components["@ui.forms/a.jx"].mtime > 0
+    assert catalog.components["@ui.forms/a.jx"].mtime == 0  # not compiled yet
 
 
 def test_add_same_folder_many_times(folder):
@@ -526,3 +526,18 @@ def test_render_string_does_not_share_assets_between_sources(folder):
     assert catalog.render_string(
         '{#css "b.css" #}{#js "b.js" #}\n{{ assets.render() }}'
     ) == '<link rel="stylesheet" href="b.css">\n<script type="module" src="b.js"></script>'
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("{% raw %}Use {% in a sentence{% endraw %}", "Use {% in a sentence"),
+        ('{% raw %}{% "unterminated quote{% endraw %}', '{% "unterminated quote'),
+        ("{% raw %}<Card />{%+ endraw %}", "<Card />"),
+    ],
+)
+def test_raw_blocks_render_exactly_like_jinja(folder, source, expected):
+    """A raw block is text all the way down, so Jx must not lex inside it."""
+    catalog = Catalog(folder)
+    assert catalog.render_string(source) == expected
+    assert jinja2.Environment().from_string(source).render() == expected
