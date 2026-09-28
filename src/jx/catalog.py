@@ -84,6 +84,13 @@ def _stable(value) -> str:
     return "|".join(parts)
 
 
+def prefix_of(relpath: str) -> str:
+    """The prefix of a component's relpath: `"ui"` for `"@ui/button.jx"`, else `""`."""
+    if relpath.startswith("@"):
+        return relpath[1:].split("/", 1)[0]
+    return ""
+
+
 class Catalog:
 
     # IDEA: This dict could be replaced by a dict-like object
@@ -551,7 +558,12 @@ class Catalog:
             source = cdata.path.read_text(encoding="utf-8")
         except UnicodeDecodeError as err:
             raise FileEncodingError(cdata.path.as_posix()) from err
-        meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
+        meta = extract_metadata(
+            source,
+            base_path=cdata.base_path,
+            fullpath=cdata.path,
+            prefix=prefix_of(relpath),
+        )
 
         parser = JxParser(
             name=relpath, source=source, components=list(meta.imports.keys())

@@ -409,3 +409,22 @@ def test_relative_import_in_string_template():
     source = '{#import "./button.jx" as Button #}\n<Button />'
     with pytest.raises(InvalidImport, match="Relative import"):
         extract_metadata(source, base_path=Path(), fullpath=Path())
+
+
+def test_relative_import_keeps_the_prefix():
+    """A relative import stays inside the prefixed folder, so it keeps its prefix."""
+    base = Path("/app/kit")
+    source = """
+{# import "./icons/star.jx" as Star #}
+{# import "../shared.jx" as Shared #}
+{# import "@other/x.jx" as X #}
+{# import "plain.jx" as Plain #}
+    """
+    meta = extract_metadata(source, base, base / "buttons/button.jx", prefix="ui")
+
+    assert meta.imports == {
+        "Star": "@ui/buttons/icons/star.jx",
+        "Shared": "@ui/shared.jx",
+        "X": "@other/x.jx",
+        "Plain": "plain.jx",
+    }

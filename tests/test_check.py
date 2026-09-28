@@ -402,3 +402,17 @@ def test_check_unknown_import_line_for_relative_path(folder):
 
     errors, _checked = check_all(Catalog(folder))
     assert [e.line for e in errors] == [2]
+
+
+def test_check_relative_import_in_prefixed_folder(tmp_path, capsys):
+    app = tmp_path / "app"
+    kit = tmp_path / "kit"
+    app.mkdir()
+    kit.mkdir()
+    (app / "page.jx").write_text('{#import "@ui/button.jx" as Button #}\n<Button />')
+    (kit / "button.jx").write_text('{#import "./icon.jx" as Icon #}\n<Icon />')
+    (kit / "icon.jx").write_text("*")
+
+    catalog = Catalog(app)
+    catalog.add_folder(kit, prefix="ui")
+    assert check(catalog) == 0, capsys.readouterr()

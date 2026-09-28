@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass
 from difflib import get_close_matches
 from pathlib import Path
 
-from .catalog import Catalog
+from .catalog import Catalog, prefix_of
 from .exceptions import InvalidImport, JxException
 from .lexer import scan_header
 from .meta import extract_metadata, parse_import_expr, scan_import_lines
@@ -77,7 +77,12 @@ def check_component(
         return [CheckError(file=relpath, line=None, message="Not valid UTF-8", abs_path=abs_path)]
 
     try:
-        meta = extract_metadata(source, base_path=cdata.base_path, fullpath=cdata.path)
+        meta = extract_metadata(
+            source,
+            base_path=cdata.base_path,
+            fullpath=cdata.path,
+            prefix=prefix_of(relpath),
+        )
     except JxException as err:
         line, col = error_position(err)
         return [

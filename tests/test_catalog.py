@@ -609,3 +609,29 @@ def test_auto_reload_setter_is_a_noop_when_unchanged(folder):
     catalog.auto_reload = False
 
     assert catalog.get_component("a.jx") is before
+
+
+def test_relative_imports_inside_a_prefixed_folder(tmp_path):
+    """
+    `add_folder` documents that a component can import its prefixed siblings
+    with a relative path. The prefix used to be dropped, so `./sub/icon.jx`
+    was looked up as the unprefixed `sub/icon.jx` and not found.
+    """
+    app = tmp_path / "app"
+    kit = tmp_path / "kit"
+    (kit / "sub").mkdir(parents=True)
+    app.mkdir()
+    (app / "page.jx").write_text('{# import "@ui/button.jx" as Button #}<Button />')
+    (app / "shared.jx").write_text("APP")
+    (kit / "button.jx").write_text(
+        '{# import "./sub/icon.jx" as Icon #}{# import "shared.jx" as Shared #}'
+        "[<Icon /> <Shared />]"
+    )
+    (kit / "sub" / "icon.jx").write_text('{# import "../shared.jx" as Shared #}icon:<Shared />')
+    (kit / "shared.jx").write_text("KIT")
+
+    catalog = Catalog(app)
+    catalog.add_folder(kit, prefix="ui")
+
+    # The relative imports stay in the kit; the unprefixed `shared.jx` is the app's.
+    assert catalog.render("page.jx") == "[icon:KIT APP]"

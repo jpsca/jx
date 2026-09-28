@@ -57,7 +57,7 @@ class Meta:
     js: tuple[str, ...] = ()
 
 
-def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
+def extract_metadata(source: str, base_path: Path, fullpath: Path, prefix: str = "") -> Meta:
     """
     Extract metadata from the Jx template source.
 
@@ -68,6 +68,11 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
             Absolute base path for all the template files, for relative imports.
         fullpath:
             The absolute full path of the current template, for relative imports.
+        prefix:
+            The prefix of the folder the template belongs to, without the `@`
+            or the trailing `/` (`"ui"` for `@ui/button.jx`); `""` when the
+            folder has none. A relative import stays inside that folder, so it
+            is registered under the same prefix.
 
     Returns:
         A `Meta` object containing the extracted metadata.
@@ -99,6 +104,8 @@ def extract_metadata(source: str, base_path: Path, fullpath: Path) -> Meta:
                 resolved = (fullpath.parent / import_path).resolve()
                 validate_import_path(import_path, resolved, base_path)
                 import_path = resolved.relative_to(base_path).as_posix()
+                if prefix:
+                    import_path = f"@{prefix}/{import_path}"
             meta.imports[import_name] = import_path
 
         elif keyword == "css":
